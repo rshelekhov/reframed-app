@@ -8,8 +8,9 @@ import (
 )
 
 type Config struct {
-	Env         string `yaml:"env" env-default:"development"`
-	StoragePath string `yaml:"storage_path" env-required:"true"`
+	Env string `yaml:"env" env-default:"development"`
+	// StoragePath string `yaml:"storage_path" env-required:"true"`
+	StoragePath string `yaml:"storage_path"`
 	HTTPServer  `yaml:"http_server"`
 }
 
