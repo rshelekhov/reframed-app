@@ -8,16 +8,25 @@ import (
 )
 
 type Config struct {
-	Env string `yaml:"env" env-default:"development"`
-	// StoragePath string `yaml:"storage_path" env-required:"true"`
-	StoragePath string `yaml:"storage_path"`
-	HTTPServer  `yaml:"http_server"`
+	Env        string           `yaml:"env" env-default:"development"`
+	HTTPServer HTTPServerConfig `yaml:"http_server"`
+	Postgres   PostgresConfig   `yaml:"postgres" env-required:"true"`
 }
 
-type HTTPServer struct {
+type HTTPServerConfig struct {
 	Address     string        `yaml:"address" env-default:"0.0.0.0:8080"`
 	Timeout     time.Duration `yaml:"timeout" env-default:"5s"`
 	IdleTimeout time.Duration `yaml:"idle_timeout" env-default:"60s"`
+}
+
+type PostgresConfig struct {
+	DBName     string `yaml:"db_name"`
+	DBTestName string `yaml:"db_test_name"`
+	Host       string `yaml:"host"`
+	Port       string `yaml:"port"`
+	User       string `yaml:"user"`
+	Password   string `yaml:"password"`
+	SSLMode    string `yaml:"sslmode" env-default:"disable"`
 }
 
 func MustLoad() *Config {
