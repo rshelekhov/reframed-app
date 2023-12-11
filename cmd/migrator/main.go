@@ -23,12 +23,13 @@ func main() {
 	flag.Parse()
 
 	if migrationsPath == "" {
+		// I'm fine with panic for now, as it's an auxiliary utility.
 		panic("migrations-path is required")
 	}
 
+	// Create a migrator object by passing the credentials to our database
 	m, err := migrate.New(
 		"file://"+migrationsPath,
-		// postgres://user:password@host:port/dbname?sslmode=disable
 		fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s",
 			cfg.Postgres.User,
 			cfg.Postgres.Password,
@@ -41,6 +42,7 @@ func main() {
 		panic(err)
 	}
 
+	// Migrate to the latest version
 	if err := m.Up(); err != nil {
 		if errors.Is(err, migrate.ErrNoChange) {
 			fmt.Println("no migrations to apply")
