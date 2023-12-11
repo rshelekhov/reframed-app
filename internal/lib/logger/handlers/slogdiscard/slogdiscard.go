@@ -37,11 +37,3 @@ func (d DiscardHandler) WithGroup(_ string) slog.Handler {
 func NewDiscardHandler() *DiscardHandler {
 	return &DiscardHandler{}
 }
-
-// Err ...
-func Err(err error) slog.Attr {
-	return slog.Attr{
-		Key:   "error",
-		Value: slog.StringValue(err.Error()),
-	}
-}
