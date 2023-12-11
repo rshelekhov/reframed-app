@@ -15,12 +15,11 @@ import (
 )
 
 func main() {
-	var migrationsPath, migrationsTable string
+	var migrationsPath string
 
 	cfg := config.MustLoad()
 
 	flag.StringVar(&migrationsPath, "migrations-path", "./migrations", "path to migrations")
-	flag.StringVar(&migrationsTable, "migrations-table", cfg.Postgres.DBTestName, "name of database for functional tests")
 	flag.Parse()
 
 	if migrationsPath == "" {

@@ -20,13 +20,12 @@ type HTTPServerConfig struct {
 }
 
 type PostgresConfig struct {
-	DBName     string `yaml:"db_name"`
-	DBTestName string `yaml:"db_test_name"`
-	Host       string `yaml:"host"`
-	Port       string `yaml:"port"`
-	User       string `yaml:"user"`
-	Password   string `yaml:"password"`
-	SSLMode    string `yaml:"sslmode" env-default:"disable"`
+	DBName   string `yaml:"db_name"`
+	Host     string `yaml:"host"`
+	Port     string `yaml:"port"`
+	User     string `yaml:"user"`
+	Password string `yaml:"password"`
+	SSLMode  string `yaml:"sslmode" env-default:"disable"`
 }
 
 func MustLoad() *Config {
