@@ -10,7 +10,7 @@ import (
 type Config struct {
 	Env        string           `yaml:"env" env-default:"development"`
 	HTTPServer HTTPServerConfig `yaml:"http_server"`
-	Postgres   PostgresConfig   `yaml:"postgres" env-required:"true"`
+	Database   DatabaseConfig   `yaml:"database" env-required:"true"`
 }
 
 type HTTPServerConfig struct {
@@ -19,7 +19,7 @@ type HTTPServerConfig struct {
 	IdleTimeout time.Duration `yaml:"idle_timeout" env-default:"60s"`
 }
 
-type PostgresConfig struct {
+type DatabaseConfig struct {
 	DBName   string `yaml:"db_name"`
 	Host     string `yaml:"host"`
 	Port     string `yaml:"port"`
