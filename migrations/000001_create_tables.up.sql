@@ -12,14 +12,14 @@ CREATE TABLE IF NOT EXISTS users
 
 CREATE TABLE IF NOT EXISTS roles
 (
-    "id"  uuid PRIMARY KEY,
+    id  int PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     title varchar(50) NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS assistants
 (
     id         uuid PRIMARY KEY,
-    user_id    uuid  REFERENCES users (id),
+    user_id    uuid REFERENCES users (id),
     first_name varchar(50) NOT NULL,
     last_name  varchar(50) NOT NULL,
     created_at timestamp NOT NULL,
@@ -67,19 +67,19 @@ CREATE INDEX IF NOT EXISTS idx_client_id ON appointments(client_id);
 
 CREATE TABLE IF NOT EXISTS statuses
 (
-    id          uuid PRIMARY KEY,
+    id          int PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     status_name varchar(50) NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS medical_reports
 (
-    id             uuid PRIMARY KEY,
-    diagnosis      text NOT NULL,
+    id              uuid PRIMARY KEY,
+    diagnosis       text NOT NULL,
     recommendations text NOT NULL,
-    appointment_id uuid REFERENCES appointments (id),
-    attachment_id  uuid REFERENCES attachments (id),
-    created_at     timestamp NOT NULL,
-    updated_at     timestamp NOT NULL
+    appointment_id  uuid REFERENCES appointments (id),
+    attachment_id   uuid REFERENCES attachments (id),
+    created_at      timestamp NOT NULL,
+    updated_at      timestamp NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_appointment_id ON medical_reports(appointment_id);
@@ -114,6 +114,6 @@ CREATE INDEX IF NOT EXISTS idx_client_id ON reminders(client_id);
 
 CREATE TABLE IF NOT EXISTS reminder_settings
 (
-    id       uuid PRIMARY KEY,
+    id       int PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     interval varchar(100) NOT NULL
 );
