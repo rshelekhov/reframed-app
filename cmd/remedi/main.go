@@ -23,13 +23,14 @@ func main() {
 	log.Debug("logger debug mode enabled")
 
 	storage, err := postgres.NewStorage(
-		fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-			cfg.Postgres.Host,
-			cfg.Postgres.Port,
+		fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s",
 			cfg.Postgres.User,
 			cfg.Postgres.Password,
+			cfg.Postgres.Host,
+			cfg.Postgres.Port,
 			cfg.Postgres.DBName,
-			cfg.Postgres.SSLMode))
+			cfg.Postgres.SSLMode),
+	)
 	if err != nil {
 		log.Error("failed to init storage", sl.Err(err))
 	}
