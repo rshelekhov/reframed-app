@@ -10,7 +10,7 @@ import (
 type Config struct {
 	Env        string           `yaml:"env" env-default:"development"`
 	HTTPServer HTTPServerConfig `yaml:"http_server"`
-	Postgres   PostgresConfig   `yaml:"database" env-required:"true"`
+	Postgres   PostgresConfig   `yaml:"postgres" env-required:"true"`
 }
 
 type HTTPServerConfig struct {
