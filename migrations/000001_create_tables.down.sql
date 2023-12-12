@@ -1,0 +1,11 @@
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS roles;
+DROP TABLE IF EXISTS assistants;
+DROP TABLE IF EXISTS doctors;
+DROP TABLE IF EXISTS clients;
+DROP TABLE IF EXISTS appointments;
+DROP TABLE IF EXISTS statuses;
+DROP TABLE IF EXISTS medical_reports;
+DROP TABLE IF EXISTS attachments;
+DROP TABLE IF EXISTS reminders;
+DROP TABLE IF EXISTS reminder_settings;
