@@ -1,6 +1,5 @@
 env: "local" # local, development, production
-# TODO Decompose database_url
-# database_url: "host=localhost port=5432 user=app password=p@ssw0rd dbname=remedi_dev sslmode=disable"
+
 http_server:
   address: "localhost:8082"
   timeout: 4s

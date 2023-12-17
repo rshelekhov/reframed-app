@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	// "fmt"
 	"github.com/rshelekhov/remedi/internal/config"
 	"github.com/rshelekhov/remedi/internal/lib/logger/sl"
 	"github.com/rshelekhov/remedi/internal/storage/postgres"
@@ -34,6 +35,7 @@ func main() {
 	if err != nil {
 		log.Error("failed to init storage", sl.Err(err))
 	}
+	log.Debug("storage initiated")
 
 	defer func(storage *postgres.Storage) {
 		err := storage.Close()
