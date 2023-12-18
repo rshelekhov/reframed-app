@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-	// "fmt"
 	"github.com/rshelekhov/remedi/internal/config"
 	"github.com/rshelekhov/remedi/internal/lib/logger/sl"
 	"github.com/rshelekhov/remedi/internal/storage/postgres"
@@ -13,25 +11,17 @@ import (
 func main() {
 	cfg := config.MustLoad()
 
-	log := sl.SetupLogger(cfg.Env)
+	log := sl.SetupLogger(cfg.AppEnv)
 
 	// A field with information about the current environment will be added to each message
-	log = log.With(slog.String("env", cfg.Env))
+	log = log.With(slog.String("env", cfg.AppEnv))
 
 	log.Info(
 		"initializing server",
 		slog.String("address", cfg.HTTPServer.Address))
 	log.Debug("logger debug mode enabled")
 
-	storage, err := postgres.NewStorage(
-		fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s",
-			cfg.Postgres.User,
-			cfg.Postgres.Password,
-			cfg.Postgres.Host,
-			cfg.Postgres.Port,
-			cfg.Postgres.DBName,
-			cfg.Postgres.SSLMode),
-	)
+	storage, err := postgres.NewStorage(cfg.Postgres.URL)
 	if err != nil {
 		log.Error("failed to init storage", sl.Err(err))
 	}
