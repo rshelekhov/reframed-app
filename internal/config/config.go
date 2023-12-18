@@ -1,51 +1,48 @@
 package config
 
 import (
-	"github.com/ilyakaznacheev/cleanenv"
+	"github.com/spf13/viper"
 	"log"
-	"os"
 	"time"
 )
 
 type Config struct {
-	Env        string           `yaml:"env" env-default:"development"`
-	HTTPServer HTTPServerConfig `yaml:"http_server"`
-	Postgres   PostgresConfig   `yaml:"postgres" env-required:"true"`
+	AppEnv     string           `mapstructure:"APP_ENV"`
+	HTTPServer HTTPServerConfig `mapstructure:",squash"`
+	Postgres   PostgresConfig   `mapstructure:",squash"`
 }
 
 type HTTPServerConfig struct {
-	Address     string        `yaml:"address" env:"HTTP_SERVER_ADDRESS" env-default:"0.0.0.0:8080"`
-	Timeout     time.Duration `yaml:"timeout" env-default:"5s"`
-	IdleTimeout time.Duration `yaml:"idle_timeout" env-default:"60s"`
+	Address     string        `mapstructure:"HTTP_SERVER_ADDRESS"`
+	Timeout     time.Duration `mapstructure:"HTTP_SERVER_TIMEOUT"`
+	IdleTimeout time.Duration `mapstructure:"HTTP_SERVER_IDLE_TIMEOUT"`
 }
 
 type PostgresConfig struct {
-	DBName   string `yaml:"db_name"`
-	Host     string `yaml:"host"`
-	Port     string `yaml:"port"`
-	User     string `yaml:"user"`
-	Password string `yaml:"password"`
-	SSLMode  string `yaml:"sslmode" env-default:"disable"`
+	DBName   string `mapstructure:"DB_NAME"`
+	Host     string `mapstructure:"DB_HOST"`
+	Port     string `mapstructure:"DB_PORT"`
+	User     string `mapstructure:"DB_USER"`
+	Password string `mapstructure:"DB_PASSWORD"`
+	SSLMode  string `mapstructure:"DB_SSL_MODE"`
+	URL      string `mapstructure:"DB_URL"`
 }
 
 func MustLoad() *Config {
-	// Get the path to the config file from the env variable CONFIG_PATH
-	configPath := os.Getenv("CONFIG_PATH")
-	if configPath == "" {
-		log.Fatal("CONFIG_PATH environment variable is not set")
-	}
+	cfg := Config{}
 
-	// Check if the config file exists
-	if _, err := os.Stat(configPath); err != nil {
-		log.Fatalf("error opening config file: %s", err)
-	}
+	viper.SetConfigFile("local.env")
 
-	var cfg Config
-
-	// Read the config file and fill in the struct
-	err := cleanenv.ReadConfig(configPath, &cfg)
+	err := viper.ReadInConfig()
 	if err != nil {
-		log.Fatalf("error reading config file: %s", err)
+		log.Fatalf("error finding or reading config file: %s", err)
+	}
+
+	viper.AutomaticEnv()
+
+	err = viper.Unmarshal(&cfg)
+	if err != nil {
+		log.Fatalf("error unmarshalling config file into struct: %s: ", err)
 	}
 
 	return &cfg

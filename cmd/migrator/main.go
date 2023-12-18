@@ -30,13 +30,7 @@ func main() {
 	// Create a migrator object by passing the credentials to our database
 	m, err := migrate.New(
 		"file://"+migrationsPath,
-		fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s",
-			cfg.Postgres.User,
-			cfg.Postgres.Password,
-			cfg.Postgres.Host,
-			cfg.Postgres.Port,
-			cfg.Postgres.DBName,
-			cfg.Postgres.SSLMode),
+		cfg.Postgres.URL,
 	)
 	if err != nil {
 		panic(err)
