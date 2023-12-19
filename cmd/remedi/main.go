@@ -27,6 +27,7 @@ func main() {
 	}
 	log.Debug("storage initiated")
 
+	// TODO: remove this
 	defer func(storage *postgres.Storage) {
 		err := storage.Close()
 		if err != nil {

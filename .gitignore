@@ -3,3 +3,6 @@
 
 # ENV
 local.env
+
+# Other
+.DS_Store
