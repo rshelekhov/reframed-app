@@ -2,7 +2,7 @@
 /.idea/
 
 # ENV
-local.env
+.env
 
 # Other
 .DS_Store
