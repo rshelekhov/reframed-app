@@ -13,3 +13,5 @@ var (
 
 	ErrAppointmentExists = errors.New("appointment exists")
 )
+
+// TODO add interface for ResourceNameStorage methods

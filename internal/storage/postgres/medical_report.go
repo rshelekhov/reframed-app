@@ -1,10 +1,11 @@
-package models
+package postgres
 
 import (
 	"github.com/google/uuid"
 	"time"
 )
 
+// MedicalReport DB model
 type MedicalReport struct {
 	ID              uuid.UUID
 	Diagnosis       string
@@ -15,6 +16,7 @@ type MedicalReport struct {
 	UpdatedAt       time.Time
 }
 
+// Attachment DB model
 type Attachment struct {
 	ID              uuid.UUID
 	FileName        string

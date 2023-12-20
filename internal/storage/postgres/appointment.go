@@ -1,11 +1,12 @@
-package models
+package postgres
 
 import (
 	"github.com/google/uuid"
 	"time"
 )
 
-type Appointment struct {
+// Appointment DB model
+type AppointmentStorage struct {
 	ID               uuid.UUID
 	DoctorID         uuid.UUID
 	ClientID         uuid.UUID
