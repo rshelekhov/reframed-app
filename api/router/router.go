@@ -3,6 +3,7 @@ package router
 import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/render"
 	mwlogger "github.com/rshelekhov/remedi/internal/http-server/middleware/logger"
 	"log/slog"
 )
@@ -28,6 +29,8 @@ func New(log *slog.Logger) *chi.Mux {
 
 	// Parser of incoming request URLs
 	router.Use(middleware.URLFormat)
+
+	router.Use(render.SetContentType(render.ContentTypeJSON))
 
 	return router
 }
