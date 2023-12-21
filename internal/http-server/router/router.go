@@ -4,7 +4,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/render"
-	"github.com/rshelekhov/remedi/api/resources/health"
+	"github.com/rshelekhov/remedi/internal/http-server/handlers"
 	mwlogger "github.com/rshelekhov/remedi/internal/http-server/middleware/logger"
 	"log/slog"
 )
@@ -34,7 +34,7 @@ func New(log *slog.Logger) *chi.Mux {
 	r.Use(render.SetContentType(render.ContentTypeJSON))
 
 	// r.Get("/health", health.Read)
-	health.RegisterHandlers(r)
+	handlers.RegisterHandlers(r)
 
 	return r
 }

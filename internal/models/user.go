@@ -16,4 +16,15 @@ type User struct {
 	Phone     string
 	CreatedAt time.Time
 	UpdatedAt time.Time
+	DeletedAt *time.Time
+}
+
+type UserUpdate struct {
+	Email     string
+	Password  string
+	RoleID    int
+	FirstName string
+	LastName  string
+	Phone     string
+	UpdatedAt time.Time
 }
