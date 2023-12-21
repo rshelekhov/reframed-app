@@ -16,14 +16,14 @@ import (
 type Server struct {
 	cfg    config.Config
 	log    *slog.Logger
-	router *chi.Mux
+	Router *chi.Mux
 }
 
 func NewServer(cfg *config.Config, log *slog.Logger, router *chi.Mux) *Server {
 	srv := &Server{
 		cfg:    *cfg,
 		log:    log,
-		router: router,
+		Router: router,
 	}
 
 	return srv
@@ -33,7 +33,7 @@ func NewServer(cfg *config.Config, log *slog.Logger, router *chi.Mux) *Server {
 func (s *Server) Start() {
 	srv := http.Server{
 		Addr:         s.cfg.HTTPServer.Address,
-		Handler:      s.router,
+		Handler:      s.Router,
 		ReadTimeout:  s.cfg.HTTPServer.Timeout,
 		WriteTimeout: s.cfg.HTTPServer.Timeout,
 		IdleTimeout:  s.cfg.HTTPServer.IdleTimeout,
