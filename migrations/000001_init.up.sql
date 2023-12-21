@@ -8,7 +8,8 @@ CREATE TABLE IF NOT EXISTS users
     last_name  character varying NOT NULL,
     phone      character varying,
     created_at timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
-    updated_at timestamp WITH TIME ZONE NOT NULL DEFAULT now()
+    updated_at timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
+    deleted_at timestamp WITH TIME ZONE
 );
 
 CREATE TABLE IF NOT EXISTS roles
@@ -49,7 +50,8 @@ CREATE TABLE IF NOT EXISTS appointments
     first_appointment boolean DEFAULT false,
     created_by_id     uuid NOT NULL,
     created_at        timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
-    updated_at        timestamp WITH TIME ZONE NOT NULL DEFAULT now()
+    updated_at        timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
+    deleted_at        timestamp WITH TIME ZONE
 );
 
 CREATE INDEX IF NOT EXISTS idx_doctor_id ON appointments(doctor_id);
@@ -69,7 +71,8 @@ CREATE TABLE IF NOT EXISTS medical_reports
     recommendations text NOT NULL,
     appointment_id  uuid NOT NULL,
     created_at      timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
-    updated_at      timestamp WITH TIME ZONE NOT NULL DEFAULT now()
+    updated_at      timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
+    deleted_at      timestamp WITH TIME ZONE
 );
 
 CREATE INDEX IF NOT EXISTS idx_appointment_id ON medical_reports(appointment_id);
@@ -83,7 +86,8 @@ CREATE TABLE IF NOT EXISTS attachments
     medical_report_id uuid NOT NULL,
     attached_by_id    uuid NOT NULL,
     attached_at       timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
-    updated_at        timestamp WITH TIME ZONE NOT NULL DEFAULT now()
+    updated_at        timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
+    deleted_at        timestamp WITH TIME ZONE
 );
 
 CREATE INDEX IF NOT EXISTS idx_attached_by_id ON attachments(attached_by_id);
@@ -96,7 +100,8 @@ CREATE TABLE IF NOT EXISTS reminders
     content        character varying NOT NULL,
     read           boolean NOT NULL,
     created_at     timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
-    updated_at     timestamp WITH TIME ZONE NOT NULL DEFAULT now()
+    updated_at     timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
+    deleted_at     timestamp WITH TIME ZONE
 );
 
 CREATE INDEX IF NOT EXISTS idx_appointment_id ON reminders(appointment_id);
