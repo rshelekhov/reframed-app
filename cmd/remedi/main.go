@@ -1,9 +1,11 @@
 package main
 
 import (
+	"github.com/rshelekhov/remedi/api/router"
 	"github.com/rshelekhov/remedi/internal/config"
-	"github.com/rshelekhov/remedi/internal/lib/logger/sl"
+	"github.com/rshelekhov/remedi/internal/http-server/server"
 	"github.com/rshelekhov/remedi/internal/storage/postgres"
+	"github.com/rshelekhov/remedi/internal/util/logger/sl"
 	"log/slog"
 	"os"
 )
@@ -13,7 +15,8 @@ func main() {
 
 	log := sl.SetupLogger(cfg.AppEnv)
 
-	// A field with information about the current environment will be added to each message
+	// A field with information about the current environment
+	// will be added to each message
 	log = log.With(slog.String("env", cfg.AppEnv))
 
 	log.Info(
@@ -26,6 +29,13 @@ func main() {
 		log.Error("failed to init storage", sl.Err(err))
 	}
 	log.Debug("storage initiated")
+
+	r := router.New(log)
+
+	log.Info("starting server", slog.String("address", cfg.HTTPServer.Address))
+
+	srv := server.NewServer(cfg, log, r)
+	srv.Start()
 
 	defer func(storage *postgres.Storage) {
 		err := storage.Close()

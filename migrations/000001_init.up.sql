@@ -68,7 +68,6 @@ CREATE TABLE IF NOT EXISTS medical_reports
     diagnosis       text NOT NULL,
     recommendations text NOT NULL,
     appointment_id  uuid NOT NULL,
-    attachment_id   uuid NOT NULL,
     created_at      timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
     updated_at      timestamp WITH TIME ZONE NOT NULL DEFAULT now()
 );
@@ -77,13 +76,14 @@ CREATE INDEX IF NOT EXISTS idx_appointment_id ON medical_reports(appointment_id)
 
 CREATE TABLE IF NOT EXISTS attachments
 (
-    id              uuid PRIMARY KEY ,
-    file_name       character varying NOT NULL,
-    file_url        character varying NOT NULL,
-    attachment_size character varying NULL,
-    attached_by_id  uuid NOT NULL,
-    attached_at     timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
-    updated_at      timestamp WITH TIME ZONE NOT NULL DEFAULT now()
+    id                uuid PRIMARY KEY ,
+    file_name         character varying NOT NULL,
+    file_url          character varying NOT NULL,
+    attachment_size   character varying NULL,
+    medical_report_id uuid NOT NULL,
+    attached_by_id    uuid NOT NULL,
+    attached_at       timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
+    updated_at        timestamp WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
 CREATE INDEX IF NOT EXISTS idx_attached_by_id ON attachments(attached_by_id);
@@ -118,7 +118,7 @@ ALTER TABLE appointments ADD FOREIGN KEY (client_id) REFERENCES users (id);
 ALTER TABLE appointments ADD FOREIGN KEY (status_id) REFERENCES statuses (id);
 ALTER TABLE appointments ADD FOREIGN KEY (created_by_id) REFERENCES users (id);
 ALTER TABLE medical_reports ADD FOREIGN KEY (appointment_id) REFERENCES appointments (id);
-ALTER TABLE medical_reports ADD FOREIGN KEY (attachment_id) REFERENCES attachments (id);
+ALTER TABLE attachments ADD FOREIGN KEY (medical_report_id) REFERENCES medical_reports (id);
 ALTER TABLE attachments ADD FOREIGN KEY (attached_by_id) REFERENCES users (id);
 ALTER TABLE reminders ADD FOREIGN KEY (appointment_id) REFERENCES appointments (id);
 ALTER TABLE reminders ADD FOREIGN KEY (user_id) REFERENCES users (id);

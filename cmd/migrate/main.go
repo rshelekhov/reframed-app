@@ -27,7 +27,7 @@ func main() {
 		panic("migrations-path is required")
 	}
 
-	// Create a migrator object by passing the credentials to our database
+	// Create a migrate object by passing the credentials to our database
 	m, err := migrate.New(
 		"file://"+migrationsPath,
 		cfg.Postgres.URL,

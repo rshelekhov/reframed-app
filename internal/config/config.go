@@ -31,7 +31,7 @@ type PostgresConfig struct {
 func MustLoad() *Config {
 	cfg := Config{}
 
-	viper.SetConfigFile("local.env")
+	viper.SetConfigFile(".env")
 
 	err := viper.ReadInConfig()
 	if err != nil {
