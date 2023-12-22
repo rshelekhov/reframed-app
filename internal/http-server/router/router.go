@@ -5,7 +5,6 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/render"
 	"github.com/rshelekhov/remedi/internal/http-server/handlers"
-	"github.com/rshelekhov/remedi/internal/http-server/handlers/health"
 	"github.com/rshelekhov/remedi/internal/storage/postgres"
 	"log/slog"
 )
@@ -36,7 +35,7 @@ func New(log *slog.Logger, storage postgres.Storage) *chi.Mux {
 
 	r.Use(render.SetContentType(render.ContentTypeJSON))
 
-	health.RegisterHandlers(r)
+	handlers.RegisterHandlers(r)
 
 	return r
 }
