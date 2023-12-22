@@ -19,6 +19,7 @@ type User struct {
 	DeletedAt time.Time
 }
 
+// CreateUser uses in the request body and service layer
 type CreateUser struct {
 	Email     string
 	Password  string
@@ -37,3 +38,5 @@ type UpdateUser struct {
 	Phone     string
 	UpdatedAt time.Time
 }
+
+type Users []*User

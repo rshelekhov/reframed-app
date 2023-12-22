@@ -15,6 +15,12 @@ func NewRepository(db *sql.DB) *Storage {
 	}
 }
 
+func (s Storage) ListUsers() Users {
+	const op = "storage.postgres.ListUsers"
+	users := make([]*User, 0)
+	return users
+}
+
 func (s Storage) CreateUser(user User) (uuid.UUID, error) {
 	const op = "storage.postgres.CreateUser"
 
