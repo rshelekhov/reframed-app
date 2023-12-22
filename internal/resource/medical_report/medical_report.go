@@ -1,4 +1,4 @@
-package models
+package medical_report
 
 import (
 	"github.com/google/uuid"

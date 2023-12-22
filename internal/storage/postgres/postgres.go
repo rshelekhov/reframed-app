@@ -9,7 +9,7 @@ import (
 // TODO implement sqlx
 
 type Storage struct {
-	db *sql.DB
+	DB *sql.DB
 }
 
 // NewStorage ...
@@ -30,5 +30,5 @@ func NewStorage(dsn string) (*Storage, error) {
 
 // Close ...
 func (s *Storage) Close() error {
-	return s.db.Close()
+	return s.DB.Close()
 }

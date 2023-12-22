@@ -1,16 +1,17 @@
 package router
 
 import (
+	"database/sql"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/render"
-	"github.com/rshelekhov/remedi/internal/http-server/handlers"
 	mwlogger "github.com/rshelekhov/remedi/internal/http-server/middleware/logger"
-	"github.com/rshelekhov/remedi/internal/storage/postgres"
+	"github.com/rshelekhov/remedi/internal/resource/health"
+	"github.com/rshelekhov/remedi/internal/resource/user"
 	"log/slog"
 )
 
-func New(log *slog.Logger, storage postgres.Storage) *chi.Mux {
+func New(log *slog.Logger, db *sql.DB) *chi.Mux {
 	r := chi.NewRouter()
 
 	// Add request_id to each request, for tracing purposes
@@ -34,10 +35,15 @@ func New(log *slog.Logger, storage postgres.Storage) *chi.Mux {
 
 	r.Use(render.SetContentType(render.ContentTypeJSON))
 
-	res := handlers.NewResource(log, r, storage)
+	// Health check
+	r.Get("/health", health.Read())
 
-	handlers.HealthHandlers(r, res)
-	handlers.UserHandlers(r, res)
+	userAPI := user.New(log, db)
+	r.Get("/users", userAPI.ListUsers())
+	r.Post("/users", userAPI.CreateUser())
+	r.Get("/users/{id}", userAPI.ReadUser())
+	r.Put("/users/{id}", userAPI.UpdateUser())
+	r.Delete("/users/{id}", userAPI.DeleteUser())
 
 	return r
 }

@@ -1,11 +1,21 @@
-package postgres
+package user
 
 import (
+	"database/sql"
 	"github.com/google/uuid"
-	"github.com/rshelekhov/remedi/internal/models"
 )
 
-func (s *Storage) CreateUser(user models.User) (uuid.UUID, error) {
+type Storage struct {
+	db *sql.DB
+}
+
+func NewRepository(db *sql.DB) *Storage {
+	return &Storage{
+		db: db,
+	}
+}
+
+func (s Storage) CreateUser(user User) (uuid.UUID, error) {
 	const op = "storage.postgres.CreateUser"
 
 	var lastInsertID uuid.UUID
@@ -14,20 +24,20 @@ func (s *Storage) CreateUser(user models.User) (uuid.UUID, error) {
 	return lastInsertID, nil
 }
 
-func (s *Storage) ReadUser(id uuid.UUID) (models.User, error) {
+func (s Storage) ReadUser(id uuid.UUID) (User, error) {
 	const op = "storage.postgres.GetUser"
 
-	var user models.User
+	var user User
 
 	return user, nil
 }
 
-func (s *Storage) UpdateUser(user models.User) error {
+func (s Storage) UpdateUser(user User) error {
 	const op = "storage.postgres.UpdateUser"
 	return nil
 }
 
-func (s *Storage) DeleteUser(id uuid.UUID) error {
+func (s Storage) DeleteUser(id uuid.UUID) error {
 	const op = "storage.postgres.DeleteUser"
 	return nil
 }
