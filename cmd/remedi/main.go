@@ -30,7 +30,7 @@ func main() {
 	}
 	log.Debug("storage initiated")
 
-	r := router.New(log)
+	r := router.New(log, *storage)
 
 	log.Info("starting server", slog.String("address", cfg.HTTPServer.Address))
 

@@ -1,4 +1,4 @@
-package handlers
+package health
 
 import (
 	"github.com/go-chi/chi"
