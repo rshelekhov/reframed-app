@@ -8,7 +8,7 @@ import (
 func UserHandlers(r *chi.Mux, res *Resource) {
 	r.Get("/users", res.ListUsers())
 	r.Post("/users", res.CreateUser())
-	r.Get("/users/{id}", res.GetUser())
+	r.Get("/users/{id}", res.ReadUser())
 	r.Put("/users/{id}", res.UpdateUser())
 	r.Delete("/users/{id}", res.DeleteUser())
 }
@@ -25,7 +25,7 @@ func (r Resource) CreateUser() http.HandlerFunc {
 	}
 }
 
-func (r Resource) GetUser() http.HandlerFunc {
+func (r Resource) ReadUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, _ *http.Request) {
 
 	}

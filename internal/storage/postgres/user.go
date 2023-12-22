@@ -14,7 +14,7 @@ func (s *Storage) CreateUser(user models.User) (uuid.UUID, error) {
 	return lastInsertID, nil
 }
 
-func (s *Storage) GetUser(id uuid.UUID) (models.User, error) {
+func (s *Storage) ReadUser(id uuid.UUID) (models.User, error) {
 	const op = "storage.postgres.GetUser"
 
 	var user models.User
