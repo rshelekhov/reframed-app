@@ -5,6 +5,7 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/render"
 	"github.com/rshelekhov/remedi/internal/http-server/handlers"
+	mwlogger "github.com/rshelekhov/remedi/internal/http-server/middleware/logger"
 	"github.com/rshelekhov/remedi/internal/storage/postgres"
 	"log/slog"
 )
@@ -18,6 +19,12 @@ func New(log *slog.Logger, storage postgres.Storage) *chi.Mux {
 	// Logging of all requests
 	r.Use(middleware.Logger)
 
+	// By default, middleware.Logger uses its own internal logger,
+	// which should be overridden to use ours. Otherwise, problems
+	// may arise - for example, with log collection. We can use
+	// our own middleware to log requests:
+	r.Use(mwlogger.New(log))
+
 	// If a panic happens somewhere inside the server (request handler),
 	// the application should not crash.
 	r.Use(middleware.Recoverer)
@@ -25,17 +32,11 @@ func New(log *slog.Logger, storage postgres.Storage) *chi.Mux {
 	// Parser of incoming request URLs
 	r.Use(middleware.URLFormat)
 
-	handler := handlers.NewHandler(log, r, storage)
-
-	// By default, middleware.Logger uses its own internal logger,
-	// which should be overridden to use ours. Otherwise, problems
-	// may arise - for example, with log collection. We can use
-	// our own middleware to log requests:
-	r.Use(handler.MiddlewareLogger(log))
+	res := handlers.NewResource(log, r, storage)
 
 	r.Use(render.SetContentType(render.ContentTypeJSON))
 
-	handlers.RegisterHandlers(r)
+	handlers.HealthHandlers(r, res)
 
 	return r
 }

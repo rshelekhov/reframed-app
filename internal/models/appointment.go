@@ -6,7 +6,7 @@ import (
 )
 
 // Appointment DB model
-type AppointmentStorage struct {
+type Appointment struct {
 	ID               uuid.UUID
 	DoctorID         uuid.UUID
 	ClientID         uuid.UUID

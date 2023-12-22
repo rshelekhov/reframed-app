@@ -5,11 +5,11 @@ import (
 	"net/http"
 )
 
-func RegisterHandlers(r *chi.Mux) {
-	r.Get("/health", health)
+func HealthHandlers(r *chi.Mux, res *Resource) {
+	r.Get("/health", res.Health)
 }
 
-func health(w http.ResponseWriter, _ *http.Request) {
+func (r Resource) Health(w http.ResponseWriter, _ *http.Request) {
 	_, err := w.Write([]byte("OK"))
 	if err != nil {
 		return

@@ -13,7 +13,7 @@ type Resource struct {
 	service service.Service
 }
 
-func NewHandler(logger *slog.Logger, router *chi.Mux, storage postgres.Storage) *Resource {
+func NewResource(logger *slog.Logger, router *chi.Mux, storage postgres.Storage) *Resource {
 	return &Resource{
 		logger:  logger,
 		router:  router,
