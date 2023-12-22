@@ -4,8 +4,8 @@ import (
 	"github.com/rshelekhov/remedi/internal/config"
 	"github.com/rshelekhov/remedi/internal/http-server/router"
 	"github.com/rshelekhov/remedi/internal/http-server/server"
-	"github.com/rshelekhov/remedi/internal/lib/logger/sl"
 	"github.com/rshelekhov/remedi/internal/storage/postgres"
+	"github.com/rshelekhov/remedi/internal/util/logger/sl"
 	"log/slog"
 	"os"
 )
