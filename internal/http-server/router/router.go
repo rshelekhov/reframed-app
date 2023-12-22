@@ -32,11 +32,12 @@ func New(log *slog.Logger, storage postgres.Storage) *chi.Mux {
 	// Parser of incoming request URLs
 	r.Use(middleware.URLFormat)
 
-	res := handlers.NewResource(log, r, storage)
-
 	r.Use(render.SetContentType(render.ContentTypeJSON))
 
+	res := handlers.NewResource(log, r, storage)
+
 	handlers.HealthHandlers(r, res)
+	handlers.UserHandlers(r, res)
 
 	return r
 }

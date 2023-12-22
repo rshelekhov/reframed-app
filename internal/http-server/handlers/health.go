@@ -6,12 +6,14 @@ import (
 )
 
 func HealthHandlers(r *chi.Mux, res *Resource) {
-	r.Get("/health", res.Health)
+	r.Get("/health", res.Health())
 }
 
-func (r Resource) Health(w http.ResponseWriter, _ *http.Request) {
-	_, err := w.Write([]byte("OK"))
-	if err != nil {
-		return
+func (r Resource) Health() http.HandlerFunc {
+	return func(w http.ResponseWriter, _ *http.Request) {
+		_, err := w.Write([]byte("OK"))
+		if err != nil {
+			return
+		}
 	}
 }
