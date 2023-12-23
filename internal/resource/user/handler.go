@@ -1,39 +1,48 @@
 package user
 
 import (
+	"database/sql"
 	"errors"
+	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/render"
 	resp "github.com/rshelekhov/remedi/internal/lib/api/response"
 	"github.com/rshelekhov/remedi/internal/lib/logger/sl"
-	"github.com/rshelekhov/remedi/internal/service"
 	"io"
 	"log/slog"
 	"net/http"
 )
 
-type Handler struct {
+type userHandler struct {
+	service Service
 	logger  *slog.Logger
-	service service.UserService
 }
 
-func NewHandler(
-	log *slog.Logger,
-	service service.UserService,
-) *Handler {
-	return &Handler{
+func RegisterHandlers(r *chi.Mux, log *slog.Logger, db *sql.DB) {
+	userService := NewService(NewStorage(db))
+	NewHandler(r, log, userService)
+}
+
+func NewHandler(r *chi.Mux, log *slog.Logger, srv Service) {
+	h := &userHandler{
+		service: srv,
 		logger:  log,
-		service: service,
 	}
+
+	r.Get("/users", h.ListUsers())
+	r.Post("/users", h.CreateUser())
+	r.Get("/users/{id}", h.ReadUser())
+	r.Put("/users/{id}", h.UpdateUser())
+	r.Delete("/users/{id}", h.DeleteUser())
 }
 
-func (h *Handler) ListUsers() http.HandlerFunc {
+func (h *userHandler) ListUsers() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.handler.ListUsers"
 	}
 }
 
-func (h *Handler) CreateUser() http.HandlerFunc {
+func (h *userHandler) CreateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.handler.CreateUser"
 
@@ -62,7 +71,7 @@ func (h *Handler) CreateUser() http.HandlerFunc {
 
 		log.Info("request body decoded", slog.Any("user", user))
 
-		/*id, err := hu.service.CreateUser(user)
+		id, err := h.service.CreateUser(user)
 		if err != nil {
 			log.Error("failed to create user", sl.Err(err))
 
@@ -73,23 +82,23 @@ func (h *Handler) CreateUser() http.HandlerFunc {
 
 		log.Info("User created", slog.Any("user_id", id))
 
-		render.JSON(w, r, resp.Success("User created", id))*/
+		render.JSON(w, r, resp.Success("User created", id))
 	}
 }
 
-func (h *Handler) ReadUser() http.HandlerFunc {
+func (h *userHandler) ReadUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.handler.ReadUser"
 	}
 }
 
-func (h *Handler) UpdateUser() http.HandlerFunc {
+func (h *userHandler) UpdateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.handler.UpdateUser"
 	}
 }
 
-func (h *Handler) DeleteUser() http.HandlerFunc {
+func (h *userHandler) DeleteUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.handler.DeleteUser"
 	}

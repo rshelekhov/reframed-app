@@ -2,8 +2,6 @@ package storage
 
 import (
 	"errors"
-	"github.com/google/uuid"
-	"github.com/rshelekhov/remedi/internal/resource/user"
 )
 
 // Errors shouldn't depend on a particular storage implementation,
@@ -17,11 +15,3 @@ var (
 
 	ErrAppointmentExists = errors.New("appointment exists")
 )
-
-type UserStorage interface {
-	ListUsers() ([]user.User, error)
-	CreateUser(user user.User) (uuid.UUID, error)
-	ReadUser(id uuid.UUID) (user.User, error)
-	UpdateUser(id uuid.UUID) (user.User, error)
-	DeleteUser(id uuid.UUID) error
-}

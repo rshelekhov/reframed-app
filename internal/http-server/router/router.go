@@ -38,15 +38,7 @@ func New(log *slog.Logger, db *sql.DB) *chi.Mux {
 	// Health check
 	r.Get("/health", health.Read())
 
-	userStorage := user.NewStorage(db)
-	userService := user.NewService(userStorage)
-	user := user.NewHandler(log, userService)
-
-	r.Get("/users", user.ListUsers())
-	r.Post("/users", user.CreateUser())
-	r.Get("/users/{id}", user.ReadUser())
-	r.Put("/users/{id}", user.UpdateUser())
-	r.Delete("/users/{id}", user.DeleteUser())
+	user.RegisterHandlers(r, log, db)
 
 	return r
 }
