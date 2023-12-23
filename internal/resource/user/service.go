@@ -4,11 +4,23 @@ import (
 	"github.com/google/uuid"
 )
 
-type Service struct {
-	storage *Storage
+type Service interface {
+	ListUsers() ([]User, error)
+	CreateUser(user CreateUser) (uuid.UUID, error)
+	ReadUser(id uuid.UUID) (User, error)
+	UpdateUser(id uuid.UUID) (User, error)
+	DeleteUser(id uuid.UUID) error
 }
 
-func (s *Service) ListUsers() ([]User, error) {
+type userService struct {
+	storage Storage
+}
+
+func NewService(repo Storage) Service {
+	return &userService{repo}
+}
+
+func (s *userService) ListUsers() ([]User, error) {
 	const op = "user.service.ListUsers"
 	users, err := s.storage.ListUsers()
 	if err != nil {
@@ -17,18 +29,23 @@ func (s *Service) ListUsers() ([]User, error) {
 	return users, nil
 }
 
-func (s *Service) CreateUser(user CreateUser) (uuid.UUID, error) {
-	return s.storage.CreateUser(user)
+func (s *userService) CreateUser(user CreateUser) (uuid.UUID, error) {
+	const op = "user.service.CreateUser"
+	id := uuid.New()
+	return id, nil
 }
 
-func (s *Service) ReadUser(id uuid.UUID) (User, error) {
+func (s *userService) ReadUser(id uuid.UUID) (User, error) {
+	const op = "user.service.ReadUser"
 	return s.storage.ReadUser(id)
 }
 
-func (s *Service) UpdateUser(id uuid.UUID) (User, error) {
+func (s *userService) UpdateUser(id uuid.UUID) (User, error) {
+	const op = "user.service.UpdateUser"
 	return s.storage.UpdateUser(id)
 }
 
-func (s *Service) DeleteUser(id uuid.UUID) error {
+func (s *userService) DeleteUser(id uuid.UUID) error {
+	const op = "user.service.DeleteUser"
 	return s.storage.DeleteUser(id)
 }

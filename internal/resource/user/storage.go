@@ -5,23 +5,29 @@ import (
 	"github.com/google/uuid"
 )
 
-type Storage struct {
+type Storage interface {
+	ListUsers() ([]User, error)
+	CreateUser(user CreateUser) (uuid.UUID, error)
+	ReadUser(id uuid.UUID) (User, error)
+	UpdateUser(id uuid.UUID) (User, error)
+	DeleteUser(id uuid.UUID) error
+}
+
+type userStorage struct {
 	db *sql.DB
 }
 
-func NewRepository(db *sql.DB) *Storage {
-	return &Storage{
-		db: db,
-	}
+func NewStorage(conn *sql.DB) Storage {
+	return &userStorage{db: conn}
 }
 
-func (s Storage) ListUsers() ([]User, error) {
+func (s *userStorage) ListUsers() ([]User, error) {
 	const op = "user.storage.ListUsers"
 	users := make([]User, 0)
 	return users, nil
 }
 
-func (s Storage) CreateUser(user CreateUser) (uuid.UUID, error) {
+func (s *userStorage) CreateUser(user CreateUser) (uuid.UUID, error) {
 	const op = "user.storage.CreateUser"
 
 	var lastInsertID uuid.UUID
@@ -30,15 +36,15 @@ func (s Storage) CreateUser(user CreateUser) (uuid.UUID, error) {
 	return lastInsertID, nil
 }
 
-func (s Storage) ReadUser(id uuid.UUID) (User, error) {
-	const op = "user.storage.GetUser"
+func (s *userStorage) ReadUser(id uuid.UUID) (User, error) {
+	const op = "user.storage.ReadUser"
 
 	var user User
 
 	return user, nil
 }
 
-func (s Storage) UpdateUser(id uuid.UUID) (User, error) {
+func (s *userStorage) UpdateUser(id uuid.UUID) (User, error) {
 	const op = "user.storage.UpdateUser"
 
 	var user User
@@ -46,7 +52,7 @@ func (s Storage) UpdateUser(id uuid.UUID) (User, error) {
 	return user, nil
 }
 
-func (s Storage) DeleteUser(id uuid.UUID) error {
+func (s *userStorage) DeleteUser(id uuid.UUID) error {
 	const op = "user.storage.DeleteUser"
 
 	return nil

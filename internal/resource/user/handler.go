@@ -3,6 +3,7 @@ package user
 import (
 	"database/sql"
 	"errors"
+	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/render"
 	resp "github.com/rshelekhov/remedi/internal/lib/api/response"
@@ -12,26 +13,36 @@ import (
 	"net/http"
 )
 
-type Handler struct {
-	logger  *slog.Logger
-	storage *Storage
+type userHandler struct {
 	service Service
+	logger  *slog.Logger
 }
 
-func NewHandler(log *slog.Logger, db *sql.DB) *Handler {
-	return &Handler{
+func RegisterHandlers(r *chi.Mux, log *slog.Logger, db *sql.DB) {
+	userService := NewService(NewStorage(db))
+	NewHandler(r, log, userService)
+}
+
+func NewHandler(r *chi.Mux, log *slog.Logger, srv Service) {
+	h := &userHandler{
+		service: srv,
 		logger:  log,
-		storage: NewRepository(db),
 	}
+
+	r.Get("/users", h.ListUsers())
+	r.Post("/users", h.CreateUser())
+	r.Get("/users/{id}", h.ReadUser())
+	r.Put("/users/{id}", h.UpdateUser())
+	r.Delete("/users/{id}", h.DeleteUser())
 }
 
-func (h *Handler) ListUsers() http.HandlerFunc {
+func (h *userHandler) ListUsers() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.handler.ListUsers"
 	}
 }
 
-func (h *Handler) CreateUser() http.HandlerFunc {
+func (h *userHandler) CreateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.handler.CreateUser"
 
@@ -75,19 +86,19 @@ func (h *Handler) CreateUser() http.HandlerFunc {
 	}
 }
 
-func (h *Handler) ReadUser() http.HandlerFunc {
+func (h *userHandler) ReadUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.handler.ReadUser"
 	}
 }
 
-func (h *Handler) UpdateUser() http.HandlerFunc {
+func (h *userHandler) UpdateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.handler.UpdateUser"
 	}
 }
 
-func (h *Handler) DeleteUser() http.HandlerFunc {
+func (h *userHandler) DeleteUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.handler.DeleteUser"
 	}

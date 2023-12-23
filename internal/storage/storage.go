@@ -1,6 +1,8 @@
 package storage
 
-import "errors"
+import (
+	"errors"
+)
 
 // Errors shouldn't depend on a particular storage implementation,
 // so they are placed in the storage package
