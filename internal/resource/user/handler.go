@@ -18,7 +18,7 @@ type Handler struct {
 	service Service
 }
 
-func New(log *slog.Logger, db *sql.DB) *Handler {
+func NewHandler(log *slog.Logger, db *sql.DB) *Handler {
 	return &Handler{
 		logger:  log,
 		storage: NewRepository(db),
