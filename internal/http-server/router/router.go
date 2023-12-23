@@ -40,10 +40,15 @@ func New(log *slog.Logger, db *sql.DB) *chi.Mux {
 
 	userHandler := user.New(log, db)
 	r.Get("/users", userHandler.ListUsers())
-	r.Post("/users", userHandler.CreateUser())
 	r.Get("/users/{id}", userHandler.ReadUser())
 	r.Put("/users/{id}", userHandler.UpdateUser())
 	r.Delete("/users/{id}", userHandler.DeleteUser())
+
+	userStorage := user.NewStorage(db)
+	userService := user.NewServiceUpd(userStorage)
+	user := user.NewHandlerUpd(log, userService)
+
+	r.Post("/users", user.CreateUser())
 
 	return r
 }

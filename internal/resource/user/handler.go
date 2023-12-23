@@ -7,6 +7,7 @@ import (
 	"github.com/go-chi/render"
 	resp "github.com/rshelekhov/remedi/internal/lib/api/response"
 	"github.com/rshelekhov/remedi/internal/lib/logger/sl"
+	"github.com/rshelekhov/remedi/internal/service"
 	"io"
 	"log/slog"
 	"net/http"
@@ -21,7 +22,22 @@ type Handler struct {
 func New(log *slog.Logger, db *sql.DB) *Handler {
 	return &Handler{
 		logger:  log,
-		storage: NewRepository(db),
+		storage: NewStorage(db),
+	}
+}
+
+type HandlerUpd struct {
+	logger  *slog.Logger
+	service service.UserService
+}
+
+func NewHandlerUpd(
+	log *slog.Logger,
+	service service.UserService,
+) *HandlerUpd {
+	return &HandlerUpd{
+		logger:  log,
+		service: service,
 	}
 }
 
@@ -31,11 +47,11 @@ func (h *Handler) ListUsers() http.HandlerFunc {
 	}
 }
 
-func (h *Handler) CreateUser() http.HandlerFunc {
+func (hu *HandlerUpd) CreateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.handler.CreateUser"
 
-		log := h.logger.With(
+		log := hu.logger.With(
 			slog.String("op", op),
 			slog.String("request_id", middleware.GetReqID(r.Context())),
 		)
@@ -60,7 +76,7 @@ func (h *Handler) CreateUser() http.HandlerFunc {
 
 		log.Info("request body decoded", slog.Any("user", user))
 
-		id, err := h.service.CreateUser(user)
+		/*id, err := hu.service.CreateUser(user)
 		if err != nil {
 			log.Error("failed to create user", sl.Err(err))
 
@@ -71,7 +87,7 @@ func (h *Handler) CreateUser() http.HandlerFunc {
 
 		log.Info("User created", slog.Any("user_id", id))
 
-		render.JSON(w, r, resp.Success("User created", id))
+		render.JSON(w, r, resp.Success("User created", id))*/
 	}
 }
 

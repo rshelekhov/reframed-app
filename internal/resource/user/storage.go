@@ -9,7 +9,7 @@ type Storage struct {
 	db *sql.DB
 }
 
-func NewRepository(db *sql.DB) *Storage {
+func NewStorage(db *sql.DB) *Storage {
 	return &Storage{
 		db: db,
 	}
@@ -21,7 +21,7 @@ func (s Storage) ListUsers() ([]User, error) {
 	return users, nil
 }
 
-func (s Storage) CreateUser(user CreateUser) (uuid.UUID, error) {
+func (s Storage) CreateUser(user User) (uuid.UUID, error) {
 	const op = "user.storage.CreateUser"
 
 	var lastInsertID uuid.UUID

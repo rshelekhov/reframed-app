@@ -1,6 +1,10 @@
 package storage
 
-import "errors"
+import (
+	"errors"
+	"github.com/google/uuid"
+	"github.com/rshelekhov/remedi/internal/resource/user"
+)
 
 // Errors shouldn't depend on a particular storage implementation,
 // so they are placed in the storage package
@@ -13,3 +17,7 @@ var (
 
 	ErrAppointmentExists = errors.New("appointment exists")
 )
+
+type UserStorage interface {
+	CreateUser(user user.User) (uuid.UUID, error)
+}
