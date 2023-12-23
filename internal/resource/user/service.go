@@ -6,15 +6,11 @@ import (
 )
 
 type Service struct {
-	storage *Storage
-}
-
-type ServiceUpd struct {
 	storage storage.UserStorage
 }
 
-func NewServiceUpd(storage storage.UserStorage) *ServiceUpd {
-	return &ServiceUpd{
+func NewService(storage storage.UserStorage) *Service {
+	return &Service{
 		storage: storage,
 	}
 }
@@ -28,7 +24,7 @@ func (s *Service) ListUsers() ([]User, error) {
 	return users, nil
 }
 
-func (su *ServiceUpd) CreateUserService(user CreateUser) (uuid.UUID, error) {
+func (s *Service) CreateUser(user CreateUser) (uuid.UUID, error) {
 	id := uuid.New()
 	return id, nil
 }

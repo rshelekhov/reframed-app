@@ -1,7 +1,6 @@
 package user
 
 import (
-	"database/sql"
 	"errors"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/render"
@@ -15,27 +14,14 @@ import (
 
 type Handler struct {
 	logger  *slog.Logger
-	storage *Storage
-	service Service
-}
-
-func New(log *slog.Logger, db *sql.DB) *Handler {
-	return &Handler{
-		logger:  log,
-		storage: NewStorage(db),
-	}
-}
-
-type HandlerUpd struct {
-	logger  *slog.Logger
 	service service.UserService
 }
 
-func NewHandlerUpd(
+func NewHandler(
 	log *slog.Logger,
 	service service.UserService,
-) *HandlerUpd {
-	return &HandlerUpd{
+) *Handler {
+	return &Handler{
 		logger:  log,
 		service: service,
 	}
@@ -47,11 +33,11 @@ func (h *Handler) ListUsers() http.HandlerFunc {
 	}
 }
 
-func (hu *HandlerUpd) CreateUser() http.HandlerFunc {
+func (h *Handler) CreateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.handler.CreateUser"
 
-		log := hu.logger.With(
+		log := h.logger.With(
 			slog.String("op", op),
 			slog.String("request_id", middleware.GetReqID(r.Context())),
 		)
