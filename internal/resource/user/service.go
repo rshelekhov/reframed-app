@@ -1,6 +1,7 @@
 package user
 
 import (
+	"github.com/go-playground/validator"
 	"github.com/google/uuid"
 )
 
@@ -13,13 +14,16 @@ type Service interface {
 }
 
 type userService struct {
-	storage Storage
+	validator *validator.Validate
+	storage   Storage
 }
 
-func NewService(repo Storage) Service {
-	return &userService{repo}
+// NewService creates a new service
+func NewService(validate *validator.Validate, storage Storage) Service {
+	return &userService{validate, storage}
 }
 
+// ListUsers returns a list of users
 func (s *userService) ListUsers() ([]User, error) {
 	const op = "user.service.ListUsers"
 	users, err := s.storage.ListUsers()
@@ -29,22 +33,26 @@ func (s *userService) ListUsers() ([]User, error) {
 	return users, nil
 }
 
+// CreateUser creates a new user
 func (s *userService) CreateUser(user CreateUser) (uuid.UUID, error) {
 	const op = "user.service.CreateUser"
 	id := uuid.New()
 	return id, nil
 }
 
+// ReadUser returns a user by id
 func (s *userService) ReadUser(id uuid.UUID) (User, error) {
 	const op = "user.service.ReadUser"
 	return s.storage.ReadUser(id)
 }
 
+// UpdateUser updates a user by id
 func (s *userService) UpdateUser(id uuid.UUID) (User, error) {
 	const op = "user.service.UpdateUser"
 	return s.storage.UpdateUser(id)
 }
 
+// DeleteUser deletes a user by id
 func (s *userService) DeleteUser(id uuid.UUID) error {
 	const op = "user.service.DeleteUser"
 	return s.storage.DeleteUser(id)
