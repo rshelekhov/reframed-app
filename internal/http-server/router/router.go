@@ -5,13 +5,14 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/render"
+	"github.com/go-playground/validator"
 	mwlogger "github.com/rshelekhov/remedi/internal/http-server/middleware/logger"
 	"github.com/rshelekhov/remedi/internal/resource/health"
-	"github.com/rshelekhov/remedi/internal/resource/user"
+	userHandlers "github.com/rshelekhov/remedi/internal/resource/user"
 	"log/slog"
 )
 
-func New(log *slog.Logger, db *sql.DB) *chi.Mux {
+func New(log *slog.Logger, db *sql.DB, validate *validator.Validate) *chi.Mux {
 	r := chi.NewRouter()
 
 	// Add request_id to each request, for tracing purposes
@@ -26,7 +27,7 @@ func New(log *slog.Logger, db *sql.DB) *chi.Mux {
 	// our own middleware to log requests:
 	r.Use(mwlogger.New(log))
 
-	// If a panic happens somewhere inside the server (request handler),
+	// If a panic happens somewhere inside the server (request handlers),
 	// the application should not crash.
 	r.Use(middleware.Recoverer)
 
@@ -38,7 +39,8 @@ func New(log *slog.Logger, db *sql.DB) *chi.Mux {
 	// Health check
 	r.Get("/health", health.Read())
 
-	user.RegisterHandlers(r, log, db)
+	// Handlers
+	userHandlers.Activate(r, log, db, validate)
 
 	return r
 }

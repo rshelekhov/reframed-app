@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/go-playground/validator"
 	"github.com/rshelekhov/remedi/internal/config"
 	"github.com/rshelekhov/remedi/internal/http-server/router"
 	"github.com/rshelekhov/remedi/internal/http-server/server"
@@ -24,13 +25,15 @@ func main() {
 		slog.String("address", cfg.HTTPServer.Address))
 	log.Debug("logger debug mode enabled")
 
+	validate := validator.New()
+
 	storage, err := postgres.NewStorage(cfg.Postgres.URL)
 	if err != nil {
 		log.Error("failed to init storage", sl.Err(err))
 	}
 	log.Debug("storage initiated")
 
-	r := router.New(log, storage.DB)
+	r := router.New(log, storage.DB, validate)
 
 	log.Info("starting server", slog.String("address", cfg.HTTPServer.Address))
 
