@@ -2,7 +2,6 @@ package user
 
 import (
 	"fmt"
-	"github.com/go-playground/validator"
 	"github.com/google/uuid"
 	"time"
 )
@@ -16,13 +15,12 @@ type Service interface {
 }
 
 type userService struct {
-	validator *validator.Validate
-	storage   Storage
+	storage Storage
 }
 
 // NewService creates a new service
-func NewService(validate *validator.Validate, storage Storage) Service {
-	return &userService{validate, storage}
+func NewService(storage Storage) Service {
+	return &userService{storage}
 }
 
 // ListUsers returns a list of users
@@ -38,8 +36,6 @@ func (s *userService) ListUsers() ([]User, error) {
 // CreateUser creates a new user
 func (s *userService) CreateUser(user CreateUser) (uuid.UUID, error) {
 	const op = "user.service.CreateUser"
-
-	// TODO add validation
 
 	entity := User{
 		ID:        uuid.New(),

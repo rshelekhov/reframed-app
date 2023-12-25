@@ -21,12 +21,12 @@ type User struct {
 
 // CreateUser uses in the request body and service layer
 type CreateUser struct {
-	Email     string `json:"email"`
-	Password  string `json:"password"`
-	RoleID    int    `json:"role_id"`
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-	Phone     string `json:"phone"`
+	Email     string `json:"email" validate:"required,email"`
+	Password  string `json:"password" validate:"required,min=8"`
+	RoleID    int    `json:"role_id" validate:"required"`
+	FirstName string `json:"first_name" validate:"required"`
+	LastName  string `json:"last_name" validate:"required"`
+	Phone     string `json:"phone" validate:"required,e164"`
 }
 
 // UpdateUser uses in the request body and service layer

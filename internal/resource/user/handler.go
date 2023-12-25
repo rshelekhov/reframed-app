@@ -17,21 +17,23 @@ import (
 )
 
 type handler struct {
-	logger  *slog.Logger
-	service Service
+	logger    *slog.Logger
+	service   Service
+	validator *validator.Validate
 }
 
 // Activate activates the user resource
 func Activate(r *chi.Mux, log *slog.Logger, db *sql.DB, validate *validator.Validate) {
-	srv := NewService(validate, NewStorage(db))
-	newHandler(r, log, srv)
+	srv := NewService(NewStorage(db))
+	newHandler(r, log, srv, validate)
 }
 
 // NewHandler create a handler struct and register the routes
-func newHandler(r *chi.Mux, log *slog.Logger, srv Service) {
+func newHandler(r *chi.Mux, log *slog.Logger, srv Service, validate *validator.Validate) {
 	h := handler{
-		logger:  log,
-		service: srv,
+		logger:    log,
+		service:   srv,
+		validator: validate,
 	}
 
 	r.Get("/users", h.ListUsers())
@@ -60,6 +62,7 @@ func (h *handler) CreateUser() http.HandlerFunc {
 
 		var user CreateUser
 
+		// Decode the request body
 		err := render.DecodeJSON(r.Body, &user)
 		if errors.Is(err, io.EOF) {
 			log.Error("request body is empty")
@@ -78,6 +81,17 @@ func (h *handler) CreateUser() http.HandlerFunc {
 
 		log.Info("request body decoded", slog.Any("user", user))
 
+		// Validate the user
+		err = h.validator.Struct(user)
+		if err != nil {
+			validateErr := err.(validator.ValidationErrors)
+
+			render.JSON(w, r, resp.Error(validateErr.Error()))
+
+			return
+		}
+
+		// Create the user
 		id, err := h.service.CreateUser(user)
 		if errors.Is(err, storage.ErrUserAlreadyExists) {
 			log.Info("user already exists", slog.String("email", user.Email))
@@ -96,6 +110,7 @@ func (h *handler) CreateUser() http.HandlerFunc {
 
 		log.Info("User created", slog.Any("user_id", id))
 
+		// Return the user id
 		render.JSON(w, r, resp.Success("User created", id))
 	}
 }
