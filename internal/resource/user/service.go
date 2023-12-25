@@ -9,7 +9,7 @@ import (
 
 type Service interface {
 	ListUsers() ([]User, error)
-	CreateUser(user CreateUser) (string, error)
+	CreateUser(user CreateUser) (uuid.UUID, error)
 	ReadUser(id uuid.UUID) (User, error)
 	UpdateUser(id uuid.UUID) (uuid.UUID, error)
 	DeleteUser(id uuid.UUID) error
@@ -36,11 +36,13 @@ func (s *userService) ListUsers() ([]User, error) {
 }
 
 // CreateUser creates a new user
-func (s *userService) CreateUser(user CreateUser) (string, error) {
+func (s *userService) CreateUser(user CreateUser) (uuid.UUID, error) {
 	const op = "user.service.CreateUser"
 
+	// TODO add validation
+
 	entity := User{
-		ID:        uuid.New().String(),
+		ID:        uuid.New(),
 		Email:     user.Email,
 		Password:  user.Password,
 		RoleID:    user.RoleID,
@@ -53,7 +55,8 @@ func (s *userService) CreateUser(user CreateUser) (string, error) {
 
 	err := s.storage.CreateUser(entity)
 	if err != nil {
-		return "", fmt.Errorf("%s: failed to create user: %w", op, err)
+		// TODO learn how to return nil instead of uuid.Nil
+		return uuid.Nil, fmt.Errorf("%s: failed to create user: %w", op, err)
 	}
 
 	return entity.ID, nil

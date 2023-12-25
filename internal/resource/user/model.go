@@ -1,12 +1,13 @@
 package user
 
 import (
+	"github.com/google/uuid"
 	"time"
 )
 
 // User DB model
 type User struct {
-	ID        string    `db:"id"`
+	ID        uuid.UUID `db:"id"`
 	Email     string    `db:"email"`
 	Password  string    `db:"password"`
 	RoleID    int       `db:"role_id"`
