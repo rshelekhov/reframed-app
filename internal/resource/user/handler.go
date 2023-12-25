@@ -86,7 +86,7 @@ func (h *handler) CreateUser() http.HandlerFunc {
 		if err != nil {
 			validateErr := err.(validator.ValidationErrors)
 
-			render.JSON(w, r, resp.Error(validateErr.Error()))
+			render.JSON(w, r, resp.ValidationError(validateErr))
 
 			return
 		}
