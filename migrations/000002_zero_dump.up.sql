@@ -1,10 +1,10 @@
-INSERT INTO roles (title) VALUES
-    ('assistant'),
-    ('doctor'),
-    ('client');
+INSERT INTO roles (id, title) VALUES
+    (1, 'assistant'),
+    (2, 'doctor'),
+    (3, 'client');
 
-INSERT INTO statuses (status_name) VALUES
-    ('new'),
-    ('tentative'),
-    ('confirmed'),
-    ('cancelled');
+INSERT INTO statuses (id, status_name) VALUES
+    (1, 'new'),
+    (2, 'tentative'),
+    (3, 'confirmed'),
+    (4, 'cancelled');

@@ -1,17 +1,15 @@
 package response
 
-import "github.com/google/uuid"
-
 const (
 	StatusOK    = "OK"
 	StatusError = "ERROR"
 )
 
 type Response struct {
-	Status  string    `json:"status"`
-	Error   string    `json:"error,omitempty"`
-	Success string    `json:"success,omitempty"`
-	ID      uuid.UUID `json:"id,omitempty"`
+	Status  string `json:"status"`
+	Error   string `json:"error,omitempty"`
+	Success string `json:"success,omitempty"`
+	ID      string `json:"id,omitempty"`
 }
 
 func Error(msg string) Response {
@@ -21,7 +19,7 @@ func Error(msg string) Response {
 	}
 }
 
-func Success(msg string, id uuid.UUID) Response {
+func Success(msg string, id string) Response {
 	return Response{
 		Status:  StatusOK,
 		Success: msg,

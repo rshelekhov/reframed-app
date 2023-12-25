@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	resp "github.com/rshelekhov/remedi/internal/lib/api/response"
 	"github.com/rshelekhov/remedi/internal/lib/logger/sl"
+	"github.com/rshelekhov/remedi/internal/storage"
 	"io"
 	"log/slog"
 	"net/http"
@@ -78,6 +79,13 @@ func (h *handler) CreateUser() http.HandlerFunc {
 		log.Info("request body decoded", slog.Any("user", user))
 
 		id, err := h.service.CreateUser(user)
+		if errors.Is(err, storage.ErrUserAlreadyExists) {
+			log.Info("user already exists", slog.String("email", user.Email))
+
+			render.JSON(w, r, resp.Error("user already exists"))
+
+			return
+		}
 		if err != nil {
 			log.Error("failed to create user", sl.Err(err))
 
