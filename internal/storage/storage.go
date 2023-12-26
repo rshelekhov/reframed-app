@@ -7,13 +7,12 @@ import (
 // Errors shouldn't depend on a particular storage implementation,
 // so they are placed in the storage package
 var (
-	ErrUserAlreadyExists   = errors.New("user with this email already exists")
+	ErrUserNotFound        = errors.New("user not found")
+	ErrRoleNotFound        = errors.New("role not found")
 	ErrAppointmentNotFound = errors.New("appointment not found")
-	ErrPhysicianNotFound   = errors.New("physician not found")
-	ErrClientNotFound      = errors.New("client not found")
-	ErrAssistantNotFound   = errors.New("assistant not found")
 	ErrFileNotFound        = errors.New("file not found")
 
+	ErrUserAlreadyExists = errors.New("user with this email already exists")
 	ErrAppointmentExists = errors.New("appointment exists")
 )
 

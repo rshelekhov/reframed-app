@@ -1,6 +1,7 @@
 package user
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -12,9 +13,9 @@ import (
 // TODO: implement sqlx.DB
 
 type Storage interface {
-	ListUsers() ([]User, error)
+	GetUsers() ([]GetUser, error)
 	CreateUser(user User) error
-	ReadUser(id string) (User, error)
+	GetUser(id string) (GetUser, error)
 	UpdateUser(id string) error
 	DeleteUser(id string) error
 }
@@ -28,10 +29,10 @@ func NewStorage(conn *sqlx.DB) Storage {
 	return &userStorage{db: conn}
 }
 
-// ListUsers returns a list of users
-func (s *userStorage) ListUsers() ([]User, error) {
-	const op = "user.storage.ListUsers"
-	users := make([]User, 0)
+// GetUsers returns a list of users
+func (s *userStorage) GetUsers() ([]GetUser, error) {
+	const op = "user.storage.GetUsers"
+	users := make([]GetUser, 0)
 	return users, nil
 }
 
@@ -42,7 +43,7 @@ func (s *userStorage) CreateUser(user User) error {
 	querySelectRoleID := `SELECT id FROM roles WHERE id = $1`
 
 	queryInsertUser := `INSERT INTO users (id, email, password, role_id, first_name, last_name, phone, updated_at)
-						VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
+							VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
 
 	// Begin transaction
 	tx, err := s.db.Begin()
@@ -55,6 +56,9 @@ func (s *userStorage) CreateUser(user User) error {
 	var roleID int
 	err = tx.QueryRow(querySelectRoleID, user.RoleID).Scan(&roleID)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fmt.Errorf("%s: role not found: %w", op, storage.ErrRoleNotFound)
+		}
 		return fmt.Errorf("%s: failed to check if role exists: %w", op, err)
 	}
 
@@ -77,6 +81,7 @@ func (s *userStorage) CreateUser(user User) error {
 				return fmt.Errorf("%s: %w", op, storage.ErrUserAlreadyExists)
 			}
 		}
+		return fmt.Errorf("%s: %w", op, err)
 	}
 
 	// Commit transaction
@@ -88,23 +93,33 @@ func (s *userStorage) CreateUser(user User) error {
 	return nil
 }
 
-// ReadUser returns a user by id
-func (s *userStorage) ReadUser(id string) (User, error) {
+// GetUser returns a user by ID
+func (s *userStorage) GetUser(id string) (GetUser, error) {
 	const op = "user.storage.ReadUser"
 
-	var user User
+	var user GetUser
+	querySelectUser := `SELECT id, email, role_id, first_name, last_name, phone, updated_at
+							FROM users WHERE id = $1 AND deleted_at IS NULL`
+
+	err := s.db.Get(&user, querySelectUser, id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return GetUser{}, fmt.Errorf("%s: %w", op, storage.ErrUserNotFound)
+		}
+		return GetUser{}, fmt.Errorf("%s: failed to get user: %w", op, err)
+	}
 
 	return user, nil
 }
 
-// UpdateUser updates a user by id
+// UpdateUser updates a user by ID
 func (s *userStorage) UpdateUser(id string) error {
 	const op = "user.storage.UpdateUser"
 
 	return nil
 }
 
-// DeleteUser deletes a user by id
+// DeleteUser deletes a user by ID
 func (s *userStorage) DeleteUser(id string) error {
 	const op = "user.storage.DeleteUser"
 

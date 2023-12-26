@@ -7,9 +7,9 @@ import (
 )
 
 type Service interface {
-	ListUsers() ([]User, error)
+	GetUsers() ([]GetUser, error)
 	CreateUser(user CreateUser) (string, error)
-	ReadUser(id string) (User, error)
+	GetUser(id string) (GetUser, error)
 	UpdateUser(id string) (string, error)
 	DeleteUser(id string) error
 }
@@ -23,10 +23,10 @@ func NewService(storage Storage) Service {
 	return &userService{storage}
 }
 
-// ListUsers returns a list of users
-func (s *userService) ListUsers() ([]User, error) {
-	const op = "user.service.ListUsers"
-	users, err := s.storage.ListUsers()
+// GetUsers returns a list of users
+func (s *userService) GetUsers() ([]GetUser, error) {
+	const op = "user.service.GetUsers"
+	users, err := s.storage.GetUsers()
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -52,20 +52,19 @@ func (s *userService) CreateUser(user CreateUser) (string, error) {
 
 	err := s.storage.CreateUser(entity)
 	if err != nil {
-		// TODO learn how to return nil instead of uuid.Nil
 		return "", fmt.Errorf("%s: failed to create user: %w", op, err)
 	}
 
 	return entity.ID, nil
 }
 
-// ReadUser returns a user by id
-func (s *userService) ReadUser(id string) (User, error) {
-	const op = "user.service.ReadUser"
-	return s.storage.ReadUser(id)
+// GetUser returns a user by ID
+func (s *userService) GetUser(id string) (GetUser, error) {
+	const op = "user.service.GetUser"
+	return s.storage.GetUser(id)
 }
 
-// UpdateUser updates a user by id
+// UpdateUser updates a user by ID
 func (s *userService) UpdateUser(id string) (string, error) {
 	const op = "user.service.UpdateUser"
 
@@ -77,7 +76,7 @@ func (s *userService) UpdateUser(id string) (string, error) {
 	return id, nil
 }
 
-// DeleteUser deletes a user by id
+// DeleteUser deletes a user by ID
 func (s *userService) DeleteUser(id string) error {
 	const op = "user.service.DeleteUser"
 	return s.storage.DeleteUser(id)
