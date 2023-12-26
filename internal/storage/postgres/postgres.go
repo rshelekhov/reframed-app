@@ -1,22 +1,22 @@
 package postgres
 
 import (
-	"database/sql"
 	"fmt"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jmoiron/sqlx"
 )
 
 // TODO implement sqlx
 
 type Storage struct {
-	DB *sql.DB
+	DB *sqlx.DB
 }
 
 // NewStorage ...
 func NewStorage(dsn string) (*Storage, error) {
 	const op = "storage.postgres.NewStorage"
 
-	db, err := sql.Open("pgx", dsn)
+	db, err := sqlx.Open("pgx", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}

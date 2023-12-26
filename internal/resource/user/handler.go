@@ -1,12 +1,12 @@
 package user
 
 import (
-	"database/sql"
 	"errors"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator"
+	"github.com/jmoiron/sqlx"
 	resp "github.com/rshelekhov/remedi/internal/lib/api/response"
 	"github.com/rshelekhov/remedi/internal/lib/logger/sl"
 	"github.com/rshelekhov/remedi/internal/storage"
@@ -22,7 +22,7 @@ type handler struct {
 }
 
 // Activate activates the user resource
-func Activate(r *chi.Mux, log *slog.Logger, db *sql.DB, validate *validator.Validate) {
+func Activate(r *chi.Mux, log *slog.Logger, db *sqlx.DB, validate *validator.Validate) {
 	srv := NewService(NewStorage(db))
 	newHandler(r, log, srv, validate)
 }

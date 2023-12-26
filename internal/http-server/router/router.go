@@ -1,18 +1,18 @@
 package router
 
 import (
-	"database/sql"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator"
+	"github.com/jmoiron/sqlx"
 	mwlogger "github.com/rshelekhov/remedi/internal/http-server/middleware/logger"
 	"github.com/rshelekhov/remedi/internal/resource/health"
 	userHandlers "github.com/rshelekhov/remedi/internal/resource/user"
 	"log/slog"
 )
 
-func New(log *slog.Logger, db *sql.DB, validate *validator.Validate) *chi.Mux {
+func New(log *slog.Logger, db *sqlx.DB, validate *validator.Validate) *chi.Mux {
 	r := chi.NewRouter()
 
 	// Add request_id to each request, for tracing purposes

@@ -1,11 +1,11 @@
 package user
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jmoiron/sqlx"
 	"github.com/rshelekhov/remedi/internal/storage"
 )
 
@@ -20,11 +20,11 @@ type Storage interface {
 }
 
 type userStorage struct {
-	db *sql.DB
+	db *sqlx.DB
 }
 
 // NewStorage creates a new storage
-func NewStorage(conn *sql.DB) Storage {
+func NewStorage(conn *sqlx.DB) Storage {
 	return &userStorage{db: conn}
 }
 
