@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/rshelekhov/remedi/internal/storage"
@@ -15,9 +14,9 @@ import (
 type Storage interface {
 	ListUsers() ([]User, error)
 	CreateUser(user User) error
-	ReadUser(id uuid.UUID) (User, error)
-	UpdateUser(id uuid.UUID) error
-	DeleteUser(id uuid.UUID) error
+	ReadUser(id string) (User, error)
+	UpdateUser(id string) error
+	DeleteUser(id string) error
 }
 
 type userStorage struct {
@@ -42,8 +41,8 @@ func (s *userStorage) CreateUser(user User) error {
 
 	querySelectRoleID := `SELECT id FROM roles WHERE id = $1`
 
-	queryInsertUser := `INSERT INTO users (id, email, password, role_id, first_name, last_name, phone, created_at, updated_at)
-						VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
+	queryInsertUser := `INSERT INTO users (id, email, password, role_id, first_name, last_name, phone, updated_at)
+						VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
 
 	// Begin transaction
 	tx, err := s.db.Begin()
@@ -69,7 +68,6 @@ func (s *userStorage) CreateUser(user User) error {
 		user.FirstName,
 		user.LastName,
 		user.Phone,
-		user.CreatedAt,
 		user.UpdatedAt,
 	)
 	if err != nil {
@@ -91,7 +89,7 @@ func (s *userStorage) CreateUser(user User) error {
 }
 
 // ReadUser returns a user by id
-func (s *userStorage) ReadUser(id uuid.UUID) (User, error) {
+func (s *userStorage) ReadUser(id string) (User, error) {
 	const op = "user.storage.ReadUser"
 
 	var user User
@@ -100,14 +98,14 @@ func (s *userStorage) ReadUser(id uuid.UUID) (User, error) {
 }
 
 // UpdateUser updates a user by id
-func (s *userStorage) UpdateUser(id uuid.UUID) error {
+func (s *userStorage) UpdateUser(id string) error {
 	const op = "user.storage.UpdateUser"
 
 	return nil
 }
 
 // DeleteUser deletes a user by id
-func (s *userStorage) DeleteUser(id uuid.UUID) error {
+func (s *userStorage) DeleteUser(id string) error {
 	const op = "user.storage.DeleteUser"
 
 	return nil

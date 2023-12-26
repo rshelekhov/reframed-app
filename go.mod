@@ -9,6 +9,7 @@ require (
 	github.com/golang-migrate/migrate/v4 v4.16.2
 	github.com/google/uuid v1.4.0
 	github.com/jackc/pgx/v5 v5.5.1
+	github.com/segmentio/ksuid v1.0.4
 	github.com/spf13/viper v1.18.1
 )
 

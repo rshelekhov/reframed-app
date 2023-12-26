@@ -9,6 +9,7 @@
 - The usage of [log/slog](https://pkg.go.dev/log/slog) as the centralized Syslog logger.
 - The usage of [go-chi](https://github.com/go-chi/chi) as the HTTP router.
 - The usage of [validator](https://github.com/go-playground/validator) as the form validator.
+- The usage of [ksuid](https://github.com/segmentio/ksuid) as the unique identifier.
 
 ## Endpoints
 

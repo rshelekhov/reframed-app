@@ -1,13 +1,12 @@
 CREATE TABLE IF NOT EXISTS users
 (
-    id         uuid PRIMARY KEY,
+    id         character varying PRIMARY KEY,
     email      character varying NOT NULL UNIQUE,
     password   character varying NOT NULL,
     role_id    int NOT NULL,
     first_name character varying NOT NULL,
     last_name  character varying NOT NULL,
     phone      character varying,
-    created_at timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
     updated_at timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
     deleted_at timestamp WITH TIME ZONE
 );
@@ -26,7 +25,7 @@ CREATE TABLE IF NOT EXISTS permissions
 
 CREATE TABLE IF NOT EXISTS user_roles
 (
-    user_id uuid,
+    user_id character varying,
     role_id int,
     PRIMARY KEY (user_id, role_id)
 );
@@ -40,16 +39,15 @@ CREATE TABLE IF NOT EXISTS role_permissions
 
 CREATE TABLE IF NOT EXISTS appointments
 (
-    id                uuid PRIMARY KEY,
-    doctor_id         uuid NOT NULL,
-    client_id         uuid NOT NULL,
+    id                character varying PRIMARY KEY,
+    doctor_id         character varying NOT NULL,
+    client_id         character varying NOT NULL,
     title             character varying NOT NULL,
     content           text NOT NULL,
     status_id         int NOT NULL,
     scheduled_at      timestamp NOT NULL,
     first_appointment boolean DEFAULT false,
-    created_by_id     uuid NOT NULL,
-    created_at        timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
+    created_by_id     character varying NOT NULL,
     updated_at        timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
     deleted_at        timestamp WITH TIME ZONE
 );
@@ -66,11 +64,10 @@ CREATE TABLE IF NOT EXISTS statuses
 
 CREATE TABLE IF NOT EXISTS medical_reports
 (
-    id              uuid PRIMARY KEY,
+    id              character varying PRIMARY KEY,
     diagnosis       text NOT NULL,
     recommendations text NOT NULL,
-    appointment_id  uuid NOT NULL,
-    created_at      timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
+    appointment_id  character varying NOT NULL,
     updated_at      timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
     deleted_at      timestamp WITH TIME ZONE
 );
@@ -79,13 +76,12 @@ CREATE INDEX IF NOT EXISTS idx_appointment_id ON medical_reports(appointment_id)
 
 CREATE TABLE IF NOT EXISTS attachments
 (
-    id                uuid PRIMARY KEY ,
+    id                character varying PRIMARY KEY ,
     file_name         character varying NOT NULL,
     file_url          character varying NOT NULL,
     attachment_size   character varying NULL,
-    medical_report_id uuid NOT NULL,
-    attached_by_id    uuid NOT NULL,
-    attached_at       timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
+    medical_report_id character varying NOT NULL,
+    attached_by_id    character varying NOT NULL,
     updated_at        timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
     deleted_at        timestamp WITH TIME ZONE
 );
@@ -94,12 +90,11 @@ CREATE INDEX IF NOT EXISTS idx_attached_by_id ON attachments(attached_by_id);
 
 CREATE TABLE IF NOT EXISTS reminders
 (
-    id             uuid PRIMARY KEY,
-    appointment_id uuid NOT NULL,
-    user_id        uuid NOT NULL,
+    id             character varying PRIMARY KEY,
+    appointment_id character varying NOT NULL,
+    user_id        character varying NOT NULL,
     content        character varying NOT NULL,
     read           boolean NOT NULL,
-    created_at     timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
     updated_at     timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
     deleted_at     timestamp WITH TIME ZONE
 );

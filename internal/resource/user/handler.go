@@ -7,7 +7,6 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator"
-	"github.com/google/uuid"
 	resp "github.com/rshelekhov/remedi/internal/lib/api/response"
 	"github.com/rshelekhov/remedi/internal/lib/logger/sl"
 	"github.com/rshelekhov/remedi/internal/storage"
@@ -134,10 +133,10 @@ func (h *handler) DeleteUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.handlers.DeleteUser"
 
-		id := uuid.New()
+		/*id := uuid.New()
 		err := h.service.DeleteUser(id)
 		if err != nil {
 			return
-		}
+		}*/
 	}
 }

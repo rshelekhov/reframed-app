@@ -1,20 +1,18 @@
 package user
 
 import (
-	"github.com/google/uuid"
 	"time"
 )
 
 // User DB model
 type User struct {
-	ID        uuid.UUID `db:"id"`
+	ID        string    `db:"id"`
 	Email     string    `db:"email"`
 	Password  string    `db:"password"`
 	RoleID    int       `db:"role_id"`
 	FirstName string    `db:"first_name"`
 	LastName  string    `db:"last_name"`
 	Phone     string    `db:"phone"`
-	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
 	DeletedAt time.Time `db:"deleted_at"`
 }
