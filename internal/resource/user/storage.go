@@ -7,15 +7,14 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
+	"github.com/rshelekhov/remedi/internal/lib/api/models"
 	"github.com/rshelekhov/remedi/internal/storage"
 )
 
-// TODO: implement sqlx.DB
-
 type Storage interface {
-	GetUsers() ([]GetUser, error)
 	CreateUser(user User) error
 	GetUser(id string) (GetUser, error)
+	GetUsers(models.Pagination) ([]GetUser, error)
 	UpdateUser(id string) error
 	DeleteUser(id string) error
 }
@@ -27,13 +26,6 @@ type userStorage struct {
 // NewStorage creates a new storage
 func NewStorage(conn *sqlx.DB) Storage {
 	return &userStorage{db: conn}
-}
-
-// GetUsers returns a list of users
-func (s *userStorage) GetUsers() ([]GetUser, error) {
-	const op = "user.storage.GetUsers"
-	users := make([]GetUser, 0)
-	return users, nil
 }
 
 // CreateUser creates a new user
@@ -50,7 +42,12 @@ func (s *userStorage) CreateUser(user User) error {
 	if err != nil {
 		return fmt.Errorf("%s: failed to begin transaction: %w", op, err)
 	}
-	defer tx.Rollback()
+	defer func(tx *sql.Tx) {
+		err := tx.Rollback()
+		if err != nil {
+			return
+		}
+	}(tx)
 
 	// Check if role exists
 	var roleID int
@@ -110,6 +107,25 @@ func (s *userStorage) GetUser(id string) (GetUser, error) {
 	}
 
 	return user, nil
+}
+
+// GetUsers returns a list of users
+func (s *userStorage) GetUsers(pagination models.Pagination) ([]GetUser, error) {
+	const op = "user.storage.GetUsers"
+
+	var users []GetUser
+	querySelectUsers := `SELECT id, email, role_id, first_name, last_name, phone, updated_at
+							FROM users WHERE deleted_at IS NULL ORDER BY id DESC LIMIT $1 OFFSET $2`
+
+	err := s.db.Select(&users, querySelectUsers, pagination.Limit, pagination.Offset)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("%s: no users found: %w", op, storage.ErrNoUsersFound)
+		}
+		return nil, fmt.Errorf("%s: failed to get users: %w", op, err)
+	}
+
+	return users, nil
 }
 
 // UpdateUser updates a user by ID

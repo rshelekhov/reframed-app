@@ -18,6 +18,7 @@
 | Health      | GET         | /health       |
 |             |             |               |
 | Create user | POST        | /users        |
+| Get user    | GET         | /users/{id}   |
 
 
 ## Database design

@@ -8,6 +8,7 @@ import (
 // so they are placed in the storage package
 var (
 	ErrUserNotFound        = errors.New("user not found")
+	ErrNoUsersFound        = errors.New("no users found")
 	ErrRoleNotFound        = errors.New("role not found")
 	ErrAppointmentNotFound = errors.New("appointment not found")
 	ErrFileNotFound        = errors.New("file not found")

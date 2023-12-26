@@ -7,6 +7,7 @@ import (
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator"
 	"github.com/jmoiron/sqlx"
+	"github.com/rshelekhov/remedi/internal/lib/api/parser"
 	resp "github.com/rshelekhov/remedi/internal/lib/api/response"
 	"github.com/rshelekhov/remedi/internal/lib/logger/sl"
 	"github.com/rshelekhov/remedi/internal/storage"
@@ -35,18 +36,11 @@ func newHandler(r *chi.Mux, log *slog.Logger, srv Service, validate *validator.V
 		validator: validate,
 	}
 
-	r.Get("/users", h.GetUsers())
 	r.Post("/users", h.CreateUser())
 	r.Get("/users/{id}", h.GetUser())
+	r.Get("/users", h.GetUsers())
 	r.Put("/users/{id}", h.UpdateUser())
 	r.Delete("/users/{id}", h.DeleteUser())
-}
-
-// GetUsers get a list of users
-func (h *handler) GetUsers() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.handler.GetUsers"
-	}
 }
 
 // CreateUser creates a new user
@@ -91,6 +85,8 @@ func (h *handler) CreateUser() http.HandlerFunc {
 		if err != nil {
 			validateErr := err.(validator.ValidationErrors)
 
+			log.Error("failed to validate user", sl.Err(err))
+
 			render.JSON(w, r, resp.ValidationError(validateErr))
 
 			return
@@ -100,13 +96,13 @@ func (h *handler) CreateUser() http.HandlerFunc {
 		id, err := h.service.CreateUser(user)
 		if err != nil {
 			if errors.Is(err, storage.ErrUserAlreadyExists) {
-				log.Info("user already exists", slog.String("email", user.Email))
+				log.Error("user already exists", slog.String("email", user.Email))
 
 				render.JSON(w, r, resp.Error(http.StatusConflict, "user already exists"))
 
 				return
 			} else if errors.Is(err, storage.ErrRoleNotFound) {
-				log.Info("role not found", slog.Int("role", user.RoleID))
+				log.Error("role not found", slog.Int("role", user.RoleID))
 
 				render.JSON(w, r, Response{
 					Response: resp.Error(http.StatusNotFound, "role not found"),
@@ -156,13 +152,12 @@ func (h *handler) GetUser() http.HandlerFunc {
 		user, err := h.service.GetUser(id)
 		if err != nil {
 			if errors.Is(err, storage.ErrUserNotFound) {
-				log.Info("user not found", slog.String("user_id", id))
+				log.Error("user not found", slog.String("user_id", id))
 
 				render.JSON(w, r, resp.Error(http.StatusNotFound, "user not found"))
 
 				return
 			}
-
 			log.Error("failed to get user", sl.Err(err))
 
 			render.JSON(w, r, resp.Error(http.StatusInternalServerError, "failed to get user"))
@@ -175,6 +170,52 @@ func (h *handler) GetUser() http.HandlerFunc {
 		render.JSON(w, r, Response{
 			Response: resp.Success(http.StatusOK, "User received"),
 			User:     user,
+		})
+	}
+}
+
+// GetUsers get a list of users
+func (h *handler) GetUsers() http.HandlerFunc {
+	type Response struct {
+		resp.Response
+		Users []GetUser `json:"users"`
+	}
+	return func(w http.ResponseWriter, r *http.Request) {
+		const op = "user.handler.GetUsers"
+
+		log := h.logger.With(
+			slog.String("op", op),
+			slog.String("request_id", middleware.GetReqID(r.Context())),
+		)
+
+		pagination, err := parser.ParseLimitAndOffset(r)
+		if err != nil {
+			log.Error("failed to parse limit and offset", sl.Err(err))
+
+			render.JSON(w, r, resp.Error(http.StatusBadRequest, "failed to parse limit and offset"))
+
+			return
+		}
+
+		users, err := h.service.GetUsers(pagination)
+		if err != nil {
+			if errors.Is(err, storage.ErrNoUsersFound) {
+				log.Error("no users found")
+
+				render.JSON(w, r, resp.Error(http.StatusNotFound, "no users found"))
+
+				return
+			}
+			log.Error("failed to get users", sl.Err(err))
+
+			render.JSON(w, r, resp.Error(http.StatusInternalServerError, "failed to get users"))
+		}
+
+		log.Info("users found", slog.Int("count", len(users)))
+
+		render.JSON(w, r, Response{
+			Response: resp.Success(http.StatusOK, "users found"),
+			Users:    users,
 		})
 	}
 }

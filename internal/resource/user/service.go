@@ -2,14 +2,15 @@ package user
 
 import (
 	"fmt"
+	"github.com/rshelekhov/remedi/internal/lib/api/models"
 	"github.com/segmentio/ksuid"
 	"time"
 )
 
 type Service interface {
-	GetUsers() ([]GetUser, error)
 	CreateUser(user CreateUser) (string, error)
 	GetUser(id string) (GetUser, error)
+	GetUsers(models.Pagination) ([]GetUser, error)
 	UpdateUser(id string) (string, error)
 	DeleteUser(id string) error
 }
@@ -21,16 +22,6 @@ type userService struct {
 // NewService creates a new service
 func NewService(storage Storage) Service {
 	return &userService{storage}
-}
-
-// GetUsers returns a list of users
-func (s *userService) GetUsers() ([]GetUser, error) {
-	const op = "user.service.GetUsers"
-	users, err := s.storage.GetUsers()
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
-	return users, nil
 }
 
 // CreateUser creates a new user
@@ -60,8 +51,14 @@ func (s *userService) CreateUser(user CreateUser) (string, error) {
 
 // GetUser returns a user by ID
 func (s *userService) GetUser(id string) (GetUser, error) {
-	const op = "user.service.GetUser"
+	// const op = "user.service.GetUser"
 	return s.storage.GetUser(id)
+}
+
+// GetUsers returns a list of users
+func (s *userService) GetUsers(pagination models.Pagination) ([]GetUser, error) {
+	// const op = "user.service.GetUsers"
+	return s.storage.GetUsers(pagination)
 }
 
 // UpdateUser updates a user by ID
@@ -78,6 +75,6 @@ func (s *userService) UpdateUser(id string) (string, error) {
 
 // DeleteUser deletes a user by ID
 func (s *userService) DeleteUser(id string) error {
-	const op = "user.service.DeleteUser"
+	// const op = "user.service.DeleteUser"
 	return s.storage.DeleteUser(id)
 }
