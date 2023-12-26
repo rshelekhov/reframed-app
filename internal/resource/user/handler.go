@@ -188,7 +188,7 @@ func (h *handler) GetUsers() http.HandlerFunc {
 			slog.String("request_id", middleware.GetReqID(r.Context())),
 		)
 
-		pagination, err := parser.ParseLimitAndOffset(r)
+		pagination, err := parser.ParseLimitAndOffset(log, r)
 		if err != nil {
 			log.Error("failed to parse limit and offset", sl.Err(err))
 
@@ -211,7 +211,12 @@ func (h *handler) GetUsers() http.HandlerFunc {
 			render.JSON(w, r, resp.Error(http.StatusInternalServerError, "failed to get users"))
 		}
 
-		log.Info("users found", slog.Int("count", len(users)))
+		log.Info(
+			"users found",
+			slog.Int("count", len(users)),
+			slog.Int("limit", pagination.Limit),
+			slog.Int("offset", pagination.Offset),
+		)
 
 		render.JSON(w, r, Response{
 			Response: resp.Success(http.StatusOK, "users found"),
