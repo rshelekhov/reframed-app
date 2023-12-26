@@ -2,6 +2,6 @@ package models
 
 // Pagination represents pagination parameters
 type Pagination struct {
-	Limit  int `json:"limit"`
-	Offset int `json:"offset"`
+	Limit  string `json:"limit"`
+	Offset string `json:"offset"`
 }

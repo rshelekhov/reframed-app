@@ -8,23 +8,37 @@ import (
 )
 
 const (
-	defaultLimit  = 100
-	defaultOffset = 0
+	defaultLimit  = "100"
+	defaultOffset = "0"
 )
 
 func ParseLimitAndOffset(r *http.Request) (models.Pagination, error) {
-	limit, err := strconv.Atoi(chi.URLParam(r, "limit"))
-	if err != nil {
+	limit := chi.URLParam(r, "limit")
+	if limit == "" {
 		limit = defaultLimit
 	}
 
-	offset, err := strconv.Atoi(chi.URLParam(r, "offset"))
-	if err != nil {
+	offset := chi.URLParam(r, "offset")
+	if offset == "" {
 		offset = defaultOffset
 	}
 
-	if limit < 0 {
+	limitInt, err := strconv.Atoi(limit)
+	if err != nil {
+		return models.Pagination{}, err
+	}
+
+	if limitInt < 0 {
 		limit = defaultLimit
+	}
+
+	offsetInt, err := strconv.Atoi(offset)
+	if err != nil {
+		return models.Pagination{}, err
+	}
+
+	if offsetInt < 0 {
+		limit = defaultOffset
 	}
 
 	pagination := models.Pagination{
