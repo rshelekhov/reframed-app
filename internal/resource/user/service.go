@@ -56,9 +56,9 @@ func (s *userService) GetUser(id string) (GetUser, error) {
 }
 
 // GetUsers returns a list of users
-func (s *userService) GetUsers(pagination models.Pagination) ([]GetUser, error) {
+func (s *userService) GetUsers(pgn models.Pagination) ([]GetUser, error) {
 	// const op = "user.service.GetUsers"
-	return s.storage.GetUsers(pagination)
+	return s.storage.GetUsers(pgn)
 }
 
 // UpdateUser updates a user by ID

@@ -110,14 +110,14 @@ func (s *userStorage) GetUser(id string) (GetUser, error) {
 }
 
 // GetUsers returns a list of users
-func (s *userStorage) GetUsers(pagination models.Pagination) ([]GetUser, error) {
+func (s *userStorage) GetUsers(pgn models.Pagination) ([]GetUser, error) {
 	const op = "user.storage.GetUsers"
 
 	var users []GetUser
 	querySelectUsers := `SELECT id, email, role_id, first_name, last_name, phone, updated_at
 							FROM users WHERE deleted_at IS NULL ORDER BY id DESC LIMIT $1 OFFSET $2`
 
-	err := s.db.Select(&users, querySelectUsers, pagination.Limit, pagination.Offset)
+	err := s.db.Select(&users, querySelectUsers, pgn.Limit, pgn.Offset)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, fmt.Errorf("%s: no users found: %w", op, storage.ErrNoUsersFound)
