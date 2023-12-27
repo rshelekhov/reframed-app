@@ -139,5 +139,20 @@ func (s *userStorage) UpdateUser(id string) error {
 func (s *userStorage) DeleteUser(id string) error {
 	const op = "user.storage.DeleteUser"
 
+	queryDeleteUser := `UPDATE users SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL`
+	result, err := s.db.Exec(queryDeleteUser, id)
+	if err != nil {
+		return fmt.Errorf("%s: failed to delete user: %w", op, err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("%s: failed to get rows affected: %w", op, err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("%s: user with ID %s not found: %w", op, id, storage.ErrUserNotFound)
+	}
+
 	return nil
 }

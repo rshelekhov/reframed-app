@@ -19,6 +19,7 @@
 |             |             |               |
 | Create user | POST        | /users        |
 | Get user    | GET         | /users/{id}   |
+| Delete user | DELETE      | /users/{id}   |
 
 
 ## Database design

@@ -51,7 +51,6 @@ func (h *handler) CreateUser() http.HandlerFunc {
 		ID     string `json:"id,omitempty"`
 		RoleID int    `json:"role_id,omitempty"`
 	}
-
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.handler.CreateUser"
 
@@ -235,13 +234,51 @@ func (h *handler) UpdateUser() http.HandlerFunc {
 
 // DeleteUser deletes a user by ID
 func (h *handler) DeleteUser() http.HandlerFunc {
+	type Response struct {
+		resp.Response
+		ID string `json:"id,omitempty"`
+	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.handler.DeleteUser"
 
-		/*id := uuid.New()
+		log := h.logger.With(
+			slog.String("op", op),
+			slog.String("request_id", middleware.GetReqID(r.Context())),
+		)
+
+		id := chi.URLParam(r, "id")
+		if id == "" {
+			log.Error("user id is empty")
+
+			render.JSON(w, r, resp.Error(http.StatusBadRequest, "user id is empty"))
+
+			return
+		}
+
 		err := h.service.DeleteUser(id)
 		if err != nil {
+			if errors.Is(err, storage.ErrUserNotFound) {
+				log.Error("user not found", slog.String("user_id", id))
+
+				render.JSON(w, r, Response{
+					Response: resp.Error(http.StatusNotFound, "user not found"),
+					ID:       id,
+				})
+
+				return
+			}
+			log.Error("failed to delete user", sl.Err(err))
+
+			render.JSON(w, r, resp.Error(http.StatusInternalServerError, "failed to delete user"))
+
 			return
-		}*/
+		}
+
+		log.Info("user deleted", slog.String("user_id", id))
+
+		render.JSON(w, r, Response{
+			Response: resp.Success(http.StatusOK, "user deleted"),
+			ID:       id,
+		})
 	}
 }
