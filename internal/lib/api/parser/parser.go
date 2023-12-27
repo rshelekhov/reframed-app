@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"github.com/rshelekhov/remedi/internal/lib/api/models"
+	"github.com/rshelekhov/remedi/internal/resource/common/models"
 	"net/http"
 	"strconv"
 )

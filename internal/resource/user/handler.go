@@ -9,8 +9,8 @@ import (
 	"github.com/rshelekhov/remedi/internal/lib/api/parser"
 	resp "github.com/rshelekhov/remedi/internal/lib/api/response"
 	"github.com/rshelekhov/remedi/internal/lib/logger/sl"
+	"github.com/rshelekhov/remedi/internal/resource/common/helpers"
 	"github.com/rshelekhov/remedi/internal/storage"
-	"io"
 	"log/slog"
 	"net/http"
 )
@@ -55,36 +55,11 @@ func (h *handler) CreateUser() http.HandlerFunc {
 
 		log := sl.LogWithRequest(h.logger, op, r)
 
-		var user CreateUser
+		user := &CreateUser{}
 
-		// Decode the request body
-		err := render.DecodeJSON(r.Body, &user)
-		if errors.Is(err, io.EOF) {
-			log.Error("request body is empty")
-
-			render.JSON(w, r, resp.Error(http.StatusNotFound, "request body is empty"))
-
-			return
-		}
+		// Decode the request body and validate the data
+		err := helpers.DecodeAndValidate(w, r, log, user, h.validator)
 		if err != nil {
-			log.Error("failed to decode request body", sl.Err(err))
-
-			render.JSON(w, r, resp.Error(http.StatusBadRequest, "failed to decode request body"))
-
-			return
-		}
-
-		log.Info("request body decoded", slog.Any("user", user))
-
-		// Validate the user
-		err = h.validator.Struct(user)
-		if err != nil {
-			validateErr := err.(validator.ValidationErrors)
-
-			log.Error("failed to validate user", sl.Err(err))
-
-			render.JSON(w, r, resp.ValidationError(validateErr))
-
 			return
 		}
 
@@ -133,12 +108,8 @@ func (h *handler) GetUser() http.HandlerFunc {
 
 		log := sl.LogWithRequest(h.logger, op, r)
 
-		id := chi.URLParam(r, "id")
-		if id == "" {
-			log.Error("user id is empty")
-
-			render.JSON(w, r, resp.Error(http.StatusBadRequest, "user id is empty"))
-
+		id, err := helpers.GetID(w, r, log)
+		if err != nil {
 			return
 		}
 
@@ -217,8 +188,64 @@ func (h *handler) GetUsers() http.HandlerFunc {
 
 // UpdateUser updates a user by ID
 func (h *handler) UpdateUser() http.HandlerFunc {
+	type Response struct {
+		resp.Response
+		ID    string `json:"id,omitempty"`
+		Email string `json:"email,omitempty"`
+	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.handler.UpdateUser"
+
+		log := sl.LogWithRequest(h.logger, op, r)
+
+		user := &UpdateUser{}
+
+		id, err := helpers.GetID(w, r, log)
+		if err != nil {
+			return
+		}
+
+		// Decode the request body and validate the data
+		err = helpers.DecodeAndValidate(w, r, log, user, h.validator)
+		if err != nil {
+			return
+		}
+
+		err = h.service.UpdateUser(id, user)
+		if err != nil {
+			if errors.Is(err, storage.ErrUserNotFound) {
+				log.Error("user not found", slog.String("user_id", id))
+
+				render.JSON(w, r, Response{
+					Response: resp.Error(http.StatusNotFound, "user not found"),
+					ID:       id,
+				})
+
+				return
+			} else if errors.Is(err, storage.ErrUserAlreadyExists) {
+				log.Error("this email already taken", slog.String("email", user.Email))
+
+				render.JSON(w, r, Response{
+					Response: resp.Error(http.StatusConflict, "this email already taken"),
+					Email:    user.Email,
+				})
+
+				return
+			}
+			log.Error("failed to update user", sl.Err(err))
+
+			render.JSON(w, r, resp.Error(http.StatusInternalServerError, "failed to update user"))
+
+			return
+		}
+
+		log.Info("User updated", slog.String("user_id", id))
+
+		render.JSON(w, r, Response{
+			Response: resp.Success(http.StatusOK, "user updated"),
+			ID:       id,
+		})
+
 	}
 }
 
@@ -233,16 +260,12 @@ func (h *handler) DeleteUser() http.HandlerFunc {
 
 		log := sl.LogWithRequest(h.logger, op, r)
 
-		id := chi.URLParam(r, "id")
-		if id == "" {
-			log.Error("user id is empty")
-
-			render.JSON(w, r, resp.Error(http.StatusBadRequest, "user id is empty"))
-
+		id, err := helpers.GetID(w, r, log)
+		if err != nil {
 			return
 		}
 
-		err := h.service.DeleteUser(id)
+		err = h.service.DeleteUser(id)
 		if err != nil {
 			if errors.Is(err, storage.ErrUserNotFound) {
 				log.Error("user not found", slog.String("user_id", id))

@@ -2,16 +2,16 @@ package user
 
 import (
 	"fmt"
-	"github.com/rshelekhov/remedi/internal/lib/api/models"
+	"github.com/rshelekhov/remedi/internal/resource/common/models"
 	"github.com/segmentio/ksuid"
 	"time"
 )
 
 type Service interface {
-	CreateUser(user CreateUser) (string, error)
+	CreateUser(user *CreateUser) (string, error)
 	GetUser(id string) (GetUser, error)
 	GetUsers(models.Pagination) ([]GetUser, error)
-	UpdateUser(id string) (string, error)
+	UpdateUser(id string, user *UpdateUser) error
 	DeleteUser(id string) error
 }
 
@@ -25,7 +25,7 @@ func NewService(storage Storage) Service {
 }
 
 // CreateUser creates a new user
-func (s *userService) CreateUser(user CreateUser) (string, error) {
+func (s *userService) CreateUser(user *CreateUser) (string, error) {
 	const op = "user.service.CreateUser"
 
 	id := ksuid.New()
@@ -62,15 +62,25 @@ func (s *userService) GetUsers(pgn models.Pagination) ([]GetUser, error) {
 }
 
 // UpdateUser updates a user by ID
-func (s *userService) UpdateUser(id string) (string, error) {
+func (s *userService) UpdateUser(id string, user *UpdateUser) error {
 	const op = "user.service.UpdateUser"
 
-	err := s.storage.UpdateUser(id)
-	if err != nil {
-		return "", fmt.Errorf("%s: failed to update user: %w", op, err)
+	entity := User{
+		ID:        id,
+		Email:     user.Email,
+		Password:  user.Password,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Phone:     user.Phone,
+		UpdatedAt: time.Now().UTC(),
 	}
 
-	return id, nil
+	err := s.storage.UpdateUser(entity)
+	if err != nil {
+		return fmt.Errorf("%s: failed to update user: %w", op, err)
+	}
+
+	return nil
 }
 
 // DeleteUser deletes a user by ID

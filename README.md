@@ -1,6 +1,6 @@
 # Remedi
 
-> Manage physician and clinic assistant interactions with clients
+> Solution for managing physician and clinic assistant interactions with clients
 
 ## What's included
 - The idiomatic structure based on the resource-oriented design.
@@ -13,13 +13,15 @@
 
 ## Endpoints
 
-| Name        | HTTP Method | Route         |
-|-------------|-------------|---------------|
-| Health      | GET         | /health       |
-|             |             |               |
-| Create user | POST        | /users        |
-| Get user    | GET         | /users/{id}   |
-| Delete user | DELETE      | /users/{id}   |
+| Name        | HTTP Method | Route       |
+|-------------|-------------|-------------|
+| Health      | GET         | /health     |
+|             |             |             |
+| Create user | POST        | /users      |
+| Get user    | GET         | /users/{id} |
+| Get users   | GET         | /users/     |
+| Update user | PUT         | /users/{id} |
+| Delete user | DELETE      | /users/{id} |
 
 
 ## Database design
@@ -52,12 +54,17 @@ remedi
 │  │  │  ├── models
 │  │  │  ├── parser
 │  │  │  └── response
+│  │  │
 │  │  └── logger
 │  │
 │  ├── resource
 │  │  ├── common
-│  │  │  └── err
+│  │  │  ├── err
+│  │  │  ├── helpers
+│  │  │  └── models
+│  │  │
 │  │  ├── health
+│  │  │
 │  │  └── resourceName
 │  │     ├── handler.go
 │  │     ├── model.go
