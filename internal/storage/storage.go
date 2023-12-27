@@ -1,17 +1,23 @@
 package storage
 
-import "errors"
+import (
+	"errors"
+)
 
 // Errors shouldn't depend on a particular storage implementation,
 // so they are placed in the storage package
 var (
+	ErrUserNotFound        = errors.New("user not found")
+	ErrNoUsersFound        = errors.New("no users found")
+	ErrNoRolesFound        = errors.New("no roles found")
+	ErrRoleNotFound        = errors.New("role not found")
 	ErrAppointmentNotFound = errors.New("appointment not found")
-	ErrPhysicianNotFound   = errors.New("physician not found")
-	ErrClientNotFound      = errors.New("client not found")
-	ErrAssistantNotFound   = errors.New("assistant not found")
 	ErrFileNotFound        = errors.New("file not found")
 
-	ErrAppointmentExists = errors.New("appointment exists")
+	ErrUserAlreadyExists        = errors.New("user with this email already exists")
+	ErrAppointmentAlreadyExists = errors.New("appointment exists")
 )
 
-// TODO add interface for ResourceNameStorage methods
+const (
+	UniqueConstraintViolation = "23505"
+)

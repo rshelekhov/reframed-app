@@ -5,7 +5,7 @@ DROP TABLE IF EXISTS user_roles;
 DROP TABLE IF EXISTS role_permissions;
 DROP TABLE IF EXISTS appointments CASCADE;
 DROP TABLE IF EXISTS statuses CASCADE;
-DROP TABLE IF EXISTS medical_reports;
+DROP TABLE IF EXISTS medical_reports CASCADE;
 DROP TABLE IF EXISTS attachments CASCADE;
 DROP TABLE IF EXISTS reminders;
 DROP TABLE IF EXISTS reminder_settings;

@@ -1,4 +1,4 @@
-package models
+package reminder
 
 import "github.com/google/uuid"
 
