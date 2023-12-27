@@ -19,10 +19,10 @@ func DecodeAndValidate(
 	log *slog.Logger,
 	data interface{},
 	v *validator.Validate,
-) (err error) {
+) error {
 
 	// Decode the request body
-	err = render.DecodeJSON(r.Body, &data)
+	err := render.DecodeJSON(r.Body, &data)
 	if errors.Is(err, io.EOF) {
 		log.Error("request body is empty")
 
@@ -52,5 +52,5 @@ func DecodeAndValidate(
 		return fmt.Errorf("validation error")
 	}
 
-	return err
+	return nil
 }
