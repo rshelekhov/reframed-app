@@ -68,22 +68,17 @@ func (h *handler) CreateUser() http.HandlerFunc {
 		if err != nil {
 			if errors.Is(err, storage.ErrUserAlreadyExists) {
 				log.Error("user already exists", slog.String("email", user.Email))
-
 				render.JSON(w, r, resp.Error(http.StatusConflict, "user already exists"))
-
 				return
 			} else if errors.Is(err, storage.ErrRoleNotFound) {
 				log.Error("role not found", slog.Int("role", user.RoleID))
-
 				render.JSON(w, r, Response{
 					Response: resp.Error(http.StatusNotFound, "role not found"),
 					RoleID:   user.RoleID,
 				})
 			}
 			log.Error("failed to create user", sl.Err(err))
-
 			render.JSON(w, r, resp.Error(http.StatusInternalServerError, "failed to create user"))
-
 			return
 		}
 
@@ -117,15 +112,11 @@ func (h *handler) GetUser() http.HandlerFunc {
 		if err != nil {
 			if errors.Is(err, storage.ErrUserNotFound) {
 				log.Error("user not found", slog.String("user_id", id))
-
 				render.JSON(w, r, resp.Error(http.StatusNotFound, "user not found"))
-
 				return
 			}
 			log.Error("failed to get user", sl.Err(err))
-
 			render.JSON(w, r, resp.Error(http.StatusInternalServerError, "failed to get user"))
-
 			return
 		}
 
@@ -152,9 +143,7 @@ func (h *handler) GetUsers() http.HandlerFunc {
 		pagination, err := parser.ParseLimitAndOffset(r)
 		if err != nil {
 			log.Error("failed to parse limit and offset", sl.Err(err))
-
 			render.JSON(w, r, resp.Error(http.StatusBadRequest, "failed to parse limit and offset"))
-
 			return
 		}
 
@@ -162,14 +151,12 @@ func (h *handler) GetUsers() http.HandlerFunc {
 		if err != nil {
 			if errors.Is(err, storage.ErrNoUsersFound) {
 				log.Error("no users found")
-
 				render.JSON(w, r, resp.Error(http.StatusNotFound, "no users found"))
-
 				return
 			}
 			log.Error("failed to get users", sl.Err(err))
-
 			render.JSON(w, r, resp.Error(http.StatusInternalServerError, "failed to get users"))
+			return
 		}
 
 		log.Info(
@@ -215,27 +202,21 @@ func (h *handler) UpdateUser() http.HandlerFunc {
 		if err != nil {
 			if errors.Is(err, storage.ErrUserNotFound) {
 				log.Error("user not found", slog.String("user_id", id))
-
 				render.JSON(w, r, Response{
 					Response: resp.Error(http.StatusNotFound, "user not found"),
 					ID:       id,
 				})
-
 				return
 			} else if errors.Is(err, storage.ErrUserAlreadyExists) {
 				log.Error("this email already taken", slog.String("email", user.Email))
-
 				render.JSON(w, r, Response{
 					Response: resp.Error(http.StatusConflict, "this email already taken"),
 					Email:    user.Email,
 				})
-
 				return
 			}
 			log.Error("failed to update user", sl.Err(err))
-
 			render.JSON(w, r, resp.Error(http.StatusInternalServerError, "failed to update user"))
-
 			return
 		}
 
@@ -269,18 +250,14 @@ func (h *handler) DeleteUser() http.HandlerFunc {
 		if err != nil {
 			if errors.Is(err, storage.ErrUserNotFound) {
 				log.Error("user not found", slog.String("user_id", id))
-
 				render.JSON(w, r, Response{
 					Response: resp.Error(http.StatusNotFound, "user not found"),
 					ID:       id,
 				})
-
 				return
 			}
 			log.Error("failed to delete user", sl.Err(err))
-
 			render.JSON(w, r, resp.Error(http.StatusInternalServerError, "failed to delete user"))
-
 			return
 		}
 
@@ -308,15 +285,11 @@ func (h *handler) GetUserRoles() http.HandlerFunc {
 		if err != nil {
 			if errors.Is(err, storage.ErrNoRolesFound) {
 				log.Error("no roles found")
-
 				render.JSON(w, r, resp.Error(http.StatusNotFound, "no roles found"))
-
 				return
 			}
 			log.Error("failed to get roles", sl.Err(err))
-
 			render.JSON(w, r, resp.Error(http.StatusInternalServerError, "failed to get roles"))
-
 			return
 		}
 
