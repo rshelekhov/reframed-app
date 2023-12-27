@@ -3,7 +3,6 @@ package user
 import (
 	"errors"
 	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator"
 	"github.com/jmoiron/sqlx"
@@ -54,10 +53,7 @@ func (h *handler) CreateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.handler.CreateUser"
 
-		log := h.logger.With(
-			slog.String("op", op),
-			slog.String("request_id", middleware.GetReqID(r.Context())),
-		)
+		log := sl.LogWithRequest(h.logger, op, r)
 
 		var user CreateUser
 
@@ -135,10 +131,7 @@ func (h *handler) GetUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.handler.GetUser"
 
-		log := h.logger.With(
-			slog.String("op", op),
-			slog.String("request_id", middleware.GetReqID(r.Context())),
-		)
+		log := sl.LogWithRequest(h.logger, op, r)
 
 		id := chi.URLParam(r, "id")
 		if id == "" {
@@ -183,10 +176,7 @@ func (h *handler) GetUsers() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.handler.GetUsers"
 
-		log := h.logger.With(
-			slog.String("op", op),
-			slog.String("request_id", middleware.GetReqID(r.Context())),
-		)
+		log := sl.LogWithRequest(h.logger, op, r)
 
 		pagination, err := parser.ParseLimitAndOffset(r)
 		if err != nil {
@@ -241,10 +231,7 @@ func (h *handler) DeleteUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.handler.DeleteUser"
 
-		log := h.logger.With(
-			slog.String("op", op),
-			slog.String("request_id", middleware.GetReqID(r.Context())),
-		)
+		log := sl.LogWithRequest(h.logger, op, r)
 
 		id := chi.URLParam(r, "id")
 		if id == "" {

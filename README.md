@@ -49,6 +49,8 @@ remedi
 │  │
 │  ├── lib
 │  │  ├── api
+│  │  │  ├── models
+│  │  │  ├── parser
 │  │  │  └── response
 │  │  └── logger
 │  │
