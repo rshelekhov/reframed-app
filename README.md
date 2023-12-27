@@ -13,15 +13,16 @@
 
 ## Endpoints
 
-| Name        | HTTP Method | Route       |
-|-------------|-------------|-------------|
-| Health      | GET         | /health     |
-|             |             |             |
-| Create user | POST        | /users      |
-| Get user    | GET         | /users/{id} |
-| Get users   | GET         | /users/     |
-| Update user | PUT         | /users/{id} |
-| Delete user | DELETE      | /users/{id} |
+| Name        | HTTP Method | Route         |
+|-------------|-------------|---------------|
+| Health      | GET         | /health       |
+|             |             |               |
+| Create user | POST        | /users        |
+| Get user    | GET         | /users/{id}   |
+| Get users   | GET         | /users/       |
+| Update user | PUT         | /users/{id}   |
+| Delete user | DELETE      | /users/{id}   |
+| Get roles   | GET         | /users/roles  |
 
 
 ## Database design

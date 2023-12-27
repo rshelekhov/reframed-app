@@ -13,6 +13,7 @@ type Service interface {
 	GetUsers(models.Pagination) ([]GetUser, error)
 	UpdateUser(id string, user *UpdateUser) error
 	DeleteUser(id string) error
+	GetUserRoles() ([]GetRole, error)
 }
 
 type userService struct {
@@ -87,4 +88,10 @@ func (s *userService) UpdateUser(id string, user *UpdateUser) error {
 func (s *userService) DeleteUser(id string) error {
 	// const op = "user.service.DeleteUser"
 	return s.storage.DeleteUser(id)
+}
+
+// GetUserRoles returns a list of roles
+func (s *userService) GetUserRoles() ([]GetRole, error) {
+	// const op = "user.service.GetUserRoles"
+	return s.storage.GetUserRoles()
 }

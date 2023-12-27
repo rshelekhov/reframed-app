@@ -48,5 +48,13 @@ type UpdateUser struct {
 	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
 }
 
+/*
 // Users used in the response body and service layer
 type Users []*User
+*/
+
+// GetRole used in the response body and service layer
+type GetRole struct {
+	RoleID int    `json:"role_id" db:"id"`
+	Title  string `json:"title" db:"title"`
+}

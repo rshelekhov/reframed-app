@@ -40,7 +40,7 @@ func newHandler(r *chi.Mux, log *slog.Logger, srv Service, validate *validator.V
 	r.Get("/users", h.GetUsers())
 	r.Put("/users/{id}", h.UpdateUser())
 	r.Delete("/users/{id}", h.DeleteUser())
-	// TODO: add get user status
+	r.Get("/users/roles", h.GetUserRoles())
 }
 
 // CreateUser creates a new user
@@ -289,6 +289,42 @@ func (h *handler) DeleteUser() http.HandlerFunc {
 		render.JSON(w, r, Response{
 			Response: resp.Success(http.StatusOK, "user deleted"),
 			ID:       id,
+		})
+	}
+}
+
+// GetUserRoles get a list of roles
+func (h *handler) GetUserRoles() http.HandlerFunc {
+	type Response struct {
+		resp.Response
+		Roles []GetRole `json:"roles"`
+	}
+	return func(w http.ResponseWriter, r *http.Request) {
+		const op = "user.handler.GetUserRoles"
+
+		log := sl.LogWithRequest(h.logger, op, r)
+
+		roles, err := h.service.GetUserRoles()
+		if err != nil {
+			if errors.Is(err, storage.ErrNoRolesFound) {
+				log.Error("no roles found")
+
+				render.JSON(w, r, resp.Error(http.StatusNotFound, "no roles found"))
+
+				return
+			}
+			log.Error("failed to get roles", sl.Err(err))
+
+			render.JSON(w, r, resp.Error(http.StatusInternalServerError, "failed to get roles"))
+
+			return
+		}
+
+		log.Info("roles found", slog.Int("count", len(roles)))
+
+		render.JSON(w, r, Response{
+			Response: resp.Success(http.StatusOK, "roles found"),
+			Roles:    roles,
 		})
 	}
 }

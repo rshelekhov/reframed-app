@@ -17,6 +17,7 @@ type Storage interface {
 	GetUsers(models.Pagination) ([]GetUser, error)
 	UpdateUser(user User) error
 	DeleteUser(id string) error
+	GetUserRoles() ([]GetRole, error)
 }
 
 type userStorage struct {
@@ -217,4 +218,22 @@ func (s *userStorage) DeleteUser(id string) error {
 	}
 
 	return nil
+}
+
+// GetUserRoles returns a list of roles
+func (s *userStorage) GetUserRoles() ([]GetRole, error) {
+	const op = "user.storage.GetUserRoles"
+
+	var roles []GetRole
+	query := `SELECT id, title FROM roles`
+
+	err := s.db.Select(&roles, query)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("%s: no roles found: %w", op, storage.ErrNoRolesFound)
+		}
+		return nil, fmt.Errorf("%s: failed to get roles: %w", op, err)
+	}
+
+	return roles, nil
 }
