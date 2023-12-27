@@ -41,6 +41,7 @@ func newHandler(r *chi.Mux, log *slog.Logger, srv Service, validate *validator.V
 	r.Get("/users", h.GetUsers())
 	r.Put("/users/{id}", h.UpdateUser())
 	r.Delete("/users/{id}", h.DeleteUser())
+	// TODO: add get user status
 }
 
 // CreateUser creates a new user
@@ -188,7 +189,7 @@ func (h *handler) GetUsers() http.HandlerFunc {
 			slog.String("request_id", middleware.GetReqID(r.Context())),
 		)
 
-		pagination, err := parser.ParseLimitAndOffset(log, r)
+		pagination, err := parser.ParseLimitAndOffset(r)
 		if err != nil {
 			log.Error("failed to parse limit and offset", sl.Err(err))
 
