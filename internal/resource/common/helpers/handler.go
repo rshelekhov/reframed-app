@@ -3,6 +3,7 @@ package helpers
 import (
 	"errors"
 	"fmt"
+	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator"
 	resp "github.com/rshelekhov/remedi/internal/lib/api/response"
@@ -11,6 +12,20 @@ import (
 	"log/slog"
 	"net/http"
 )
+
+// GetID gets the entity id from the request
+func GetID(w http.ResponseWriter, r *http.Request, log *slog.Logger) (string, error) {
+	id := chi.URLParam(r, "id")
+	if id == "" {
+		log.Error("id is empty")
+
+		render.JSON(w, r, resp.Error(http.StatusBadRequest, "id is empty"))
+
+		return "", fmt.Errorf("empty id")
+	}
+
+	return id, nil
+}
 
 // DecodeAndValidate decodes the request body and validates the data
 func DecodeAndValidate(
