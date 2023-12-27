@@ -1,7 +1,9 @@
 package sl
 
 import (
+	"github.com/go-chi/chi/middleware"
 	"log/slog"
+	"net/http"
 	"os"
 )
 
@@ -32,4 +34,12 @@ func Err(err error) slog.Attr {
 		Key:   "error",
 		Value: slog.StringValue(err.Error()),
 	}
+}
+
+func LogWithRequest(log *slog.Logger, op string, r *http.Request) *slog.Logger {
+	log.With(
+		slog.String("op", op),
+		slog.String("request_id", middleware.GetReqID(r.Context())),
+	)
+	return log
 }

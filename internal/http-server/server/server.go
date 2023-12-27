@@ -14,14 +14,14 @@ import (
 )
 
 type Server struct {
-	cfg    config.Config
+	cfg    *config.Config
 	log    *slog.Logger
 	Router *chi.Mux
 }
 
 func NewServer(cfg *config.Config, log *slog.Logger, router *chi.Mux) *Server {
 	srv := &Server{
-		cfg:    *cfg,
+		cfg:    cfg,
 		log:    log,
 		Router: router,
 	}

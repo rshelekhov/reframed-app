@@ -1,4 +1,4 @@
-package mwlogger
+package logger
 
 import (
 	"github.com/go-chi/chi/middleware"
@@ -42,11 +42,11 @@ func New(log *slog.Logger) func(next http.Handler) http.Handler {
 				)
 			}()
 
-			// Pass control to the next handler in the middleware chain
+			// Pass control to the next handlers in the middleware chain
 			next.ServeHTTP(ww, r)
 		}
 
-		// Return the handler created above by casting it
+		// Return the handlers created above by casting it
 		// to the type http.HandlerFunc
 		return http.HandlerFunc(fn)
 	}
