@@ -19,7 +19,8 @@ func GetID(w http.ResponseWriter, r *http.Request, log *slog.Logger) (string, er
 	if id == "" {
 		log.Error("id is empty")
 
-		render.JSON(w, r, resp.Error(http.StatusBadRequest, "id is empty"))
+		render.Status(r, http.StatusBadRequest)
+		render.JSON(w, r, resp.Error("id is empty"))
 
 		return "", fmt.Errorf("empty id")
 	}
@@ -41,14 +42,16 @@ func DecodeAndValidate(
 	if errors.Is(err, io.EOF) {
 		log.Error("request body is empty")
 
-		render.JSON(w, r, resp.Error(http.StatusNotFound, "request body is empty"))
+		render.Status(r, http.StatusNotFound)
+		render.JSON(w, r, resp.Error("request body is empty"))
 
 		return fmt.Errorf("decode error")
 	}
 	if err != nil {
 		log.Error("failed to decode request body", sl.Err(err))
 
-		render.JSON(w, r, resp.Error(http.StatusBadRequest, "failed to decode request body"))
+		render.Status(r, http.StatusBadRequest)
+		render.JSON(w, r, resp.Error("failed to decode request body"))
 
 		return fmt.Errorf("decode error")
 	}
@@ -62,6 +65,7 @@ func DecodeAndValidate(
 
 		log.Error("failed to validate user", sl.Err(err))
 
+		render.Status(r, http.StatusUnprocessableEntity)
 		render.JSON(w, r, resp.ValidationError(validateErr))
 
 		return fmt.Errorf("validation error")
