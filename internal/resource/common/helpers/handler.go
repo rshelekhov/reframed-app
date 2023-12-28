@@ -61,7 +61,8 @@ func DecodeAndValidate(
 	// Validate the data
 	err = v.Struct(data)
 	if err != nil {
-		validateErr := err.(validator.ValidationErrors)
+		var validateErr validator.ValidationErrors
+		errors.As(err, &validateErr)
 
 		log.Error("failed to validate user", sl.Err(err))
 
