@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"github.com/rshelekhov/remedi/internal/resource/common/models"
+	"github.com/rshelekhov/remedi/internal/model"
 	"net/http"
 	"strconv"
 )
@@ -11,7 +11,7 @@ const (
 	defaultOffset = 0
 )
 
-func ParseLimitAndOffset(r *http.Request) (models.Pagination, error) {
+func ParseLimitAndOffset(r *http.Request) (model.Pagination, error) {
 	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
 	if err != nil {
 		limit = defaultLimit
@@ -30,7 +30,7 @@ func ParseLimitAndOffset(r *http.Request) (models.Pagination, error) {
 		limit = defaultOffset
 	}
 
-	pagination := models.Pagination{
+	pagination := model.Pagination{
 		Limit:  limit,
 		Offset: offset,
 	}

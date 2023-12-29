@@ -1,4 +1,4 @@
-package user
+package model
 
 import (
 	"time"
@@ -47,11 +47,6 @@ type UpdateUser struct {
 	Phone     string    `json:"phone" db:"phone" validate:"e164"`
 	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
 }
-
-/*
-// Users used in the response body and service layer
-type Users []*User
-*/
 
 // GetRole used in the response body and service layer
 type GetRole struct {

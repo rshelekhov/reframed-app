@@ -1,4 +1,4 @@
-package models
+package model
 
 // Pagination represents pagination parameters
 type Pagination struct {

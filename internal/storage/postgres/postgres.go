@@ -4,16 +4,15 @@ import (
 	"fmt"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
+	"github.com/rshelekhov/remedi/internal/storage"
 )
-
-// TODO implement sqlx
 
 type Storage struct {
 	DB *sqlx.DB
 }
 
-// NewStorage ...
-func NewStorage(dsn string) (*Storage, error) {
+// NewPostgresStorage ...
+func NewPostgresStorage(dsn string) (*Storage, error) {
 	const op = "storage.postgres.NewStorage"
 
 	db, err := sqlx.Open("pgx", dsn)
@@ -28,7 +27,12 @@ func NewStorage(dsn string) (*Storage, error) {
 	return &Storage{db}, nil
 }
 
-// Close ...
+// Close closes the Postgres storage
 func (s *Storage) Close() error {
 	return s.DB.Close()
+}
+
+// GetStorage ...
+func GetStorage(db *sqlx.DB) storage.Storage {
+	return &Storage{db}
 }

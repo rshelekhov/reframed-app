@@ -52,7 +52,7 @@ remedi
 │  │
 │  ├── lib
 │  │  ├── api
-│  │  │  ├── models
+│  │  │  ├── model
 │  │  │  ├── parser
 │  │  │  └── response
 │  │  │
@@ -62,7 +62,7 @@ remedi
 │  │  ├── common
 │  │  │  ├── err
 │  │  │  ├── helpers
-│  │  │  └── models
+│  │  │  └── model
 │  │  │
 │  │  ├── health
 │  │  │

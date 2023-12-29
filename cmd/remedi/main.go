@@ -27,7 +27,7 @@ func main() {
 
 	validate := validator.New()
 
-	storage, err := postgres.NewStorage(cfg.Postgres.URL)
+	storage, err := postgres.NewPostgresStorage(cfg.Postgres.URL)
 	if err != nil {
 		log.Error("failed to init storage", sl.Err(err))
 	}

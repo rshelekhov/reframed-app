@@ -1,38 +1,26 @@
-package user
+package handler
 
 import (
 	"errors"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator"
-	"github.com/jmoiron/sqlx"
 	"github.com/rshelekhov/remedi/internal/lib/api/parser"
 	resp "github.com/rshelekhov/remedi/internal/lib/api/response"
 	"github.com/rshelekhov/remedi/internal/lib/logger/sl"
-	"github.com/rshelekhov/remedi/internal/resource/common/helpers"
+	"github.com/rshelekhov/remedi/internal/model"
+	"github.com/rshelekhov/remedi/internal/service"
 	"github.com/rshelekhov/remedi/internal/storage"
 	"log/slog"
 	"net/http"
 )
 
-type handler struct {
-	logger    *slog.Logger
-	service   Service
-	validator *validator.Validate
-}
-
-// Activate activates the user resource
-func Activate(r *chi.Mux, log *slog.Logger, db *sqlx.DB, validate *validator.Validate) {
-	srv := NewService(NewStorage(db))
-	newHandler(r, log, srv, validate)
-}
-
 // NewHandler create a handler struct and register the routes
-func newHandler(r *chi.Mux, log *slog.Logger, srv Service, validate *validator.Validate) {
+func newUserHandlers(r *chi.Mux, log *slog.Logger, srv service.Service, v *validator.Validate) {
 	h := handler{
 		logger:    log,
 		service:   srv,
-		validator: validate,
+		validator: v,
 	}
 
 	r.Post("/users", h.CreateUser())
@@ -55,16 +43,17 @@ func (h *handler) CreateUser() http.HandlerFunc {
 
 		log := sl.LogWithRequest(h.logger, op, r)
 
-		user := &CreateUser{}
+		user := &model.CreateUser{}
 
 		// Decode the request body and validate the data
-		err := helpers.DecodeAndValidate(w, r, log, user, h.validator)
+		err := DecodeAndValidate(w, r, log, user, h.validator)
 		if err != nil {
 			return
 		}
 
 		// Create the user
 		id, err := h.service.CreateUser(user)
+		// TODO: refactor to use a switch statement
 		if err != nil {
 			if errors.Is(err, storage.ErrUserAlreadyExists) {
 				log.Error("user already exists", slog.String("email", user.Email))
@@ -108,14 +97,14 @@ func (h *handler) CreateUser() http.HandlerFunc {
 func (h *handler) GetUser() http.HandlerFunc {
 	type Response struct {
 		resp.Response
-		User GetUser `json:"user"`
+		User model.GetUser `json:"user"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.handler.GetUser"
 
 		log := sl.LogWithRequest(h.logger, op, r)
 
-		id, err := helpers.GetID(w, r, log)
+		id, err := GetID(w, r, log)
 		if err != nil {
 			return
 		}
@@ -152,7 +141,7 @@ func (h *handler) GetUser() http.HandlerFunc {
 func (h *handler) GetUsers() http.HandlerFunc {
 	type Response struct {
 		resp.Response
-		Users []GetUser `json:"users"`
+		Users []model.GetUser `json:"users"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.handler.GetUsers"
@@ -214,15 +203,15 @@ func (h *handler) UpdateUser() http.HandlerFunc {
 
 		log := sl.LogWithRequest(h.logger, op, r)
 
-		user := &UpdateUser{}
+		user := &model.UpdateUser{}
 
-		id, err := helpers.GetID(w, r, log)
+		id, err := GetID(w, r, log)
 		if err != nil {
 			return
 		}
 
 		// Decode the request body and validate the data
-		err = helpers.DecodeAndValidate(w, r, log, user, h.validator)
+		err = DecodeAndValidate(w, r, log, user, h.validator)
 		if err != nil {
 			return
 		}
@@ -281,7 +270,7 @@ func (h *handler) DeleteUser() http.HandlerFunc {
 
 		log := sl.LogWithRequest(h.logger, op, r)
 
-		id, err := helpers.GetID(w, r, log)
+		id, err := GetID(w, r, log)
 		if err != nil {
 			return
 		}
@@ -321,7 +310,7 @@ func (h *handler) DeleteUser() http.HandlerFunc {
 func (h *handler) GetUserRoles() http.HandlerFunc {
 	type Response struct {
 		resp.Response
-		Roles []GetRole `json:"roles"`
+		Roles []model.GetRole `json:"roles"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.handler.GetUserRoles"
