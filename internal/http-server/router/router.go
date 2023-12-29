@@ -9,7 +9,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	mwlogger "github.com/rshelekhov/remedi/internal/http-server/middleware/logger"
 	"github.com/rshelekhov/remedi/internal/resource/health"
-	userHandlers "github.com/rshelekhov/remedi/internal/resource/user"
+	userHandlers "github.com/rshelekhov/remedi/internal/resource/user/handler"
 	"log/slog"
 	"time"
 )
