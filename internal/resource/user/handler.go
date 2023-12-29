@@ -1,4 +1,4 @@
-package handler
+package user
 
 import (
 	"errors"
@@ -10,7 +10,6 @@ import (
 	resp "github.com/rshelekhov/remedi/internal/lib/api/response"
 	"github.com/rshelekhov/remedi/internal/lib/logger/sl"
 	"github.com/rshelekhov/remedi/internal/resource/common/helpers"
-	"github.com/rshelekhov/remedi/internal/resource/user"
 	"github.com/rshelekhov/remedi/internal/storage"
 	"log/slog"
 	"net/http"
@@ -18,18 +17,18 @@ import (
 
 type handler struct {
 	logger    *slog.Logger
-	service   user.Service
+	service   Service
 	validator *validator.Validate
 }
 
 // Activate activates the user resource
 func Activate(r *chi.Mux, log *slog.Logger, db *sqlx.DB, validate *validator.Validate) {
-	srv := user.NewService(user.NewStorage(db))
+	srv := NewService(NewStorage(db))
 	newHandler(r, log, srv, validate)
 }
 
 // NewHandler create a handler struct and register the routes
-func newHandler(r *chi.Mux, log *slog.Logger, srv user.Service, validate *validator.Validate) {
+func newHandler(r *chi.Mux, log *slog.Logger, srv Service, validate *validator.Validate) {
 	h := handler{
 		logger:    log,
 		service:   srv,
@@ -56,7 +55,7 @@ func (h *handler) CreateUser() http.HandlerFunc {
 
 		log := sl.LogWithRequest(h.logger, op, r)
 
-		user := &user.CreateUser{}
+		user := &CreateUser{}
 
 		// Decode the request body and validate the data
 		err := helpers.DecodeAndValidate(w, r, log, user, h.validator)
@@ -109,7 +108,7 @@ func (h *handler) CreateUser() http.HandlerFunc {
 func (h *handler) GetUser() http.HandlerFunc {
 	type Response struct {
 		resp.Response
-		User user.GetUser `json:"user"`
+		User GetUser `json:"user"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.handler.GetUser"
@@ -153,7 +152,7 @@ func (h *handler) GetUser() http.HandlerFunc {
 func (h *handler) GetUsers() http.HandlerFunc {
 	type Response struct {
 		resp.Response
-		Users []user.GetUser `json:"users"`
+		Users []GetUser `json:"users"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.handler.GetUsers"
@@ -215,7 +214,7 @@ func (h *handler) UpdateUser() http.HandlerFunc {
 
 		log := sl.LogWithRequest(h.logger, op, r)
 
-		user := &user.UpdateUser{}
+		user := &UpdateUser{}
 
 		id, err := helpers.GetID(w, r, log)
 		if err != nil {
@@ -322,7 +321,7 @@ func (h *handler) DeleteUser() http.HandlerFunc {
 func (h *handler) GetUserRoles() http.HandlerFunc {
 	type Response struct {
 		resp.Response
-		Roles []user.GetRole `json:"roles"`
+		Roles []GetRole `json:"roles"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.handler.GetUserRoles"
