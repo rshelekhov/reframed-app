@@ -67,7 +67,7 @@ remedi
 │  │  ├── health
 │  │  │
 │  │  └── resourceName
-│  │     ├── handler.go
+│  │     ├── handlers.go
 │  │     ├── model.go
 │  │     ├── service.go
 │  │     └── storage.go

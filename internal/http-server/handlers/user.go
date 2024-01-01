@@ -1,4 +1,4 @@
-package handler
+package handlers
 
 import (
 	"errors"
@@ -39,7 +39,7 @@ func (h *handler) CreateUser() http.HandlerFunc {
 		RoleID int    `json:"role_id,omitempty"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.handler.CreateUser"
+		const op = "user.handlers.CreateUser"
 
 		log := sl.LogWithRequest(h.logger, op, r)
 
@@ -100,7 +100,7 @@ func (h *handler) GetUser() http.HandlerFunc {
 		User model.GetUser `json:"user"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.handler.GetUser"
+		const op = "user.handlers.GetUser"
 
 		log := sl.LogWithRequest(h.logger, op, r)
 
@@ -144,7 +144,7 @@ func (h *handler) GetUsers() http.HandlerFunc {
 		Users []model.GetUser `json:"users"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.handler.GetUsers"
+		const op = "user.handlers.GetUsers"
 
 		log := sl.LogWithRequest(h.logger, op, r)
 
@@ -199,7 +199,7 @@ func (h *handler) UpdateUser() http.HandlerFunc {
 		Email string `json:"email,omitempty"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.handler.UpdateUser"
+		const op = "user.handlers.UpdateUser"
 
 		log := sl.LogWithRequest(h.logger, op, r)
 
@@ -266,7 +266,7 @@ func (h *handler) DeleteUser() http.HandlerFunc {
 		ID string `json:"id,omitempty"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.handler.DeleteUser"
+		const op = "user.handlers.DeleteUser"
 
 		log := sl.LogWithRequest(h.logger, op, r)
 
@@ -313,7 +313,7 @@ func (h *handler) GetUserRoles() http.HandlerFunc {
 		Roles []model.GetRole `json:"roles"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.handler.GetUserRoles"
+		const op = "user.handlers.GetUserRoles"
 
 		log := sl.LogWithRequest(h.logger, op, r)
 

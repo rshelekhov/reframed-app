@@ -7,7 +7,7 @@ import (
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator"
 	"github.com/jmoiron/sqlx"
-	"github.com/rshelekhov/remedi/internal/http-server/handler"
+	"github.com/rshelekhov/remedi/internal/http-server/handlers"
 	mwlogger "github.com/rshelekhov/remedi/internal/http-server/middleware/logger"
 	"log/slog"
 	"time"
@@ -28,7 +28,7 @@ func New(log *slog.Logger, db *sqlx.DB, validate *validator.Validate) *chi.Mux {
 	// our own middleware to log requests:
 	r.Use(mwlogger.New(log))
 
-	// If a panic happens somewhere inside the server (request handler),
+	// If a panic happens somewhere inside the server (request handlers),
 	// the application should not crash.
 	r.Use(middleware.Recoverer)
 
@@ -42,10 +42,10 @@ func New(log *slog.Logger, db *sqlx.DB, validate *validator.Validate) *chi.Mux {
 	r.Use(httprate.LimitByIP(100, 1*time.Minute))
 
 	// Health check
-	r.Get("/health", handler.HealthRead())
+	r.Get("/health", handlers.HealthRead())
 
 	// Handlers
-	handler.Activate(r, log, db, validate)
+	handlers.Activate(r, log, db, validate)
 
 	return r
 }
