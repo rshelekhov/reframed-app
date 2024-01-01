@@ -5,21 +5,21 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator"
+	"github.com/rshelekhov/remedi/internal/app"
 	"github.com/rshelekhov/remedi/internal/lib/api/parser"
 	resp "github.com/rshelekhov/remedi/internal/lib/api/response"
 	"github.com/rshelekhov/remedi/internal/lib/logger/sl"
 	"github.com/rshelekhov/remedi/internal/model"
-	"github.com/rshelekhov/remedi/internal/service"
 	"github.com/rshelekhov/remedi/internal/storage"
 	"log/slog"
 	"net/http"
 )
 
 // NewHandler create a handler struct and register the routes
-func newUserHandlers(r *chi.Mux, log *slog.Logger, srv service.Service, v *validator.Validate) {
+func newUserHandlers(r *chi.Mux, log *slog.Logger, app app.App, v *validator.Validate) {
 	h := handler{
 		logger:    log,
-		service:   srv,
+		app:       app,
 		validator: v,
 	}
 
@@ -52,7 +52,7 @@ func (h *handler) CreateUser() http.HandlerFunc {
 		}
 
 		// Create the user
-		id, err := h.service.CreateUser(user)
+		id, err := h.app.CreateUser(user)
 		// TODO: refactor to use a switch statement
 		if err != nil {
 			if errors.Is(err, storage.ErrUserAlreadyExists) {
@@ -109,7 +109,7 @@ func (h *handler) GetUser() http.HandlerFunc {
 			return
 		}
 
-		user, err := h.service.GetUser(id)
+		user, err := h.app.GetUser(id)
 		if err != nil {
 			if errors.Is(err, storage.ErrUserNotFound) {
 				log.Error("user not found", slog.String("user_id", id))
@@ -158,7 +158,7 @@ func (h *handler) GetUsers() http.HandlerFunc {
 			return
 		}
 
-		users, err := h.service.GetUsers(pagination)
+		users, err := h.app.GetUsers(pagination)
 		if err != nil {
 			if errors.Is(err, storage.ErrNoUsersFound) {
 				log.Error("no users found")
@@ -216,7 +216,7 @@ func (h *handler) UpdateUser() http.HandlerFunc {
 			return
 		}
 
-		err = h.service.UpdateUser(id, user)
+		err = h.app.UpdateUser(id, user)
 		if err != nil {
 			if errors.Is(err, storage.ErrUserNotFound) {
 				log.Error("user not found", slog.String("user_id", id))
@@ -275,7 +275,7 @@ func (h *handler) DeleteUser() http.HandlerFunc {
 			return
 		}
 
-		err = h.service.DeleteUser(id)
+		err = h.app.DeleteUser(id)
 		if err != nil {
 			if errors.Is(err, storage.ErrUserNotFound) {
 				log.Error("user not found", slog.String("user_id", id))
@@ -317,7 +317,7 @@ func (h *handler) GetUserRoles() http.HandlerFunc {
 
 		log := sl.LogWithRequest(h.logger, op, r)
 
-		roles, err := h.service.GetUserRoles()
+		roles, err := h.app.GetUserRoles()
 		if err != nil {
 			if errors.Is(err, storage.ErrNoRolesFound) {
 				log.Error("no roles found")

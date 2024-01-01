@@ -69,7 +69,7 @@ remedi
 │  │  └── resourceName
 │  │     ├── handlers.go
 │  │     ├── model.go
-│  │     ├── service.go
+│  │     ├── app.go
 │  │     └── storage.go
 │  │
 │  └── storage

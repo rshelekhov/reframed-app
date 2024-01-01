@@ -1,21 +1,21 @@
-package service
+package app
 
 import (
 	"github.com/rshelekhov/remedi/internal/model"
 	"github.com/rshelekhov/remedi/internal/storage"
 )
 
-type service struct {
+type app struct {
 	storage storage.Storage
 }
 
-// New creates a new service (service) layer
-func New(storage storage.Storage) Service {
-	return &service{storage}
+// New creates a new app layer
+func New(storage storage.Storage) App {
+	return &app{storage}
 }
 
-// Service is the common interface for all services
-type Service interface {
+// App is the common interface for all services
+type App interface {
 	UserService
 }
 

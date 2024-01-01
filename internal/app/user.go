@@ -1,4 +1,4 @@
-package service
+package app
 
 import (
 	"fmt"
@@ -8,8 +8,8 @@ import (
 )
 
 // CreateUser creates a new user
-func (s *service) CreateUser(user *model.CreateUser) (string, error) {
-	const op = "user.service.CreateUser"
+func (a *app) CreateUser(user *model.CreateUser) (string, error) {
+	const op = "user.app.CreateUser"
 
 	id := ksuid.New()
 
@@ -24,7 +24,7 @@ func (s *service) CreateUser(user *model.CreateUser) (string, error) {
 		UpdatedAt: time.Now().UTC(),
 	}
 
-	err := s.storage.CreateUser(entity)
+	err := a.storage.CreateUser(entity)
 	if err != nil {
 		return "", fmt.Errorf("%s: failed to create user: %w", op, err)
 	}
@@ -33,20 +33,20 @@ func (s *service) CreateUser(user *model.CreateUser) (string, error) {
 }
 
 // GetUser returns a user by ID
-func (s *service) GetUser(id string) (model.GetUser, error) {
-	// const op = "user.service.GetUser"
-	return s.storage.GetUser(id)
+func (a *app) GetUser(id string) (model.GetUser, error) {
+	// const op = "user.app.GetUser"
+	return a.storage.GetUser(id)
 }
 
 // GetUsers returns a list of users
-func (s *service) GetUsers(pgn model.Pagination) ([]model.GetUser, error) {
-	// const op = "user.service.GetUsers"
-	return s.storage.GetUsers(pgn)
+func (a *app) GetUsers(pgn model.Pagination) ([]model.GetUser, error) {
+	// const op = "user.app.GetUsers"
+	return a.storage.GetUsers(pgn)
 }
 
 // UpdateUser updates a user by ID
-func (s *service) UpdateUser(id string, user *model.UpdateUser) error {
-	const op = "user.service.UpdateUser"
+func (a *app) UpdateUser(id string, user *model.UpdateUser) error {
+	const op = "user.app.UpdateUser"
 
 	entity := model.User{
 		ID:        id,
@@ -58,7 +58,7 @@ func (s *service) UpdateUser(id string, user *model.UpdateUser) error {
 		UpdatedAt: time.Now().UTC(),
 	}
 
-	err := s.storage.UpdateUser(entity)
+	err := a.storage.UpdateUser(entity)
 	if err != nil {
 		return fmt.Errorf("%s: failed to update user: %w", op, err)
 	}
@@ -67,13 +67,13 @@ func (s *service) UpdateUser(id string, user *model.UpdateUser) error {
 }
 
 // DeleteUser deletes a user by ID
-func (s *service) DeleteUser(id string) error {
-	// const op = "user.service.DeleteUser"
-	return s.storage.DeleteUser(id)
+func (a *app) DeleteUser(id string) error {
+	// const op = "user.app.DeleteUser"
+	return a.storage.DeleteUser(id)
 }
 
 // GetUserRoles returns a list of roles
-func (s *service) GetUserRoles() ([]model.GetRole, error) {
-	// const op = "user.service.GetUserRoles"
-	return s.storage.GetUserRoles()
+func (a *app) GetUserRoles() ([]model.GetRole, error) {
+	// const op = "user.app.GetUserRoles"
+	return a.storage.GetUserRoles()
 }
