@@ -11,7 +11,7 @@ import (
 )
 
 // CreateUser creates a new user
-func (s *Storage) CreateUser(user model.User) error {
+func (s *Storage) CreateUser(user *model.User) error {
 	const op = "user.storage.CreateUser"
 
 	querySelectRoleID := `SELECT id FROM roles WHERE id = $1`
@@ -110,7 +110,7 @@ func (s *Storage) GetUsers(pgn model.Pagination) ([]model.GetUser, error) {
 }
 
 // UpdateUser updates a user by ID
-func (s *Storage) UpdateUser(user model.User) error {
+func (s *Storage) UpdateUser(user *model.User) error {
 	const op = "user.storage.UpdateUser"
 
 	queryCheckEmail := `SELECT EXISTS(SELECT 1 FROM users WHERE email = $1 AND id != $2 AND deleted_at IS NULL)`

@@ -30,10 +30,10 @@ type Storage interface {
 
 // UserStorage is the interface that wraps the basic CRUD operations for users
 type UserStorage interface {
-	CreateUser(user model.User) error
+	CreateUser(user *model.User) error
 	GetUser(id string) (model.GetUser, error)
 	GetUsers(model.Pagination) ([]model.GetUser, error)
-	UpdateUser(user model.User) error
+	UpdateUser(user *model.User) error
 	DeleteUser(id string) error
 	GetUserRoles() ([]model.GetRole, error)
 }

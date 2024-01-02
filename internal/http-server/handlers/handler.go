@@ -11,7 +11,7 @@ import (
 
 type handler struct {
 	logger    *slog.Logger
-	app       service.App
+	srv       service.Service
 	validator *validator.Validate
 }
 

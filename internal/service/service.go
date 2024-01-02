@@ -9,18 +9,18 @@ import (
 
 var ErrValidationError = errors.New("validation error")
 
-type app struct {
+type service struct {
 	storage  storage.Storage
 	validate *validator.Validate
 }
 
 // New creates a new service layer
-func New(storage storage.Storage, v *validator.Validate) App {
-	return &app{storage, v}
+func New(storage storage.Storage, v *validator.Validate) Service {
+	return &service{storage, v}
 }
 
-// App is the common interface for all services
-type App interface {
+// Service is the common interface for all services
+type Service interface {
 	UserService
 }
 
