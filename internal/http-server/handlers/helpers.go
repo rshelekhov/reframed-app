@@ -28,15 +28,13 @@ func GetID(w http.ResponseWriter, r *http.Request, log *slog.Logger) (string, er
 	return id, nil
 }
 
-// DecodeAndValidate decodes the request body and validates the data
-func DecodeAndValidate(
+// DecodeJSON decodes the request body
+func DecodeJSON(
 	w http.ResponseWriter,
 	r *http.Request,
 	log *slog.Logger,
 	data interface{},
-	v *validator.Validate,
 ) error {
-
 	// Decode the request body
 	err := render.DecodeJSON(r.Body, &data)
 	if errors.Is(err, io.EOF) {
@@ -58,19 +56,32 @@ func DecodeAndValidate(
 
 	log.Info("request body decoded", slog.Any("user", data))
 
-	// Validate the data
-	err = v.Struct(data)
+	return nil
+}
+
+// ValidateData validates the request
+func ValidateData(
+	w http.ResponseWriter,
+	r *http.Request,
+	log *slog.Logger,
+	data interface{},
+	v *validator.Validate,
+) error {
+	err := v.Struct(data)
 	if err != nil {
-		var validateErr validator.ValidationErrors
-		errors.As(err, &validateErr)
+		var ve validator.ValidationErrors
+		if errors.As(err, &ve) {
+			log.Error("failed to validate user", sl.Err(err))
 
-		log.Error("failed to validate user", sl.Err(err))
+			render.Status(r, http.StatusUnprocessableEntity)
+			render.JSON(w, r, resp.ValidationError(ve))
+		} else {
+			log.Error("failed to validate user", sl.Err(err))
 
-		render.Status(r, http.StatusUnprocessableEntity)
-		render.JSON(w, r, resp.ValidationError(validateErr))
-
+			render.Status(r, http.StatusInternalServerError)
+			render.JSON(w, r, resp.Error("failed to validate user"))
+		}
 		return fmt.Errorf("validation error")
 	}
-
 	return nil
 }

@@ -1,4 +1,4 @@
-package app
+package service
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 
 // CreateUser creates a new user
 func (a *app) CreateUser(user *model.CreateUser) (string, error) {
-	const op = "user.app.CreateUser"
+	const op = "user.service.CreateUser"
 
 	id := ksuid.New()
 
@@ -34,19 +34,19 @@ func (a *app) CreateUser(user *model.CreateUser) (string, error) {
 
 // GetUser returns a user by ID
 func (a *app) GetUser(id string) (model.GetUser, error) {
-	// const op = "user.app.GetUser"
+	// const op = "user.service.GetUser"
 	return a.storage.GetUser(id)
 }
 
 // GetUsers returns a list of users
 func (a *app) GetUsers(pgn model.Pagination) ([]model.GetUser, error) {
-	// const op = "user.app.GetUsers"
+	// const op = "user.service.GetUsers"
 	return a.storage.GetUsers(pgn)
 }
 
 // UpdateUser updates a user by ID
 func (a *app) UpdateUser(id string, user *model.UpdateUser) error {
-	const op = "user.app.UpdateUser"
+	const op = "user.service.UpdateUser"
 
 	entity := model.User{
 		ID:        id,
@@ -68,12 +68,12 @@ func (a *app) UpdateUser(id string, user *model.UpdateUser) error {
 
 // DeleteUser deletes a user by ID
 func (a *app) DeleteUser(id string) error {
-	// const op = "user.app.DeleteUser"
+	// const op = "user.service.DeleteUser"
 	return a.storage.DeleteUser(id)
 }
 
 // GetUserRoles returns a list of roles
 func (a *app) GetUserRoles() ([]model.GetRole, error) {
-	// const op = "user.app.GetUserRoles"
+	// const op = "user.service.GetUserRoles"
 	return a.storage.GetUserRoles()
 }

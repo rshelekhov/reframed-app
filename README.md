@@ -61,7 +61,7 @@ remedi
 │  ├── resource
 │  │  ├── common
 │  │  │  ├── err
-│  │  │  ├── helpers
+│  │  │  ├── helper
 │  │  │  └── model
 │  │  │
 │  │  ├── health
@@ -69,7 +69,7 @@ remedi
 │  │  └── resourceName
 │  │     ├── handlers.go
 │  │     ├── model.go
-│  │     ├── app.go
+│  │     ├── service.go
 │  │     └── storage.go
 │  │
 │  └── storage

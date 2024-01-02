@@ -5,18 +5,18 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator"
-	"github.com/rshelekhov/remedi/internal/app"
 	"github.com/rshelekhov/remedi/internal/lib/api/parser"
 	resp "github.com/rshelekhov/remedi/internal/lib/api/response"
 	"github.com/rshelekhov/remedi/internal/lib/logger/sl"
 	"github.com/rshelekhov/remedi/internal/model"
+	"github.com/rshelekhov/remedi/internal/service"
 	"github.com/rshelekhov/remedi/internal/storage"
 	"log/slog"
 	"net/http"
 )
 
 // NewHandler create a handler struct and register the routes
-func newUserHandlers(r *chi.Mux, log *slog.Logger, app app.App, v *validator.Validate) {
+func newUserHandlers(r *chi.Mux, log *slog.Logger, app service.App, v *validator.Validate) {
 	h := handler{
 		logger:    log,
 		app:       app,
@@ -45,8 +45,14 @@ func (h *handler) CreateUser() http.HandlerFunc {
 
 		user := &model.CreateUser{}
 
-		// Decode the request body and validate the data
-		err := DecodeAndValidate(w, r, log, user, h.validator)
+		// Decode the request body
+		err := DecodeJSON(w, r, log, user)
+		if err != nil {
+			return
+		}
+
+		// Validate the request
+		err = ValidateData(w, r, log, user, h.validator)
 		if err != nil {
 			return
 		}
@@ -210,8 +216,14 @@ func (h *handler) UpdateUser() http.HandlerFunc {
 			return
 		}
 
-		// Decode the request body and validate the data
-		err = DecodeAndValidate(w, r, log, user, h.validator)
+		// Decode the request body
+		err = DecodeJSON(w, r, log, user)
+		if err != nil {
+			return
+		}
+
+		// Validate the request
+		err = ValidateData(w, r, log, user, h.validator)
 		if err != nil {
 			return
 		}

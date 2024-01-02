@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-func New(log *slog.Logger, db *sqlx.DB, validate *validator.Validate) *chi.Mux {
+func New(log *slog.Logger, db *sqlx.DB, v *validator.Validate) *chi.Mux {
 	r := chi.NewRouter()
 
 	// Add request_id to each request, for tracing purposes
@@ -45,7 +45,7 @@ func New(log *slog.Logger, db *sqlx.DB, validate *validator.Validate) *chi.Mux {
 	r.Get("/health", handlers.HealthRead())
 
 	// Handlers
-	handlers.Activate(r, log, db, validate)
+	handlers.Activate(r, log, db, v)
 
 	return r
 }

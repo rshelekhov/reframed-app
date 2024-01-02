@@ -1,17 +1,22 @@
-package app
+package service
 
 import (
+	"errors"
+	"github.com/go-playground/validator"
 	"github.com/rshelekhov/remedi/internal/model"
 	"github.com/rshelekhov/remedi/internal/storage"
 )
 
+var ErrValidationError = errors.New("validation error")
+
 type app struct {
-	storage storage.Storage
+	storage  storage.Storage
+	validate *validator.Validate
 }
 
-// New creates a new app layer
-func New(storage storage.Storage) App {
-	return &app{storage}
+// New creates a new service layer
+func New(storage storage.Storage, v *validator.Validate) App {
+	return &app{storage, v}
 }
 
 // App is the common interface for all services
