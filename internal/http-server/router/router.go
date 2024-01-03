@@ -3,16 +3,17 @@ package router
 import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/httprate"
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator"
 	"github.com/jmoiron/sqlx"
-	mwlogger "github.com/rshelekhov/remedi/internal/http-server/middleware/logger"
-	"github.com/rshelekhov/remedi/internal/resource/health"
-	userHandlers "github.com/rshelekhov/remedi/internal/resource/user"
+	"github.com/rshelekhov/reframed/internal/http-server/handlers"
+	mwlogger "github.com/rshelekhov/reframed/internal/http-server/middleware/logger"
 	"log/slog"
+	"time"
 )
 
-func New(log *slog.Logger, db *sqlx.DB, validate *validator.Validate) *chi.Mux {
+func New(log *slog.Logger, db *sqlx.DB, v *validator.Validate) *chi.Mux {
 	r := chi.NewRouter()
 
 	// Add request_id to each request, for tracing purposes
@@ -34,13 +35,17 @@ func New(log *slog.Logger, db *sqlx.DB, validate *validator.Validate) *chi.Mux {
 	// Parser of incoming request URLs
 	r.Use(middleware.URLFormat)
 
+	// Set the content type to application/json
 	r.Use(render.SetContentType(render.ContentTypeJSON))
 
+	// Enable httprate request limiter of 100 requests per minute per IP
+	r.Use(httprate.LimitByIP(100, 1*time.Minute))
+
 	// Health check
-	r.Get("/health", health.Read())
+	r.Get("/health", handlers.HealthRead())
 
 	// Handlers
-	userHandlers.Activate(r, log, db, validate)
+	handlers.Activate(r, log, db, v)
 
 	return r
 }

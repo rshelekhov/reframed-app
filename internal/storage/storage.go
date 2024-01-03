@@ -2,6 +2,7 @@ package storage
 
 import (
 	"errors"
+	"github.com/rshelekhov/reframed/internal/model"
 )
 
 // Errors shouldn't depend on a particular storage implementation,
@@ -21,3 +22,18 @@ var (
 const (
 	UniqueConstraintViolation = "23505"
 )
+
+// Storage is the common interface for all storage implementations
+type Storage interface {
+	UserStorage
+}
+
+// UserStorage is the interface that wraps the basic CRUD operations for users
+type UserStorage interface {
+	CreateUser(user *model.User) error
+	GetUser(id string) (model.GetUser, error)
+	GetUsers(model.Pagination) ([]model.GetUser, error)
+	UpdateUser(user *model.User) error
+	DeleteUser(id string) error
+	GetUserRoles() ([]model.GetRole, error)
+}

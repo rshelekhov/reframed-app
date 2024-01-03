@@ -52,7 +52,7 @@ remedi
 │  │
 │  ├── lib
 │  │  ├── api
-│  │  │  ├── models
+│  │  │  ├── model
 │  │  │  ├── parser
 │  │  │  └── response
 │  │  │
@@ -61,13 +61,13 @@ remedi
 │  ├── resource
 │  │  ├── common
 │  │  │  ├── err
-│  │  │  ├── helpers
-│  │  │  └── models
+│  │  │  ├── helper
+│  │  │  └── model
 │  │  │
 │  │  ├── health
 │  │  │
 │  │  └── resourceName
-│  │     ├── handler.go
+│  │     ├── handlers.go
 │  │     ├── model.go
 │  │     ├── service.go
 │  │     └── storage.go

@@ -1,4 +1,4 @@
-package user
+package model
 
 import (
 	"time"
@@ -40,18 +40,12 @@ type GetUser struct {
 
 // UpdateUser uses in the request body and service layer for updating a user by ID
 type UpdateUser struct {
-	Email     string    `json:"email" db:"email" validate:"email"`
-	Password  string    `json:"password" db:"password" validate:"min=8"`
-	FirstName string    `json:"first_name" db:"first_name"`
-	LastName  string    `json:"last_name" db:"last_name"`
-	Phone     string    `json:"phone" db:"phone" validate:"e164"`
-	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
+	Email     string `json:"email" db:"email" validate:"email"`
+	Password  string `json:"password" db:"password" validate:"min=8"`
+	FirstName string `json:"first_name" db:"first_name"`
+	LastName  string `json:"last_name" db:"last_name"`
+	Phone     string `json:"phone" db:"phone" validate:"e164"`
 }
-
-/*
-// Users used in the response body and service layer
-type Users []*User
-*/
 
 // GetRole used in the response body and service layer
 type GetRole struct {

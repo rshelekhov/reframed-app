@@ -1,4 +1,4 @@
-package user
+package postgres
 
 import (
 	"database/sql"
@@ -6,31 +6,12 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/jmoiron/sqlx"
-	"github.com/rshelekhov/remedi/internal/resource/common/models"
-	"github.com/rshelekhov/remedi/internal/storage"
+	"github.com/rshelekhov/reframed/internal/model"
+	"github.com/rshelekhov/reframed/internal/storage"
 )
 
-type Storage interface {
-	CreateUser(user User) error
-	GetUser(id string) (GetUser, error)
-	GetUsers(models.Pagination) ([]GetUser, error)
-	UpdateUser(user User) error
-	DeleteUser(id string) error
-	GetUserRoles() ([]GetRole, error)
-}
-
-type userStorage struct {
-	db *sqlx.DB
-}
-
-// NewStorage creates a new storage
-func NewStorage(conn *sqlx.DB) Storage {
-	return &userStorage{db: conn}
-}
-
 // CreateUser creates a new user
-func (s *userStorage) CreateUser(user User) error {
+func (s *Storage) CreateUser(user *model.User) error {
 	const op = "user.storage.CreateUser"
 
 	querySelectRoleID := `SELECT id FROM roles WHERE id = $1`
@@ -39,7 +20,7 @@ func (s *userStorage) CreateUser(user User) error {
 							VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
 
 	// Begin transaction
-	tx, err := s.db.Begin()
+	tx, err := s.DB.Begin()
 	if err != nil {
 		return fmt.Errorf("%s: failed to begin transaction: %w", op, err)
 	}
@@ -91,33 +72,33 @@ func (s *userStorage) CreateUser(user User) error {
 }
 
 // GetUser returns a user by ID
-func (s *userStorage) GetUser(id string) (GetUser, error) {
+func (s *Storage) GetUser(id string) (model.GetUser, error) {
 	const op = "user.storage.ReadUser"
 
-	var user GetUser
+	var user model.GetUser
 	query := `SELECT id, email, role_id, first_name, last_name, phone, updated_at
 							FROM users WHERE id = $1 AND deleted_at IS NULL`
 
-	err := s.db.Get(&user, query, id)
+	err := s.DB.Get(&user, query, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return GetUser{}, fmt.Errorf("%s: %w", op, storage.ErrUserNotFound)
+			return model.GetUser{}, fmt.Errorf("%s: %w", op, storage.ErrUserNotFound)
 		}
-		return GetUser{}, fmt.Errorf("%s: failed to get user: %w", op, err)
+		return model.GetUser{}, fmt.Errorf("%s: failed to get user: %w", op, err)
 	}
 
 	return user, nil
 }
 
 // GetUsers returns a list of users
-func (s *userStorage) GetUsers(pgn models.Pagination) ([]GetUser, error) {
+func (s *Storage) GetUsers(pgn model.Pagination) ([]model.GetUser, error) {
 	const op = "user.storage.GetUsers"
 
-	var users []GetUser
+	var users []model.GetUser
 	query := `SELECT id, email, role_id, first_name, last_name, phone, updated_at
 							FROM users WHERE deleted_at IS NULL ORDER BY id DESC LIMIT $1 OFFSET $2`
 
-	err := s.db.Select(&users, query, pgn.Limit, pgn.Offset)
+	err := s.DB.Select(&users, query, pgn.Limit, pgn.Offset)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, fmt.Errorf("%s: no users found: %w", op, storage.ErrNoUsersFound)
@@ -129,7 +110,7 @@ func (s *userStorage) GetUsers(pgn models.Pagination) ([]GetUser, error) {
 }
 
 // UpdateUser updates a user by ID
-func (s *userStorage) UpdateUser(user User) error {
+func (s *Storage) UpdateUser(user *model.User) error {
 	const op = "user.storage.UpdateUser"
 
 	queryCheckEmail := `SELECT EXISTS(SELECT 1 FROM users WHERE email = $1 AND id != $2 AND deleted_at IS NULL)`
@@ -144,7 +125,7 @@ func (s *userStorage) UpdateUser(user User) error {
 				WHERE id = $7 AND deleted_at IS NULL`
 
 	// Begin transaction
-	tx, err := s.db.Begin()
+	tx, err := s.DB.Begin()
 	if err != nil {
 		return fmt.Errorf("%s: failed to begin transaction: %w", op, err)
 	}
@@ -199,11 +180,11 @@ func (s *userStorage) UpdateUser(user User) error {
 }
 
 // DeleteUser deletes a user by ID
-func (s *userStorage) DeleteUser(id string) error {
+func (s *Storage) DeleteUser(id string) error {
 	const op = "user.storage.DeleteUser"
 
 	query := `UPDATE users SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL`
-	result, err := s.db.Exec(query, id)
+	result, err := s.DB.Exec(query, id)
 	if err != nil {
 		return fmt.Errorf("%s: failed to delete user: %w", op, err)
 	}
@@ -221,13 +202,13 @@ func (s *userStorage) DeleteUser(id string) error {
 }
 
 // GetUserRoles returns a list of roles
-func (s *userStorage) GetUserRoles() ([]GetRole, error) {
+func (s *Storage) GetUserRoles() ([]model.GetRole, error) {
 	const op = "user.storage.GetUserRoles"
 
-	var roles []GetRole
+	var roles []model.GetRole
 	query := `SELECT id, title FROM roles`
 
-	err := s.db.Select(&roles, query)
+	err := s.DB.Select(&roles, query)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, fmt.Errorf("%s: no roles found: %w", op, storage.ErrNoRolesFound)

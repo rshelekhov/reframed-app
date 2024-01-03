@@ -3,26 +3,30 @@ package response
 import (
 	"fmt"
 	"github.com/go-playground/validator"
-	"net/http"
 	"strings"
 )
 
+const (
+	StatusOK    = "OK"
+	StatusError = "Error"
+)
+
 type Response struct {
-	Status  int    `json:"status"`
+	Status  string `json:"status"`
 	Error   string `json:"error,omitempty"`
 	Success string `json:"success,omitempty"`
 }
 
-func Error(status int, msg string) Response {
+func Error(msg string) Response {
 	return Response{
-		Status: status,
+		Status: StatusError,
 		Error:  msg,
 	}
 }
 
-func Success(status int, msg string) Response {
+func Success(msg string) Response {
 	return Response{
-		Status:  status,
+		Status:  StatusOK,
 		Success: msg,
 	}
 }
@@ -47,7 +51,7 @@ func ValidationError(errs validator.ValidationErrors) Response {
 	}
 
 	return Response{
-		Status: http.StatusUnprocessableEntity,
+		Status: StatusError,
 		Error:  strings.Join(errMsgs, ", "),
 	}
 }
