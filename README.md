@@ -1,6 +1,6 @@
-# Remedi
+# Reframed
 
-> Solution for managing physician and clinic assistant interactions with clients
+> ...
 
 ## What's included
 - The idiomatic structure based on the resource-oriented design.
@@ -27,9 +27,9 @@
 
 ## Database design
 
-| Column Name    | Datatype  | Not Null | Primary Key |
-|----------------|-----------|----------|-------------|
-| id             | UUID      | ✅       | ✅          |
+| Column Name    | Datatype | Not Null | Primary Key |
+|----------------|----------|----------|-------------|
+| id             | ksuid    | ✅       | ✅          |
 
 ## Project structure
 
