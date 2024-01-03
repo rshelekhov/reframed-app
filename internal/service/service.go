@@ -1,13 +1,10 @@
 package service
 
 import (
-	"errors"
 	"github.com/go-playground/validator"
 	"github.com/rshelekhov/remedi/internal/model"
 	"github.com/rshelekhov/remedi/internal/storage"
 )
-
-var ErrValidationError = errors.New("validation error")
 
 type service struct {
 	storage  storage.Storage
