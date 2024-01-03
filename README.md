@@ -34,11 +34,11 @@
 ## Project structure
 
 ```shell
-remedi
+reframed
 ├── cmd
 │  ├── migrate
 │  │  └── main.go
-│  └── remedi
+│  └── reframed
 │     └── main.go
 │
 ├── internal
