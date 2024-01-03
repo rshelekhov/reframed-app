@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/go-chi/chi"
-	"github.com/rshelekhov/remedi/internal/config"
+	"github.com/rshelekhov/reframed/internal/config"
 	"log/slog"
 	"net/http"
 	"os"

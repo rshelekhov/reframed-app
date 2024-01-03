@@ -11,7 +11,7 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-	"github.com/rshelekhov/remedi/internal/config"
+	"github.com/rshelekhov/reframed/internal/config"
 )
 
 func main() {

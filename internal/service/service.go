@@ -2,8 +2,8 @@ package service
 
 import (
 	"github.com/go-playground/validator"
-	"github.com/rshelekhov/remedi/internal/model"
-	"github.com/rshelekhov/remedi/internal/storage"
+	"github.com/rshelekhov/reframed/internal/model"
+	"github.com/rshelekhov/reframed/internal/storage"
 )
 
 type service struct {

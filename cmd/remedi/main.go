@@ -2,11 +2,11 @@ package main
 
 import (
 	"github.com/go-playground/validator"
-	"github.com/rshelekhov/remedi/internal/config"
-	"github.com/rshelekhov/remedi/internal/http-server/router"
-	"github.com/rshelekhov/remedi/internal/http-server/server"
-	"github.com/rshelekhov/remedi/internal/lib/logger/sl"
-	"github.com/rshelekhov/remedi/internal/storage/postgres"
+	"github.com/rshelekhov/reframed/internal/config"
+	"github.com/rshelekhov/reframed/internal/http-server/router"
+	"github.com/rshelekhov/reframed/internal/http-server/server"
+	"github.com/rshelekhov/reframed/internal/lib/logger/sl"
+	"github.com/rshelekhov/reframed/internal/storage/postgres"
 	"log/slog"
 	"os"
 )

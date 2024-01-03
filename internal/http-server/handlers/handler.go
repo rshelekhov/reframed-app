@@ -4,8 +4,8 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-playground/validator"
 	"github.com/jmoiron/sqlx"
-	"github.com/rshelekhov/remedi/internal/service"
-	"github.com/rshelekhov/remedi/internal/storage/postgres"
+	"github.com/rshelekhov/reframed/internal/service"
+	"github.com/rshelekhov/reframed/internal/storage/postgres"
 	"log/slog"
 )
 

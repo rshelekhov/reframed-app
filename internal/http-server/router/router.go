@@ -7,8 +7,8 @@ import (
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator"
 	"github.com/jmoiron/sqlx"
-	"github.com/rshelekhov/remedi/internal/http-server/handlers"
-	mwlogger "github.com/rshelekhov/remedi/internal/http-server/middleware/logger"
+	"github.com/rshelekhov/reframed/internal/http-server/handlers"
+	mwlogger "github.com/rshelekhov/reframed/internal/http-server/middleware/logger"
 	"log/slog"
 	"time"
 )

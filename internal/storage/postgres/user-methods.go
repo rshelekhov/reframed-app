@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/rshelekhov/remedi/internal/model"
-	"github.com/rshelekhov/remedi/internal/storage"
+	"github.com/rshelekhov/reframed/internal/model"
+	"github.com/rshelekhov/reframed/internal/storage"
 )
 
 // CreateUser creates a new user

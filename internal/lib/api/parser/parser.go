@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"github.com/rshelekhov/remedi/internal/model"
+	"github.com/rshelekhov/reframed/internal/model"
 	"net/http"
 	"strconv"
 )

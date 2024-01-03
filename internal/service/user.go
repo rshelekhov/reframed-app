@@ -2,7 +2,7 @@ package service
 
 import (
 	"fmt"
-	"github.com/rshelekhov/remedi/internal/model"
+	"github.com/rshelekhov/reframed/internal/model"
 	"github.com/segmentio/ksuid"
 	"time"
 )

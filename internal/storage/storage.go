@@ -2,7 +2,7 @@ package storage
 
 import (
 	"errors"
-	"github.com/rshelekhov/remedi/internal/model"
+	"github.com/rshelekhov/reframed/internal/model"
 )
 
 // Errors shouldn't depend on a particular storage implementation,
