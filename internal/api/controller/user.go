@@ -81,7 +81,7 @@ func (c *UserController) CreateUser() http.HandlerFunc {
 		// Return the user id
 		render.Status(r, http.StatusCreated)
 		render.JSON(w, r, Response{
-			Response: resp.Success("User created"),
+			Response: resp.Success("user created"),
 			ID:       id,
 		})
 	}
@@ -125,7 +125,7 @@ func (c *UserController) GetUser() http.HandlerFunc {
 
 		render.Status(r, http.StatusOK)
 		render.JSON(w, r, Response{
-			Response: resp.Success("User received"),
+			Response: resp.Success("user received"),
 			User:     user,
 		})
 	}
