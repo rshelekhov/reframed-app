@@ -1,4 +1,4 @@
-package postgres
+package storage
 
 import (
 	"database/sql"
@@ -6,12 +6,21 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/rshelekhov/reframed/internal/model"
-	"github.com/rshelekhov/reframed/internal/storage"
+	"github.com/rshelekhov/reframed/internal/entity"
+	"github.com/rshelekhov/reframed/pkg/storage"
+	"github.com/rshelekhov/reframed/pkg/storage/postgres"
 )
 
+type UserStorage struct {
+	*postgres.Storage
+}
+
+func NewUserStorage(pg *postgres.Storage) *UserStorage {
+	return &UserStorage{pg}
+}
+
 // CreateUser creates a new user
-func (s *Storage) CreateUser(user *model.User) error {
+func (s *UserStorage) CreateUser(user *entity.User) error {
 	const op = "user.storage.CreateUser"
 
 	querySelectRoleID := `SELECT id FROM roles WHERE id = $1`
@@ -72,29 +81,29 @@ func (s *Storage) CreateUser(user *model.User) error {
 }
 
 // GetUser returns a user by ID
-func (s *Storage) GetUser(id string) (model.GetUser, error) {
+func (s *UserStorage) GetUser(id string) (entity.GetUser, error) {
 	const op = "user.storage.ReadUser"
 
-	var user model.GetUser
+	var user entity.GetUser
 	query := `SELECT id, email, role_id, first_name, last_name, phone, updated_at
 							FROM users WHERE id = $1 AND deleted_at IS NULL`
 
 	err := s.DB.Get(&user, query, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return model.GetUser{}, fmt.Errorf("%s: %w", op, storage.ErrUserNotFound)
+			return entity.GetUser{}, fmt.Errorf("%s: %w", op, storage.ErrUserNotFound)
 		}
-		return model.GetUser{}, fmt.Errorf("%s: failed to get user: %w", op, err)
+		return entity.GetUser{}, fmt.Errorf("%s: failed to get user: %w", op, err)
 	}
 
 	return user, nil
 }
 
 // GetUsers returns a list of users
-func (s *Storage) GetUsers(pgn model.Pagination) ([]model.GetUser, error) {
+func (s *UserStorage) GetUsers(pgn entity.Pagination) ([]entity.GetUser, error) {
 	const op = "user.storage.GetUsers"
 
-	var users []model.GetUser
+	var users []entity.GetUser
 	query := `SELECT id, email, role_id, first_name, last_name, phone, updated_at
 							FROM users WHERE deleted_at IS NULL ORDER BY id DESC LIMIT $1 OFFSET $2`
 
@@ -110,7 +119,7 @@ func (s *Storage) GetUsers(pgn model.Pagination) ([]model.GetUser, error) {
 }
 
 // UpdateUser updates a user by ID
-func (s *Storage) UpdateUser(user *model.User) error {
+func (s *UserStorage) UpdateUser(user *entity.User) error {
 	const op = "user.storage.UpdateUser"
 
 	queryCheckEmail := `SELECT EXISTS(SELECT 1 FROM users WHERE email = $1 AND id != $2 AND deleted_at IS NULL)`
@@ -180,7 +189,7 @@ func (s *Storage) UpdateUser(user *model.User) error {
 }
 
 // DeleteUser deletes a user by ID
-func (s *Storage) DeleteUser(id string) error {
+func (s *UserStorage) DeleteUser(id string) error {
 	const op = "user.storage.DeleteUser"
 
 	query := `UPDATE users SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL`
@@ -202,10 +211,10 @@ func (s *Storage) DeleteUser(id string) error {
 }
 
 // GetUserRoles returns a list of roles
-func (s *Storage) GetUserRoles() ([]model.GetRole, error) {
+func (s *UserStorage) GetUserRoles() ([]entity.GetRole, error) {
 	const op = "user.storage.GetUserRoles"
 
-	var roles []model.GetRole
+	var roles []entity.GetRole
 	query := `SELECT id, title FROM roles`
 
 	err := s.DB.Select(&roles, query)

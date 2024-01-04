@@ -52,7 +52,7 @@ reframed
 │  │
 │  ├── lib
 │  │  ├── api
-│  │  │  ├── model
+│  │  │  ├── entity
 │  │  │  ├── parser
 │  │  │  └── response
 │  │  │
@@ -62,14 +62,14 @@ reframed
 │  │  ├── common
 │  │  │  ├── err
 │  │  │  ├── helper
-│  │  │  └── model
+│  │  │  └── entity
 │  │  │
 │  │  ├── health
 │  │  │
 │  │  └── resourceName
-│  │     ├── handlers.go
-│  │     ├── model.go
-│  │     ├── service.go
+│  │     ├── controller.go
+│  │     ├── entity.go
+│  │     ├── usecase.go
 │  │     └── storage.go
 │  │
 │  └── storage

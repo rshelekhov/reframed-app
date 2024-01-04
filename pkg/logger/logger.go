@@ -1,4 +1,4 @@
-package sl
+package logger
 
 import (
 	"github.com/go-chi/chi/middleware"

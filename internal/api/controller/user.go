@@ -1,54 +1,36 @@
-package handlers
+package controller
 
 import (
 	"errors"
-	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
-	"github.com/go-playground/validator"
+	"github.com/rshelekhov/reframed/internal/entity"
 	"github.com/rshelekhov/reframed/internal/lib/api/parser"
 	resp "github.com/rshelekhov/reframed/internal/lib/api/response"
-	"github.com/rshelekhov/reframed/internal/lib/logger/sl"
-	"github.com/rshelekhov/reframed/internal/model"
-	"github.com/rshelekhov/reframed/internal/service"
-	"github.com/rshelekhov/reframed/internal/storage"
+	"github.com/rshelekhov/reframed/internal/usecase"
+	"github.com/rshelekhov/reframed/pkg/logger"
+	"github.com/rshelekhov/reframed/pkg/storage"
 	"log/slog"
 	"net/http"
 )
 
-// newUserHandlers create a handler struct and register the routes
-func newUserHandlers(r *chi.Mux, log *slog.Logger, srv service.Service, v *validator.Validate) {
-	h := handler{
-		logger:    log,
-		srv:       srv,
-		validator: v,
-	}
-
-	r.Route("/users", func(r chi.Router) {
-		r.Post("/", h.CreateUser())
-		r.Get("/", h.GetUsers())
-		r.Get("/roles", h.GetUserRoles())
-
-		r.Route("/{id}", func(r chi.Router) {
-			r.Get("/", h.GetUser())
-			r.Put("/", h.UpdateUser())
-			r.Delete("/", h.DeleteUser())
-		})
-	})
+type UserController struct {
+	Usecase usecase.User
+	Logger  *slog.Logger
 }
 
 // CreateUser creates a new user
-func (h *handler) CreateUser() http.HandlerFunc {
+func (c *UserController) CreateUser() http.HandlerFunc {
 	type Response struct {
 		resp.Response
 		ID     string `json:"id,omitempty"`
 		RoleID int    `json:"role_id,omitempty"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.handlers.CreateUser"
+		const op = "user.controller.CreateUser"
 
-		log := sl.LogWithRequest(h.logger, op, r)
+		log := logger.LogWithRequest(c.Logger, op, r)
 
-		user := &model.CreateUser{}
+		user := &entity.CreateUser{}
 
 		// Decode the request body
 		err := DecodeJSON(w, r, log, user)
@@ -57,13 +39,14 @@ func (h *handler) CreateUser() http.HandlerFunc {
 		}
 
 		// Validate the request
-		err = ValidateData(w, r, log, user, h.validator)
-		if err != nil {
-			return
-		}
+		// TODO: move to usecase
+		// err = ValidateData(w, r, log, user, c.validator)
+		// if err != nil {
+		//	return
+		//}
 
 		// Create the user
-		id, err := h.srv.CreateUser(user)
+		id, err := c.Usecase.CreateUser(user)
 		// TODO: refactor to use a switch statement
 		if err != nil {
 			if errors.Is(err, storage.ErrUserAlreadyExists) {
@@ -85,7 +68,7 @@ func (h *handler) CreateUser() http.HandlerFunc {
 
 				return
 			}
-			log.Error("failed to create user", sl.Err(err))
+			log.Error("failed to create user", logger.Err(err))
 
 			render.Status(r, http.StatusInternalServerError)
 			render.JSON(w, r, resp.Error("failed to create user"))
@@ -105,22 +88,22 @@ func (h *handler) CreateUser() http.HandlerFunc {
 }
 
 // GetUser get a user by ID
-func (h *handler) GetUser() http.HandlerFunc {
+func (c *UserController) GetUser() http.HandlerFunc {
 	type Response struct {
 		resp.Response
-		User model.GetUser `json:"user"`
+		User entity.GetUser `json:"user"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.handlers.GetUser"
+		const op = "user.controller.GetUser"
 
-		log := sl.LogWithRequest(h.logger, op, r)
+		log := logger.LogWithRequest(c.Logger, op, r)
 
 		id, err := GetID(w, r, log)
 		if err != nil {
 			return
 		}
 
-		user, err := h.srv.GetUser(id)
+		user, err := c.Usecase.GetUser(id)
 		if err != nil {
 			if errors.Is(err, storage.ErrUserNotFound) {
 				log.Error("user not found", slog.String("user_id", id))
@@ -130,7 +113,7 @@ func (h *handler) GetUser() http.HandlerFunc {
 
 				return
 			}
-			log.Error("failed to get user", sl.Err(err))
+			log.Error("failed to get user", logger.Err(err))
 
 			render.Status(r, http.StatusInternalServerError)
 			render.JSON(w, r, resp.Error("failed to get user"))
@@ -149,19 +132,19 @@ func (h *handler) GetUser() http.HandlerFunc {
 }
 
 // GetUsers get a list of users
-func (h *handler) GetUsers() http.HandlerFunc {
+func (c *UserController) GetUsers() http.HandlerFunc {
 	type Response struct {
 		resp.Response
-		Users []model.GetUser `json:"users"`
+		Users []entity.GetUser `json:"users"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.handlers.GetUsers"
+		const op = "user.controller.GetUsers"
 
-		log := sl.LogWithRequest(h.logger, op, r)
+		log := logger.LogWithRequest(c.Logger, op, r)
 
 		pagination, err := parser.ParseLimitAndOffset(r)
 		if err != nil {
-			log.Error("failed to parse limit and offset", sl.Err(err))
+			log.Error("failed to parse limit and offset", logger.Err(err))
 
 			render.Status(r, http.StatusBadRequest)
 			render.JSON(w, r, resp.Error("failed to parse limit and offset"))
@@ -169,7 +152,7 @@ func (h *handler) GetUsers() http.HandlerFunc {
 			return
 		}
 
-		users, err := h.srv.GetUsers(pagination)
+		users, err := c.Usecase.GetUsers(pagination)
 		if err != nil {
 			if errors.Is(err, storage.ErrNoUsersFound) {
 				log.Error("no users found")
@@ -179,7 +162,7 @@ func (h *handler) GetUsers() http.HandlerFunc {
 
 				return
 			}
-			log.Error("failed to get users", sl.Err(err))
+			log.Error("failed to get users", logger.Err(err))
 
 			render.Status(r, http.StatusInternalServerError)
 			render.JSON(w, r, resp.Error("failed to get users"))
@@ -203,18 +186,18 @@ func (h *handler) GetUsers() http.HandlerFunc {
 }
 
 // UpdateUser updates a user by ID
-func (h *handler) UpdateUser() http.HandlerFunc {
+func (c *UserController) UpdateUser() http.HandlerFunc {
 	type Response struct {
 		resp.Response
 		ID    string `json:"id,omitempty"`
 		Email string `json:"email,omitempty"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.handlers.UpdateUser"
+		const op = "user.controller.UpdateUser"
 
-		log := sl.LogWithRequest(h.logger, op, r)
+		log := logger.LogWithRequest(c.Logger, op, r)
 
-		user := &model.UpdateUser{}
+		user := &entity.UpdateUser{}
 
 		id, err := GetID(w, r, log)
 		if err != nil {
@@ -228,12 +211,12 @@ func (h *handler) UpdateUser() http.HandlerFunc {
 		}
 
 		// Validate the request
-		err = ValidateData(w, r, log, user, h.validator)
-		if err != nil {
-			return
-		}
+		// err = ValidateData(w, r, log, user, c.validator)
+		// if err != nil {
+		//	return
+		//}
 
-		err = h.srv.UpdateUser(id, user)
+		err = c.Usecase.UpdateUser(id, user)
 		if err != nil {
 			if errors.Is(err, storage.ErrUserNotFound) {
 				log.Error("user not found", slog.String("user_id", id))
@@ -257,7 +240,7 @@ func (h *handler) UpdateUser() http.HandlerFunc {
 
 				return
 			}
-			log.Error("failed to update user", sl.Err(err))
+			log.Error("failed to update user", logger.Err(err))
 
 			render.Status(r, http.StatusInternalServerError)
 			render.JSON(w, r, resp.Error("failed to update user"))
@@ -277,22 +260,22 @@ func (h *handler) UpdateUser() http.HandlerFunc {
 }
 
 // DeleteUser deletes a user by ID
-func (h *handler) DeleteUser() http.HandlerFunc {
+func (c *UserController) DeleteUser() http.HandlerFunc {
 	type Response struct {
 		resp.Response
 		ID string `json:"id,omitempty"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.handlers.DeleteUser"
+		const op = "user.controller.DeleteUser"
 
-		log := sl.LogWithRequest(h.logger, op, r)
+		log := logger.LogWithRequest(c.Logger, op, r)
 
 		id, err := GetID(w, r, log)
 		if err != nil {
 			return
 		}
 
-		err = h.srv.DeleteUser(id)
+		err = c.Usecase.DeleteUser(id)
 		if err != nil {
 			if errors.Is(err, storage.ErrUserNotFound) {
 				log.Error("user not found", slog.String("user_id", id))
@@ -305,7 +288,7 @@ func (h *handler) DeleteUser() http.HandlerFunc {
 
 				return
 			}
-			log.Error("failed to delete user", sl.Err(err))
+			log.Error("failed to delete user", logger.Err(err))
 
 			render.Status(r, http.StatusInternalServerError)
 			render.JSON(w, r, resp.Error("failed to delete user"))
@@ -324,17 +307,17 @@ func (h *handler) DeleteUser() http.HandlerFunc {
 }
 
 // GetUserRoles get a list of roles
-func (h *handler) GetUserRoles() http.HandlerFunc {
+func (c *UserController) GetUserRoles() http.HandlerFunc {
 	type Response struct {
 		resp.Response
-		Roles []model.GetRole `json:"roles"`
+		Roles []entity.GetRole `json:"roles"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.handlers.GetUserRoles"
+		const op = "user.controller.GetUserRoles"
 
-		log := sl.LogWithRequest(h.logger, op, r)
+		log := logger.LogWithRequest(c.Logger, op, r)
 
-		roles, err := h.srv.GetUserRoles()
+		roles, err := c.Usecase.GetUserRoles()
 		if err != nil {
 			if errors.Is(err, storage.ErrNoRolesFound) {
 				log.Error("no roles found")
@@ -344,7 +327,7 @@ func (h *handler) GetUserRoles() http.HandlerFunc {
 
 				return
 			}
-			log.Error("failed to get roles", sl.Err(err))
+			log.Error("failed to get roles", logger.Err(err))
 
 			render.Status(r, http.StatusInternalServerError)
 			render.JSON(w, r, resp.Error("failed to get roles"))

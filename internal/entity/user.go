@@ -1,10 +1,10 @@
-package model
+package entity
 
 import (
 	"time"
 )
 
-// User DB model
+// User DB entity
 type User struct {
 	ID        string     `db:"id"`
 	Email     string     `db:"email"`
@@ -17,7 +17,7 @@ type User struct {
 	DeletedAt *time.Time `db:"deleted_at"`
 }
 
-// CreateUser uses in the request body and service layer for create a new user
+// CreateUser uses in the request body and usecase layer for create a new user
 type CreateUser struct {
 	Email     string `json:"email" validate:"required,email"`
 	Password  string `json:"password" validate:"required,min=8"`
@@ -27,7 +27,7 @@ type CreateUser struct {
 	Phone     string `json:"phone" validate:"required,e164"`
 }
 
-// GetUser used in the response body and service layer for getting a user by ID
+// GetUser used in the response body and usecase layer for getting a user by ID
 type GetUser struct {
 	ID        string    `json:"id" db:"id"`
 	Email     string    `json:"email" db:"email"`
@@ -38,7 +38,7 @@ type GetUser struct {
 	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
 }
 
-// UpdateUser uses in the request body and service layer for updating a user by ID
+// UpdateUser uses in the request body and usecase layer for updating a user by ID
 type UpdateUser struct {
 	Email     string `json:"email" db:"email" validate:"email"`
 	Password  string `json:"password" db:"password" validate:"min=8"`
@@ -47,7 +47,7 @@ type UpdateUser struct {
 	Phone     string `json:"phone" db:"phone" validate:"e164"`
 }
 
-// GetRole used in the response body and service layer
+// GetRole used in the response body and usecase layer
 type GetRole struct {
 	RoleID int    `json:"role_id" db:"id"`
 	Title  string `json:"title" db:"title"`

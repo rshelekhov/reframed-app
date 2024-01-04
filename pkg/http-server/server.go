@@ -1,10 +1,10 @@
-package server
+package http_server
 
 import (
 	"context"
 	"errors"
 	"github.com/go-chi/chi"
-	"github.com/rshelekhov/reframed/internal/config"
+	"github.com/rshelekhov/reframed/config"
 	"log/slog"
 	"net/http"
 	"os"

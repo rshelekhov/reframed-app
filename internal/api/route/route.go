@@ -1,19 +1,17 @@
-package router
+package route
 
 import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/httprate"
 	"github.com/go-chi/render"
-	"github.com/go-playground/validator"
-	"github.com/jmoiron/sqlx"
-	"github.com/rshelekhov/reframed/internal/http-server/handlers"
-	mwlogger "github.com/rshelekhov/reframed/internal/http-server/middleware/logger"
+	"github.com/rshelekhov/reframed/internal/api/controller"
+	mwlogger "github.com/rshelekhov/reframed/pkg/http-server/middleware"
 	"log/slog"
 	"time"
 )
 
-func New(log *slog.Logger, db *sqlx.DB, v *validator.Validate) *chi.Mux {
+func NewRouter(log *slog.Logger) *chi.Mux {
 	r := chi.NewRouter()
 
 	// Add request_id to each request, for tracing purposes
@@ -28,7 +26,7 @@ func New(log *slog.Logger, db *sqlx.DB, v *validator.Validate) *chi.Mux {
 	// our own middleware to log requests:
 	r.Use(mwlogger.New(log))
 
-	// If a panic happens somewhere inside the server (request handlers),
+	// If a panic happens somewhere inside the server (request controller),
 	// the application should not crash.
 	r.Use(middleware.Recoverer)
 
@@ -42,10 +40,7 @@ func New(log *slog.Logger, db *sqlx.DB, v *validator.Validate) *chi.Mux {
 	r.Use(httprate.LimitByIP(100, 1*time.Minute))
 
 	// Health check
-	r.Get("/health", handlers.HealthRead())
-
-	// Handlers
-	handlers.Activate(r, log, db, v)
+	r.Get("/health", controller.HealthRead())
 
 	return r
 }

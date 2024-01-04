@@ -1,4 +1,4 @@
-package handlers
+package controller
 
 import (
 	"errors"
@@ -7,7 +7,7 @@ import (
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator"
 	resp "github.com/rshelekhov/reframed/internal/lib/api/response"
-	"github.com/rshelekhov/reframed/internal/lib/logger/sl"
+	"github.com/rshelekhov/reframed/pkg/logger"
 	"io"
 	"log/slog"
 	"net/http"
@@ -46,7 +46,7 @@ func DecodeJSON(
 		return fmt.Errorf("decode error")
 	}
 	if err != nil {
-		log.Error("failed to decode request body", sl.Err(err))
+		log.Error("failed to decode request body", logger.Err(err))
 
 		render.Status(r, http.StatusBadRequest)
 		render.JSON(w, r, resp.Error("failed to decode request body"))
@@ -71,12 +71,12 @@ func ValidateData(
 	if err != nil {
 		var ve validator.ValidationErrors
 		if errors.As(err, &ve) {
-			log.Error("failed to validate user", sl.Err(err))
+			log.Error("failed to validate user", logger.Err(err))
 
 			render.Status(r, http.StatusUnprocessableEntity)
 			render.JSON(w, r, resp.ValidationError(ve))
 		} else {
-			log.Error("failed to validate user", sl.Err(err))
+			log.Error("failed to validate user", logger.Err(err))
 
 			render.Status(r, http.StatusInternalServerError)
 			render.JSON(w, r, resp.Error("failed to validate user"))

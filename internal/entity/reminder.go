@@ -1,8 +1,8 @@
-package model
+package entity
 
 import "github.com/google/uuid"
 
-// Reminder DB model
+// Reminder DB entity
 type Reminder struct {
 	ID            uuid.UUID // TODO: change to string (ksuid)
 	AppointmentID uuid.UUID

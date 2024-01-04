@@ -1,10 +1,10 @@
+// Package postgres implements postgres connection.
 package postgres
 
 import (
 	"fmt"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
-	"github.com/rshelekhov/reframed/internal/storage"
 )
 
 type Storage struct {
@@ -30,9 +30,4 @@ func NewPostgresStorage(dsn string) (*Storage, error) {
 // Close closes the Postgres storage
 func (s *Storage) Close() error {
 	return s.DB.Close()
-}
-
-// GetStorage ...
-func GetStorage(db *sqlx.DB) storage.Storage {
-	return &Storage{db}
 }
