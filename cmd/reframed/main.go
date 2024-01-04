@@ -34,18 +34,18 @@ func main() {
 	}
 	log.Debug("storage initiated")
 
-	// Storages for entities
+	// Use cases
 	userUsecase := usecase.NewUserUsecase(storage.NewUserStorage(pg))
 
 	// Router
 	r := route.NewRouter(log)
 
-	// Routers for entities
+	// Routers
 	route.NewUserRouter(r, log, userUsecase)
 
+	// HTTP Server
 	log.Info("starting server", slog.String("address", cfg.HTTPServer.Address))
 
-	// HTTP Server
 	srv := http_server.NewServer(cfg, log, r)
 	srv.Start()
 

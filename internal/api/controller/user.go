@@ -39,35 +39,33 @@ func (c *UserController) CreateUser() http.HandlerFunc {
 		}
 
 		// Validate the request
-		// TODO: move to usecase
-		// err = ValidateData(w, r, log, user, c.validator)
-		// if err != nil {
-		//	return
-		//}
+		err = ValidateData(w, r, log, user)
+		if err != nil {
+			return
+		}
 
 		// Create the user
 		id, err := c.Usecase.CreateUser(user)
-		// TODO: refactor to use a switch statement
+		if errors.Is(err, storage.ErrUserAlreadyExists) {
+			log.Error("user already exists", slog.String("email", user.Email))
+
+			render.Status(r, http.StatusConflict)
+			render.JSON(w, r, resp.Error("user already exists"))
+
+			return
+		}
+		if errors.Is(err, storage.ErrRoleNotFound) {
+			log.Error("role not found", slog.Int("role", user.RoleID))
+
+			render.Status(r, http.StatusNotFound)
+			render.JSON(w, r, Response{
+				Response: resp.Error("role not found"),
+				RoleID:   user.RoleID,
+			})
+
+			return
+		}
 		if err != nil {
-			if errors.Is(err, storage.ErrUserAlreadyExists) {
-				log.Error("user already exists", slog.String("email", user.Email))
-
-				render.Status(r, http.StatusConflict)
-				render.JSON(w, r, resp.Error("user already exists"))
-
-				return
-			}
-			if errors.Is(err, storage.ErrRoleNotFound) {
-				log.Error("role not found", slog.Int("role", user.RoleID))
-
-				render.Status(r, http.StatusNotFound)
-				render.JSON(w, r, Response{
-					Response: resp.Error("role not found"),
-					RoleID:   user.RoleID,
-				})
-
-				return
-			}
 			log.Error("failed to create user", logger.Err(err))
 
 			render.Status(r, http.StatusInternalServerError)
