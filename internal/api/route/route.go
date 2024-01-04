@@ -7,11 +7,11 @@ import (
 	"github.com/go-chi/render"
 	"github.com/rshelekhov/reframed/internal/api/controller"
 	mwlogger "github.com/rshelekhov/reframed/pkg/http-server/middleware"
-	"log/slog"
+	"github.com/rshelekhov/reframed/pkg/logger"
 	"time"
 )
 
-func NewRouter(log *slog.Logger) *chi.Mux {
+func NewRouter(log logger.Interface) *chi.Mux {
 	r := chi.NewRouter()
 
 	// Add request_id to each request, for tracing purposes

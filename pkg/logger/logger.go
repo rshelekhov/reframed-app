@@ -13,7 +13,19 @@ const (
 	envProd  = "prod"
 )
 
-func SetupLogger(env string) *slog.Logger {
+type Interface interface {
+	With(attrs ...interface{}) *Logger
+	Debug(msg string, attrs ...interface{})
+	Info(msg string, attrs ...interface{})
+	Warn(msg string, attrs ...interface{})
+	Error(msg string, attrs ...interface{})
+}
+
+type Logger struct {
+	logger *slog.Logger
+}
+
+func SetupLogger(env string) *Logger {
 	var log *slog.Logger
 
 	switch env {
@@ -25,7 +37,7 @@ func SetupLogger(env string) *slog.Logger {
 		log = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	}
 
-	return log
+	return &Logger{logger: log}
 }
 
 // Err ...
@@ -36,10 +48,31 @@ func Err(err error) slog.Attr {
 	}
 }
 
-func LogWithRequest(log *slog.Logger, op string, r *http.Request) *slog.Logger {
+func LogWithRequest(log Interface, op string, r *http.Request) Interface {
 	log.With(
 		slog.String("op", op),
 		slog.String("request_id", middleware.GetReqID(r.Context())),
 	)
 	return log
+}
+
+func (l *Logger) With(attrs ...interface{}) *Logger {
+	l.logger.With(attrs...)
+	return l
+}
+
+func (l *Logger) Debug(msg string, attrs ...interface{}) {
+	l.logger.Debug(msg, attrs...)
+}
+
+func (l *Logger) Info(msg string, attrs ...interface{}) {
+	l.logger.Info(msg, attrs...)
+}
+
+func (l *Logger) Warn(msg string, attrs ...interface{}) {
+	l.logger.Warn(msg, attrs...)
+}
+
+func (l *Logger) Error(msg string, attrs ...interface{}) {
+	l.logger.Error(msg, attrs...)
 }

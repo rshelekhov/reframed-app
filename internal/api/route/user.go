@@ -4,14 +4,13 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/rshelekhov/reframed/internal/api/controller"
 	"github.com/rshelekhov/reframed/internal/usecase"
-	"github.com/rshelekhov/reframed/internal/usecase/storage"
-	"log/slog"
+	"github.com/rshelekhov/reframed/pkg/logger"
 )
 
 // NewUserRouter create a handler struct and register the routes
-func NewUserRouter(r *chi.Mux, log *slog.Logger, us *storage.UserStorage) {
+func NewUserRouter(r *chi.Mux, log logger.Interface, u usecase.User) {
 	c := &controller.UserController{
-		Usecase: usecase.NewUserUsecase(us),
+		Usecase: u,
 		Logger:  log,
 	}
 

@@ -2,12 +2,13 @@ package middleware
 
 import (
 	"github.com/go-chi/chi/middleware"
+	"github.com/rshelekhov/reframed/pkg/logger"
 	"log/slog"
 	"net/http"
 	"time"
 )
 
-func New(log *slog.Logger) func(next http.Handler) http.Handler {
+func New(log logger.Interface) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		log = log.With(slog.String("component", "middleware/logger"))
 

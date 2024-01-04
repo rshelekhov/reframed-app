@@ -5,7 +5,7 @@ import (
 	"errors"
 	"github.com/go-chi/chi"
 	"github.com/rshelekhov/reframed/config"
-	"log/slog"
+	"github.com/rshelekhov/reframed/pkg/logger"
 	"net/http"
 	"os"
 	"os/signal"
@@ -15,11 +15,11 @@ import (
 
 type Server struct {
 	cfg    *config.Config
-	log    *slog.Logger
+	log    logger.Interface
 	Router *chi.Mux
 }
 
-func NewServer(cfg *config.Config, log *slog.Logger, router *chi.Mux) *Server {
+func NewServer(cfg *config.Config, log logger.Interface, router *chi.Mux) *Server {
 	srv := &Server{
 		cfg:    cfg,
 		log:    log,

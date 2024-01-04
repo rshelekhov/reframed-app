@@ -14,7 +14,7 @@ import (
 )
 
 // GetID gets the entity id from the request
-func GetID(w http.ResponseWriter, r *http.Request, log *slog.Logger) (string, error) {
+func GetID(w http.ResponseWriter, r *http.Request, log logger.Interface) (string, error) {
 	id := chi.URLParam(r, "id")
 	if id == "" {
 		log.Error("id is empty")
@@ -32,7 +32,7 @@ func GetID(w http.ResponseWriter, r *http.Request, log *slog.Logger) (string, er
 func DecodeJSON(
 	w http.ResponseWriter,
 	r *http.Request,
-	log *slog.Logger,
+	log logger.Interface,
 	data interface{},
 ) error {
 	// Decode the request body

@@ -4,6 +4,7 @@ package main
 import (
 	"github.com/rshelekhov/reframed/config"
 	"github.com/rshelekhov/reframed/internal/api/route"
+	"github.com/rshelekhov/reframed/internal/usecase"
 	"github.com/rshelekhov/reframed/internal/usecase/storage"
 	"github.com/rshelekhov/reframed/pkg/http-server"
 	"github.com/rshelekhov/reframed/pkg/logger"
@@ -34,13 +35,13 @@ func main() {
 	log.Debug("storage initiated")
 
 	// Storages for entities
-	userStorage := storage.NewUserStorage(pg)
+	userUsecase := usecase.NewUserUsecase(storage.NewUserStorage(pg))
 
 	// Router
 	r := route.NewRouter(log)
 
 	// Routers for entities
-	route.NewUserRouter(r, log, userStorage)
+	route.NewUserRouter(r, log, userUsecase)
 
 	log.Info("starting server", slog.String("address", cfg.HTTPServer.Address))
 

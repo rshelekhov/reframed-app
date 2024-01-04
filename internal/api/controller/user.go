@@ -15,7 +15,7 @@ import (
 
 type UserController struct {
 	Usecase usecase.User
-	Logger  *slog.Logger
+	Logger  logger.Interface
 }
 
 // CreateUser creates a new user
