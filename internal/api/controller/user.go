@@ -102,15 +102,15 @@ func (c *UserController) GetUser() http.HandlerFunc {
 		}
 
 		user, err := c.Usecase.GetUser(id)
+		if errors.Is(err, storage.ErrUserNotFound) {
+			log.Error("user not found", slog.String("user_id", id))
+
+			render.Status(r, http.StatusNotFound)
+			render.JSON(w, r, resp.Error("user not found"))
+
+			return
+		}
 		if err != nil {
-			if errors.Is(err, storage.ErrUserNotFound) {
-				log.Error("user not found", slog.String("user_id", id))
-
-				render.Status(r, http.StatusNotFound)
-				render.JSON(w, r, resp.Error("user not found"))
-
-				return
-			}
 			log.Error("failed to get user", logger.Err(err))
 
 			render.Status(r, http.StatusInternalServerError)
@@ -151,15 +151,15 @@ func (c *UserController) GetUsers() http.HandlerFunc {
 		}
 
 		users, err := c.Usecase.GetUsers(pagination)
+		if errors.Is(err, storage.ErrNoUsersFound) {
+			log.Error("no users found")
+
+			render.Status(r, http.StatusNotFound)
+			render.JSON(w, r, resp.Error("no users found"))
+
+			return
+		}
 		if err != nil {
-			if errors.Is(err, storage.ErrNoUsersFound) {
-				log.Error("no users found")
-
-				render.Status(r, http.StatusNotFound)
-				render.JSON(w, r, resp.Error("no users found"))
-
-				return
-			}
 			log.Error("failed to get users", logger.Err(err))
 
 			render.Status(r, http.StatusInternalServerError)
@@ -209,35 +209,35 @@ func (c *UserController) UpdateUser() http.HandlerFunc {
 		}
 
 		// Validate the request
-		// err = ValidateData(w, r, log, user, c.validator)
-		// if err != nil {
-		//	return
-		//}
+		err = ValidateData(w, r, log, user)
+		if err != nil {
+			return
+		}
 
 		err = c.Usecase.UpdateUser(id, user)
+		if errors.Is(err, storage.ErrUserNotFound) {
+			log.Error("user not found", slog.String("user_id", id))
+
+			render.Status(r, http.StatusNotFound)
+			render.JSON(w, r, Response{
+				Response: resp.Error("user not found"),
+				ID:       id,
+			})
+
+			return
+		}
+		if errors.Is(err, storage.ErrUserAlreadyExists) {
+			log.Error("this email already taken", slog.String("email", user.Email))
+
+			render.Status(r, http.StatusConflict)
+			render.JSON(w, r, Response{
+				Response: resp.Error("this email already taken"),
+				Email:    user.Email,
+			})
+
+			return
+		}
 		if err != nil {
-			if errors.Is(err, storage.ErrUserNotFound) {
-				log.Error("user not found", slog.String("user_id", id))
-
-				render.Status(r, http.StatusNotFound)
-				render.JSON(w, r, Response{
-					Response: resp.Error("user not found"),
-					ID:       id,
-				})
-
-				return
-			}
-			if errors.Is(err, storage.ErrUserAlreadyExists) {
-				log.Error("this email already taken", slog.String("email", user.Email))
-
-				render.Status(r, http.StatusConflict)
-				render.JSON(w, r, Response{
-					Response: resp.Error("this email already taken"),
-					Email:    user.Email,
-				})
-
-				return
-			}
 			log.Error("failed to update user", logger.Err(err))
 
 			render.Status(r, http.StatusInternalServerError)
@@ -274,18 +274,18 @@ func (c *UserController) DeleteUser() http.HandlerFunc {
 		}
 
 		err = c.Usecase.DeleteUser(id)
+		if errors.Is(err, storage.ErrUserNotFound) {
+			log.Error("user not found", slog.String("user_id", id))
+
+			render.Status(r, http.StatusNotFound)
+			render.JSON(w, r, Response{
+				Response: resp.Error("user not found"),
+				ID:       id,
+			})
+
+			return
+		}
 		if err != nil {
-			if errors.Is(err, storage.ErrUserNotFound) {
-				log.Error("user not found", slog.String("user_id", id))
-
-				render.Status(r, http.StatusNotFound)
-				render.JSON(w, r, Response{
-					Response: resp.Error("user not found"),
-					ID:       id,
-				})
-
-				return
-			}
 			log.Error("failed to delete user", logger.Err(err))
 
 			render.Status(r, http.StatusInternalServerError)
@@ -316,15 +316,15 @@ func (c *UserController) GetUserRoles() http.HandlerFunc {
 		log := logger.LogWithRequest(c.Logger, op, r)
 
 		roles, err := c.Usecase.GetUserRoles()
+		if errors.Is(err, storage.ErrNoRolesFound) {
+			log.Error("no roles found")
+
+			render.Status(r, http.StatusNotFound)
+			render.JSON(w, r, resp.Error("no roles found"))
+
+			return
+		}
 		if err != nil {
-			if errors.Is(err, storage.ErrNoRolesFound) {
-				log.Error("no roles found")
-
-				render.Status(r, http.StatusNotFound)
-				render.JSON(w, r, resp.Error("no roles found"))
-
-				return
-			}
 			log.Error("failed to get roles", logger.Err(err))
 
 			render.Status(r, http.StatusInternalServerError)
