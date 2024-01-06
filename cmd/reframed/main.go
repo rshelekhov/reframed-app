@@ -10,7 +10,6 @@ import (
 	"github.com/rshelekhov/reframed/pkg/logger"
 	"github.com/rshelekhov/reframed/pkg/storage/postgres"
 	"log/slog"
-	"os"
 )
 
 func main() {
@@ -28,7 +27,7 @@ func main() {
 	log.Debug("logger debug mode enabled")
 
 	// Storage
-	pg, err := postgres.NewPostgresStorage(cfg.Postgres.URL)
+	pg, err := postgres.NewStorage(cfg)
 	if err != nil {
 		log.Error("failed to init storage", logger.Err(err))
 	}
@@ -48,12 +47,4 @@ func main() {
 
 	srv := http_server.NewServer(cfg, log, r)
 	srv.Start()
-
-	defer func(pg *postgres.Storage) {
-		err := pg.Close()
-		if err != nil {
-			log.Error("failed to close storage", err)
-			os.Exit(1)
-		}
-	}(pg)
 }

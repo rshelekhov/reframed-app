@@ -50,7 +50,7 @@ func (c *UserController) CreateUser() http.HandlerFunc {
 			log.Error("user already exists", slog.String("email", user.Email))
 
 			render.Status(r, http.StatusConflict)
-			render.JSON(w, r, resp.Error("user already exists"))
+			render.JSON(w, r, resp.Error("user with this email already exists"))
 
 			return
 		}
@@ -89,7 +89,7 @@ func (c *UserController) CreateUser() http.HandlerFunc {
 func (c *UserController) GetUser() http.HandlerFunc {
 	type Response struct {
 		resp.Response
-		User entity.GetUser `json:"user"`
+		User *entity.GetUser `json:"user"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.controller.GetUser"
@@ -133,7 +133,7 @@ func (c *UserController) GetUser() http.HandlerFunc {
 func (c *UserController) GetUsers() http.HandlerFunc {
 	type Response struct {
 		resp.Response
-		Users []entity.GetUser `json:"users"`
+		Users []*entity.GetUser `json:"users"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.controller.GetUsers"
@@ -308,7 +308,7 @@ func (c *UserController) DeleteUser() http.HandlerFunc {
 func (c *UserController) GetUserRoles() http.HandlerFunc {
 	type Response struct {
 		resp.Response
-		Roles []entity.GetRole `json:"roles"`
+		Roles []*entity.GetRole `json:"roles"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.controller.GetUserRoles"

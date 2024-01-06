@@ -42,13 +42,13 @@ func (uc *UserUsecase) CreateUser(ctx context.Context, user *entity.CreateUser) 
 }
 
 // GetUser returns a user by ID
-func (uc *UserUsecase) GetUser(ctx context.Context, id string) (entity.GetUser, error) {
+func (uc *UserUsecase) GetUser(ctx context.Context, id string) (*entity.GetUser, error) {
 	// const op = "user.usecase.GetUser"
 	return uc.storage.GetUser(ctx, id)
 }
 
 // GetUsers returns a list of users
-func (uc *UserUsecase) GetUsers(ctx context.Context, pgn entity.Pagination) ([]entity.GetUser, error) {
+func (uc *UserUsecase) GetUsers(ctx context.Context, pgn entity.Pagination) ([]*entity.GetUser, error) {
 	// const op = "user.usecase.GetUsers"
 	return uc.storage.GetUsers(ctx, pgn)
 }
@@ -82,7 +82,7 @@ func (uc *UserUsecase) DeleteUser(ctx context.Context, id string) error {
 }
 
 // GetUserRoles returns a list of roles
-func (uc *UserUsecase) GetUserRoles(ctx context.Context) ([]entity.GetRole, error) {
+func (uc *UserUsecase) GetUserRoles(ctx context.Context) ([]*entity.GetRole, error) {
 	// const op = "user.usecase.GetUserRoles"
 	return uc.storage.GetUserRoles(ctx)
 }
