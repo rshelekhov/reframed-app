@@ -56,6 +56,7 @@ func DecodeJSON(w http.ResponseWriter, r *http.Request, log logger.Interface, da
 
 // ValidateData validates the request
 func ValidateData(w http.ResponseWriter, r *http.Request, log logger.Interface, data interface{}) error {
+	// TODO: initiate validator in the main file
 	v := validator.New()
 	var ve validator.ValidationErrors
 

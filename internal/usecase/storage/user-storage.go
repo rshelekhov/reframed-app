@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -20,7 +21,7 @@ func NewUserStorage(pg *postgres.Storage) *UserStorage {
 }
 
 // CreateUser creates a new user
-func (s *UserStorage) CreateUser(user *entity.User) error {
+func (s *UserStorage) CreateUser(ctx context.Context, user *entity.User) error {
 	const op = "user.storage.CreateUser"
 
 	querySelectRoleID := `SELECT id FROM roles WHERE id = $1`
@@ -41,7 +42,8 @@ func (s *UserStorage) CreateUser(user *entity.User) error {
 
 	// Check if role exists
 	var roleID int
-	err = tx.QueryRow(querySelectRoleID, user.RoleID).Scan(&roleID)
+	// err = tx.QueryRow(querySelectRoleID, user.RoleID).Scan(&roleID)
+	err = tx.QueryRowContext(ctx, querySelectRoleID, user.RoleID).Scan(&roleID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return fmt.Errorf("%s: role not found: %w", op, storage.ErrRoleNotFound)
@@ -50,7 +52,19 @@ func (s *UserStorage) CreateUser(user *entity.User) error {
 	}
 
 	// Insert user
-	_, err = tx.Exec(
+	/*_, err = tx.Exec(
+		queryInsertUser,
+		user.ID,
+		user.Email,
+		user.Password,
+		roleID,
+		user.FirstName,
+		user.LastName,
+		user.Phone,
+		user.UpdatedAt,
+	)*/
+	_, err = tx.ExecContext(
+		ctx,
 		queryInsertUser,
 		user.ID,
 		user.Email,
@@ -81,14 +95,15 @@ func (s *UserStorage) CreateUser(user *entity.User) error {
 }
 
 // GetUser returns a user by ID
-func (s *UserStorage) GetUser(id string) (entity.GetUser, error) {
+func (s *UserStorage) GetUser(ctx context.Context, id string) (entity.GetUser, error) {
 	const op = "user.storage.ReadUser"
 
 	var user entity.GetUser
 	query := `SELECT id, email, role_id, first_name, last_name, phone, updated_at
 							FROM users WHERE id = $1 AND deleted_at IS NULL`
 
-	err := s.DB.Get(&user, query, id)
+	// err := s.DB.Get(&user, query, id)
+	err := s.DB.GetContext(ctx, &user, query, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return entity.GetUser{}, fmt.Errorf("%s: %w", op, storage.ErrUserNotFound)
@@ -100,14 +115,14 @@ func (s *UserStorage) GetUser(id string) (entity.GetUser, error) {
 }
 
 // GetUsers returns a list of users
-func (s *UserStorage) GetUsers(pgn entity.Pagination) ([]entity.GetUser, error) {
+func (s *UserStorage) GetUsers(ctx context.Context, pgn entity.Pagination) ([]entity.GetUser, error) {
 	const op = "user.storage.GetUsers"
 
 	var users []entity.GetUser
 	query := `SELECT id, email, role_id, first_name, last_name, phone, updated_at
 							FROM users WHERE deleted_at IS NULL ORDER BY id DESC LIMIT $1 OFFSET $2`
 
-	err := s.DB.Select(&users, query, pgn.Limit, pgn.Offset)
+	err := s.DB.SelectContext(ctx, &users, query, pgn.Limit, pgn.Offset)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, fmt.Errorf("%s: no users found: %w", op, storage.ErrNoUsersFound)
@@ -119,7 +134,7 @@ func (s *UserStorage) GetUsers(pgn entity.Pagination) ([]entity.GetUser, error) 
 }
 
 // UpdateUser updates a user by ID
-func (s *UserStorage) UpdateUser(user *entity.User) error {
+func (s *UserStorage) UpdateUser(ctx context.Context, user *entity.User) error {
 	const op = "user.storage.UpdateUser"
 
 	queryCheckEmail := `SELECT EXISTS(SELECT 1 FROM users WHERE email = $1 AND id != $2 AND deleted_at IS NULL)`
@@ -146,7 +161,7 @@ func (s *UserStorage) UpdateUser(user *entity.User) error {
 
 	// Check if the updating email already exists
 	var emailExists bool
-	err = tx.QueryRow(queryCheckEmail, user.Email, user.ID).Scan(&emailExists)
+	err = tx.QueryRowContext(ctx, queryCheckEmail, user.Email, user.ID).Scan(&emailExists)
 	if err != nil {
 		return fmt.Errorf("%s: failed to check if email exists: %w", op, err)
 	}
@@ -189,11 +204,11 @@ func (s *UserStorage) UpdateUser(user *entity.User) error {
 }
 
 // DeleteUser deletes a user by ID
-func (s *UserStorage) DeleteUser(id string) error {
+func (s *UserStorage) DeleteUser(ctx context.Context, id string) error {
 	const op = "user.storage.DeleteUser"
 
 	query := `UPDATE users SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL`
-	result, err := s.DB.Exec(query, id)
+	result, err := s.DB.ExecContext(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("%s: failed to delete user: %w", op, err)
 	}
@@ -211,13 +226,13 @@ func (s *UserStorage) DeleteUser(id string) error {
 }
 
 // GetUserRoles returns a list of roles
-func (s *UserStorage) GetUserRoles() ([]entity.GetRole, error) {
+func (s *UserStorage) GetUserRoles(ctx context.Context) ([]entity.GetRole, error) {
 	const op = "user.storage.GetUserRoles"
 
 	var roles []entity.GetRole
 	query := `SELECT id, title FROM roles`
 
-	err := s.DB.Select(&roles, query)
+	err := s.DB.SelectContext(ctx, &roles, query)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, fmt.Errorf("%s: no roles found: %w", op, storage.ErrNoRolesFound)

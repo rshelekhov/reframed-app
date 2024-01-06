@@ -45,7 +45,7 @@ func (c *UserController) CreateUser() http.HandlerFunc {
 		}
 
 		// Create the user
-		id, err := c.Usecase.CreateUser(user)
+		id, err := c.Usecase.CreateUser(r.Context(), user)
 		if errors.Is(err, storage.ErrUserAlreadyExists) {
 			log.Error("user already exists", slog.String("email", user.Email))
 
@@ -101,7 +101,7 @@ func (c *UserController) GetUser() http.HandlerFunc {
 			return
 		}
 
-		user, err := c.Usecase.GetUser(id)
+		user, err := c.Usecase.GetUser(r.Context(), id)
 		if errors.Is(err, storage.ErrUserNotFound) {
 			log.Error("user not found", slog.String("user_id", id))
 
@@ -150,7 +150,7 @@ func (c *UserController) GetUsers() http.HandlerFunc {
 			return
 		}
 
-		users, err := c.Usecase.GetUsers(pagination)
+		users, err := c.Usecase.GetUsers(r.Context(), pagination)
 		if errors.Is(err, storage.ErrNoUsersFound) {
 			log.Error("no users found")
 
@@ -214,7 +214,7 @@ func (c *UserController) UpdateUser() http.HandlerFunc {
 			return
 		}
 
-		err = c.Usecase.UpdateUser(id, user)
+		err = c.Usecase.UpdateUser(r.Context(), id, user)
 		if errors.Is(err, storage.ErrUserNotFound) {
 			log.Error("user not found", slog.String("user_id", id))
 
@@ -273,7 +273,7 @@ func (c *UserController) DeleteUser() http.HandlerFunc {
 			return
 		}
 
-		err = c.Usecase.DeleteUser(id)
+		err = c.Usecase.DeleteUser(r.Context(), id)
 		if errors.Is(err, storage.ErrUserNotFound) {
 			log.Error("user not found", slog.String("user_id", id))
 
@@ -315,7 +315,7 @@ func (c *UserController) GetUserRoles() http.HandlerFunc {
 
 		log := logger.LogWithRequest(c.Logger, op, r)
 
-		roles, err := c.Usecase.GetUserRoles()
+		roles, err := c.Usecase.GetUserRoles(r.Context())
 		if errors.Is(err, storage.ErrNoRolesFound) {
 			log.Error("no roles found")
 

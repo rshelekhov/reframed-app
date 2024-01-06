@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"context"
 	"fmt"
 	"github.com/rshelekhov/reframed/internal/entity"
 	"github.com/segmentio/ksuid"
@@ -16,7 +17,7 @@ func NewUserUsecase(s UserStorage) *UserUsecase {
 }
 
 // CreateUser creates a new user
-func (uc *UserUsecase) CreateUser(user *entity.CreateUser) (string, error) {
+func (uc *UserUsecase) CreateUser(ctx context.Context, user *entity.CreateUser) (string, error) {
 	const op = "user.usecase.CreateUser"
 
 	id := ksuid.New()
@@ -32,7 +33,7 @@ func (uc *UserUsecase) CreateUser(user *entity.CreateUser) (string, error) {
 		UpdatedAt: time.Now().UTC(),
 	}
 
-	err := uc.storage.CreateUser(&entity)
+	err := uc.storage.CreateUser(ctx, &entity)
 	if err != nil {
 		return "", fmt.Errorf("%s: failed to create user: %w", op, err)
 	}
@@ -41,19 +42,19 @@ func (uc *UserUsecase) CreateUser(user *entity.CreateUser) (string, error) {
 }
 
 // GetUser returns a user by ID
-func (uc *UserUsecase) GetUser(id string) (entity.GetUser, error) {
+func (uc *UserUsecase) GetUser(ctx context.Context, id string) (entity.GetUser, error) {
 	// const op = "user.usecase.GetUser"
-	return uc.storage.GetUser(id)
+	return uc.storage.GetUser(ctx, id)
 }
 
 // GetUsers returns a list of users
-func (uc *UserUsecase) GetUsers(pgn entity.Pagination) ([]entity.GetUser, error) {
+func (uc *UserUsecase) GetUsers(ctx context.Context, pgn entity.Pagination) ([]entity.GetUser, error) {
 	// const op = "user.usecase.GetUsers"
-	return uc.storage.GetUsers(pgn)
+	return uc.storage.GetUsers(ctx, pgn)
 }
 
 // UpdateUser updates a user by ID
-func (uc *UserUsecase) UpdateUser(id string, user *entity.UpdateUser) error {
+func (uc *UserUsecase) UpdateUser(ctx context.Context, id string, user *entity.UpdateUser) error {
 	const op = "user.usecase.UpdateUser"
 
 	entity := entity.User{
@@ -66,7 +67,7 @@ func (uc *UserUsecase) UpdateUser(id string, user *entity.UpdateUser) error {
 		UpdatedAt: time.Now().UTC(),
 	}
 
-	err := uc.storage.UpdateUser(&entity)
+	err := uc.storage.UpdateUser(ctx, &entity)
 	if err != nil {
 		return fmt.Errorf("%s: failed to update user: %w", op, err)
 	}
@@ -75,13 +76,13 @@ func (uc *UserUsecase) UpdateUser(id string, user *entity.UpdateUser) error {
 }
 
 // DeleteUser deletes a user by ID
-func (uc *UserUsecase) DeleteUser(id string) error {
+func (uc *UserUsecase) DeleteUser(ctx context.Context, id string) error {
 	// const op = "user.usecase.DeleteUser"
-	return uc.storage.DeleteUser(id)
+	return uc.storage.DeleteUser(ctx, id)
 }
 
 // GetUserRoles returns a list of roles
-func (uc *UserUsecase) GetUserRoles() ([]entity.GetRole, error) {
+func (uc *UserUsecase) GetUserRoles(ctx context.Context) ([]entity.GetRole, error) {
 	// const op = "user.usecase.GetUserRoles"
-	return uc.storage.GetUserRoles()
+	return uc.storage.GetUserRoles(ctx)
 }
