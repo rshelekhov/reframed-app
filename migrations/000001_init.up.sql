@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS users
 (
     id         character varying PRIMARY KEY,
-    email      character varying NOT NULL UNIQUE,
+    email      character varying NOT NULL,
     password   character varying NOT NULL,
     role_id    int NOT NULL,
     first_name character varying NOT NULL,
@@ -10,6 +10,8 @@ CREATE TABLE IF NOT EXISTS users
     updated_at timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
     deleted_at timestamp WITH TIME ZONE DEFAULT NULL
 );
+
+CREATE UNIQUE INDEX active_users_email_key ON users (email) WHERE deleted_at IS NULL;
 
 CREATE TABLE IF NOT EXISTS roles
 (
