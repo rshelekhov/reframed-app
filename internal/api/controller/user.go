@@ -30,7 +30,7 @@ func (c *UserController) CreateUser() http.HandlerFunc {
 
 		log := logger.LogWithRequest(c.Logger, op, r)
 
-		user := &entity.CreateUser{}
+		user := entity.CreateUser{}
 
 		// Decode the request body
 		err := DecodeJSON(w, r, log, user)
@@ -89,7 +89,7 @@ func (c *UserController) CreateUser() http.HandlerFunc {
 func (c *UserController) GetUser() http.HandlerFunc {
 	type Response struct {
 		resp.Response
-		User *entity.GetUser `json:"user"`
+		User entity.GetUser `json:"user"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.controller.GetUser"
@@ -195,7 +195,7 @@ func (c *UserController) UpdateUser() http.HandlerFunc {
 
 		log := logger.LogWithRequest(c.Logger, op, r)
 
-		user := &entity.UpdateUser{}
+		user := entity.UpdateUser{}
 
 		id, err := GetID(w, r, log)
 		if err != nil {

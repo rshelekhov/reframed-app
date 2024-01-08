@@ -22,7 +22,7 @@ func NewUserStorage(pg *pgxpool.Pool) *UserStorage {
 }
 
 // CreateUser creates a new user
-func (s *UserStorage) CreateUser(ctx context.Context, user *entity.User) error {
+func (s *UserStorage) CreateUser(ctx context.Context, user entity.User) error {
 	const op = "user.storage.CreateUser"
 
 	querySelectRoleID := `SELECT id FROM roles WHERE id = $1`
@@ -85,19 +85,19 @@ func (s *UserStorage) CreateUser(ctx context.Context, user *entity.User) error {
 }
 
 // GetUser returns a user by ID
-func (s *UserStorage) GetUser(ctx context.Context, id string) (*entity.GetUser, error) {
+func (s *UserStorage) GetUser(ctx context.Context, id string) (entity.GetUser, error) {
 	const op = "user.storage.ReadUser"
 
-	var user *entity.GetUser
+	var user entity.GetUser
 	query := `SELECT id, email, role_id, first_name, last_name, phone, updated_at
 							FROM users WHERE id = $1 AND deleted_at IS NULL`
 
 	err := s.QueryRow(ctx, query, id).Scan(pgx.RowToAddrOfStructByName[entity.GetUser])
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, fmt.Errorf("%s: %w", op, storage.ErrUserNotFound)
+		return user, fmt.Errorf("%s: %w", op, storage.ErrUserNotFound)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("%s: failed to get user: %w", op, err)
+		return user, fmt.Errorf("%s: failed to get user: %w", op, err)
 	}
 
 	return user, nil
@@ -126,45 +126,11 @@ func (s *UserStorage) GetUsers(ctx context.Context, pgn entity.Pagination) ([]*e
 		return nil, fmt.Errorf("%s: no users found: %w", op, storage.ErrNoUsersFound)
 	}
 
-	/*
-		for rows.Next() {
-			var user entity.GetUser
-			if err = rows.Scan(
-				&user.ID,
-				&user.Email,
-				&user.RoleID,
-				&user.FirstName,
-				&user.LastName,
-				&user.Phone,
-				&user.UpdatedAt,
-			); err != nil {
-				return nil, fmt.Errorf("%s: failed to scan row: %w", op, err)
-			}
-			users = append(users, user)
-		}
-
-		if err = rows.Err(); err != nil {
-			return nil, fmt.Errorf("%s: failed to iterate rows: %w", op, err)
-		}
-
-		if len(users) == 0 {
-			return nil, fmt.Errorf("%s: no users found: %w", op, storage.ErrNoUsersFound)
-		}
-	*/
-	/*
-		err := s.DB.SelectContext(ctx, &users, query, pgn.Limit, pgn.Offset)
-		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				return nil, fmt.Errorf("%s: no users found: %w", op, storage.ErrNoUsersFound)
-			}
-			return nil, fmt.Errorf("%s: failed to get users: %w", op, err)
-		}
-	*/
 	return users, nil
 }
 
 // UpdateUser updates a user by ID
-func (s *UserStorage) UpdateUser(ctx context.Context, user *entity.User) error {
+func (s *UserStorage) UpdateUser(ctx context.Context, user entity.User) error {
 	const op = "user.storage.UpdateUser"
 
 	// TODO check if there are no changes
@@ -201,6 +167,8 @@ func (s *UserStorage) UpdateUser(ctx context.Context, user *entity.User) error {
 	if emailExists {
 		return fmt.Errorf("%s: email already exists: %w", op, storage.ErrUserAlreadyExists)
 	}
+
+	fmt.Println("LOOK AT THIS LINE --->", emailExists)
 
 	// Update user
 	result, err := tx.Exec(
@@ -275,15 +243,6 @@ func (s *UserStorage) GetUserRoles(ctx context.Context) ([]*entity.GetRole, erro
 	if len(roles) == 0 {
 		return nil, fmt.Errorf("%s: no roles found: %w", op, storage.ErrNoRolesFound)
 	}
-
-	/*
-		err := s.SelectContext(ctx, &roles, query)
-		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				return nil, fmt.Errorf("%s: no roles found: %w", op, storage.ErrNoRolesFound)
-			}
-			return nil, fmt.Errorf("%s: failed to get roles: %w", op, err)
-		}*/
 
 	return roles, nil
 }
