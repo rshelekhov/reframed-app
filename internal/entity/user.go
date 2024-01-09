@@ -6,25 +6,15 @@ import (
 
 // User DB entity
 type User struct {
-	ID        string     `db:"id"`
-	Email     string     `db:"email"`
-	Password  string     `db:"password"`
-	RoleID    int        `db:"role_id"`
-	FirstName string     `db:"first_name"`
-	LastName  string     `db:"last_name"`
-	Phone     string     `db:"phone"`
-	UpdatedAt time.Time  `db:"updated_at"`
+	ID        string     `db:"id" json:"id" `
+	Email     string     `db:"email" json:"email" validate:"required,email"`
+	Password  string     `db:"password" json:"password" validate:"required,min=8"`
+	RoleID    int        `db:"role_id" json:"role_id" validate:"required"`
+	FirstName string     `db:"first_name" json:"first_name" validate:"required"`
+	LastName  string     `db:"last_name" json:"last_name" validate:"required"`
+	Phone     string     `db:"phone" json:"phone" validate:"required,e164"`
+	UpdatedAt time.Time  `db:"updated_at" json:"updated_at"`
 	DeletedAt *time.Time `db:"deleted_at"`
-}
-
-// CreateUser uses in the request body and usecase layer for create a new user
-type CreateUser struct {
-	Email     string `json:"email" validate:"required,email"`
-	Password  string `json:"password" validate:"required,min=8"`
-	RoleID    int    `json:"role_id" validate:"required"`
-	FirstName string `json:"first_name" validate:"required"`
-	LastName  string `json:"last_name" validate:"required"`
-	Phone     string `json:"phone" validate:"required,e164"`
 }
 
 // GetUser used in the response body and usecase layer for getting a user by ID

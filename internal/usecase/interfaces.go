@@ -13,7 +13,7 @@ type (
 
 	// User defines the user use-cases
 	User interface {
-		CreateUser(ctx context.Context, user *entity.CreateUser) (string, error)
+		CreateUser(ctx context.Context, user *entity.User) (string, error)
 		GetUser(ctx context.Context, id string) (entity.GetUser, error)
 		GetUsers(ctx context.Context, pgn entity.Pagination) ([]*entity.GetUser, error)
 		UpdateUser(ctx context.Context, id string, user *entity.UpdateUser) error

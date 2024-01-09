@@ -31,7 +31,7 @@ func (c *UserController) CreateUser() http.HandlerFunc {
 
 		log := logger.LogWithRequest(c.Logger, op, r)
 
-		user := &entity.CreateUser{}
+		user := &entity.User{}
 
 		// Decode the request body
 		err := DecodeJSON(w, r, log, user)

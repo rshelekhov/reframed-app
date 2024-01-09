@@ -17,13 +17,15 @@ func NewUserUsecase(s UserStorage) *UserUsecase {
 }
 
 // CreateUser creates a new user
-func (uc *UserUsecase) CreateUser(ctx context.Context, user *entity.CreateUser) (string, error) {
+func (uc *UserUsecase) CreateUser(ctx context.Context, user *entity.User) (string, error) {
 	const op = "user.usecase.CreateUser"
 
-	id := ksuid.New()
+	if user.ID == "" {
+		user.ID = ksuid.New().String()
+	}
 
 	newUser := entity.User{
-		ID:        id.String(),
+		ID:        user.ID,
 		Email:     user.Email,
 		Password:  user.Password,
 		RoleID:    user.RoleID,
