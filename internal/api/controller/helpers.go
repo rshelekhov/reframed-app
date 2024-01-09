@@ -29,7 +29,7 @@ func GetID(w http.ResponseWriter, r *http.Request, log logger.Interface) (string
 }
 
 // DecodeJSON decodes the request body
-func DecodeJSON(w http.ResponseWriter, r *http.Request, log logger.Interface, data interface{}) error {
+func DecodeJSON(w http.ResponseWriter, r *http.Request, log logger.Interface, data any) error {
 	// Decode the request body
 	err := render.DecodeJSON(r.Body, &data)
 	if errors.Is(err, io.EOF) {
@@ -55,7 +55,7 @@ func DecodeJSON(w http.ResponseWriter, r *http.Request, log logger.Interface, da
 }
 
 // ValidateData validates the request
-func ValidateData(w http.ResponseWriter, r *http.Request, log logger.Interface, data interface{}) error {
+func ValidateData(w http.ResponseWriter, r *http.Request, log logger.Interface, data any) error {
 	// TODO: initiate validator in the main file
 	v := validator.New()
 	var ve validator.ValidationErrors

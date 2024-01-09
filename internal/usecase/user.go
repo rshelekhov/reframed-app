@@ -17,12 +17,12 @@ func NewUserUsecase(s UserStorage) *UserUsecase {
 }
 
 // CreateUser creates a new user
-func (uc *UserUsecase) CreateUser(ctx context.Context, user entity.CreateUser) (string, error) {
+func (uc *UserUsecase) CreateUser(ctx context.Context, user *entity.CreateUser) (string, error) {
 	const op = "user.usecase.CreateUser"
 
 	id := ksuid.New()
 
-	entity := entity.User{
+	newUser := entity.User{
 		ID:        id.String(),
 		Email:     user.Email,
 		Password:  user.Password,
@@ -33,12 +33,12 @@ func (uc *UserUsecase) CreateUser(ctx context.Context, user entity.CreateUser) (
 		UpdatedAt: time.Now().UTC(),
 	}
 
-	err := uc.storage.CreateUser(ctx, entity)
+	err := uc.storage.CreateUser(ctx, newUser)
 	if err != nil {
 		return "", fmt.Errorf("%s: failed to create user: %w", op, err)
 	}
 
-	return entity.ID, nil
+	return newUser.ID, nil
 }
 
 // GetUser returns a user by ID
@@ -57,7 +57,7 @@ func (uc *UserUsecase) GetUsers(ctx context.Context, pgn entity.Pagination) ([]*
 func (uc *UserUsecase) UpdateUser(ctx context.Context, id string, user *entity.UpdateUser) error {
 	const op = "user.usecase.UpdateUser"
 
-	entity := entity.User{
+	newUser := entity.User{
 		ID:        id,
 		Email:     user.Email,
 		Password:  user.Password,
@@ -67,7 +67,7 @@ func (uc *UserUsecase) UpdateUser(ctx context.Context, id string, user *entity.U
 		UpdatedAt: time.Now().UTC(),
 	}
 
-	err := uc.storage.UpdateUser(ctx, entity)
+	err := uc.storage.UpdateUser(ctx, newUser)
 	if err != nil {
 		return fmt.Errorf("%s: failed to update user: %w", op, err)
 	}

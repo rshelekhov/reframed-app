@@ -23,13 +23,32 @@ func NewUserStorage(pg *pgxpool.Pool) *UserStorage {
 
 // CreateUser creates a new user
 func (s *UserStorage) CreateUser(ctx context.Context, user entity.User) error {
-	const op = "user.storage.CreateUser"
 
-	querySelectRoleID := `SELECT id FROM roles WHERE id = $1`
+	const (
+		op = "user.storage.CreateUser"
 
-	queryInsertUser := `INSERT INTO users
+		querySelectRoleID = `SELECT id FROM roles WHERE id = $1`
+
+		queryCheckUserExists = `SELECT CASE
+										WHEN EXISTS(
+											SELECT 1 FROM users WHERE email = $1 AND deleted_at IS NULL
+										) THEN 'active' 
+										WHEN EXISTS(
+											SELECT 1 FROM users WHERE email = $1 and deleted_at IS NOT NULL
+										) THEN 'soft_deleted'
+										ELSE 'not_found' END AS status`
+
+		queryReplaceSoftDeletedUser = `WITH update_deleted AS (
+												UPDATE users SET deleted_at = NULL WHERE email = $1 RETURNING *
+											)
+											INSERT INTO users
+												(id, email, password, role_id, first_name, last_name, phone, updated_at)
+												VALUES ($2, $3, $4, $5, $6, $7, $8, $9)`
+
+		queryInsertUser = `INSERT INTO users
     						(id, email, password, role_id, first_name, last_name, phone, updated_at)
 							VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
+	)
 
 	// Begin transaction
 	tx, err := s.Begin(ctx)
@@ -53,26 +72,61 @@ func (s *UserStorage) CreateUser(ctx context.Context, user entity.User) error {
 		return fmt.Errorf("%s: failed to check if role exists: %w", op, err)
 	}
 
-	_, err = tx.Exec(
-		ctx,
-		queryInsertUser,
-		user.ID,
-		user.Email,
-		user.Password,
-		roleID,
-		user.FirstName,
-		user.LastName,
-		user.Phone,
-		user.UpdatedAt,
-	)
-	var pgErr *pgconn.PgError
-	if errors.As(err, &pgErr) {
-		if pgErr.Code == storage.UniqueConstraintViolation {
-			return fmt.Errorf("%s: user with this email already exists %w", op, storage.ErrUserAlreadyExists)
-		}
-	}
+	var status string
+	err = tx.QueryRow(ctx, queryCheckUserExists, user.Email).Scan(&status)
 	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
+		errRollback := tx.Rollback(ctx)
+		if errRollback != nil {
+			return fmt.Errorf("%s: failed to rollback transaction: %w", op, errRollback)
+		}
+		return fmt.Errorf("%s: failed to check if user exists: %w", op, err)
+	}
+
+	if status == "soft_deleted" {
+		_, err = tx.Exec(
+			ctx,
+			queryReplaceSoftDeletedUser,
+			user.Email,
+			user.ID,
+			user.Password,
+			roleID,
+			user.FirstName,
+			user.LastName,
+			user.Phone,
+			user.UpdatedAt)
+		if err != nil {
+			errRollback := tx.Rollback(ctx)
+			if errRollback != nil {
+				return fmt.Errorf("%s: failed to rollback transaction: %w", op, errRollback)
+			}
+			return fmt.Errorf("%s: failed to replace soft deleted user: %w", op, err)
+		}
+	} else if status == "not_found" {
+		_, err = tx.Exec(
+			ctx,
+			queryInsertUser,
+			user.ID,
+			user.Email,
+			user.Password,
+			roleID,
+			user.FirstName,
+			user.LastName,
+			user.Phone,
+			user.UpdatedAt,
+		)
+		if err != nil {
+			errRollback := tx.Rollback(ctx)
+			if errRollback != nil {
+				return fmt.Errorf("%s: failed to rollback transaction: %w", op, errRollback)
+			}
+			return fmt.Errorf("%s: failed to insert new user: %w", op, err)
+		}
+	} else {
+		errRollback := tx.Rollback(ctx)
+		if errRollback != nil {
+			return fmt.Errorf("%s: failed to rollback transaction: %w", op, errRollback)
+		}
+		return fmt.Errorf("%s: user with this email already exists %w", op, storage.ErrUserAlreadyExists)
 	}
 
 	// Commit transaction
@@ -86,13 +140,20 @@ func (s *UserStorage) CreateUser(ctx context.Context, user entity.User) error {
 
 // GetUser returns a user by ID
 func (s *UserStorage) GetUser(ctx context.Context, id string) (entity.GetUser, error) {
-	const op = "user.storage.ReadUser"
+	const op = "user.storage.GetUser"
 
 	var user entity.GetUser
 	query := `SELECT id, email, role_id, first_name, last_name, phone, updated_at
 							FROM users WHERE id = $1 AND deleted_at IS NULL`
 
-	err := s.QueryRow(ctx, query, id).Scan(pgx.RowToAddrOfStructByName[entity.GetUser])
+	err := s.QueryRow(ctx, query, id).Scan(
+		&user.ID,
+		&user.Email,
+		&user.RoleID,
+		&user.FirstName,
+		&user.LastName,
+		&user.Phone,
+		&user.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return user, fmt.Errorf("%s: %w", op, storage.ErrUserNotFound)
 	}
@@ -131,19 +192,36 @@ func (s *UserStorage) GetUsers(ctx context.Context, pgn entity.Pagination) ([]*e
 
 // UpdateUser updates a user by ID
 func (s *UserStorage) UpdateUser(ctx context.Context, user entity.User) error {
-	const op = "user.storage.UpdateUser"
+	const (
+		op = "user.storage.UpdateUser"
+
+		queryCheckUserExists = `SELECT CASE
+										WHEN EXISTS(
+											SELECT 1 FROM users WHERE email = $1 AND deleted_at IS NULL
+										) THEN 'active' 
+										WHEN EXISTS(
+											SELECT 1 FROM users WHERE email = $1 and deleted_at IS NOT NULL
+										) THEN 'soft_deleted'
+										ELSE 'not_found' END AS status`
+
+		queryReplaceSoftDeletedUser = `WITH update_deleted AS (
+												UPDATE users SET deleted_at = NULL WHERE email = $1 RETURNING *
+											)
+											INSERT INTO users
+												(id, email, password, role_id, first_name, last_name, phone, updated_at)
+												VALUES ($2, $3, $4, $5, $6, $7, $8, $9)`
+
+		queryUpdateUser = `UPDATE users
+								SET email = $1,
+									password = $2,
+									first_name = $3,
+									last_name = $4,
+									phone = $5,
+									updated_at = $6
+								WHERE id = $7 AND deleted_at IS NULL`
+	)
 
 	// TODO check if there are no changes
-	queryCheckEmail := `SELECT EXISTS(SELECT 1 FROM users WHERE email = $1 AND id != $2 AND deleted_at IS NULL)`
-
-	queryUpdateUser := `UPDATE users
-				SET email = $1,
-					password = $2,
-					first_name = $3,
-					last_name = $4,
-					phone = $5,
-					updated_at = $6
-				WHERE id = $7 AND deleted_at IS NULL`
 
 	// Begin transaction
 	tx, err := s.Begin(ctx)
@@ -157,38 +235,71 @@ func (s *UserStorage) UpdateUser(ctx context.Context, user entity.User) error {
 	}()
 
 	// Check if the updating email already exists
-	var emailExists bool
-
-	err = tx.QueryRow(ctx, queryCheckEmail, user.Email, user.ID).Scan(&emailExists)
+	var status string
+	err = tx.QueryRow(ctx, queryCheckUserExists, user.Email).Scan(&status)
 	if err != nil {
-		return fmt.Errorf("%s: failed to check if email exists: %w", op, err)
+		errRollback := tx.Rollback(ctx)
+		if errRollback != nil {
+			return fmt.Errorf("%s: failed to rollback transaction: %w", op, errRollback)
+		}
+		return fmt.Errorf("%s: failed to check if user exists: %w", op, err)
 	}
 
-	if emailExists {
-		return fmt.Errorf("%s: email already exists: %w", op, storage.ErrUserAlreadyExists)
-	}
+	if status == "soft_deleted" {
+		_, err = tx.Exec(ctx,
+			queryReplaceSoftDeletedUser,
+			user.Email,
+			user.ID,
+			user.Email,
+			user.Password,
+			user.RoleID,
+			user.FirstName,
+			user.LastName,
+			user.Phone,
+			user.UpdatedAt,
+		)
+		if err != nil {
+			errRollback := tx.Rollback(ctx)
+			if errRollback != nil {
+				return fmt.Errorf("%s: failed to rollback transaction: %w", op, errRollback)
+			}
 
-	fmt.Println("LOOK AT THIS LINE --->", emailExists)
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) && pgErr.Code == storage.UniqueConstraintViolation {
+				return fmt.Errorf("%s: email already exists: %w", op, storage.ErrUserAlreadyExists)
+			}
+			return fmt.Errorf("%s: failed to replace soft deleted user: %w", op, err)
+		}
+	} else if status == "not_found" {
+		result, err := tx.Exec(ctx,
+			queryUpdateUser,
+			user.Email,
+			user.Password,
+			user.FirstName,
+			user.LastName,
+			user.Phone,
+			user.UpdatedAt,
+			user.ID,
+		)
+		if err != nil {
+			errRollback := tx.Rollback(ctx)
+			if errRollback != nil {
+				return fmt.Errorf("%s: failed to rollback transaction: %w", op, errRollback)
+			}
+			return fmt.Errorf("%s: failed to update user: %w", op, err)
+		}
 
-	// Update user
-	result, err := tx.Exec(
-		ctx,
-		queryUpdateUser,
-		user.Email,
-		user.Password,
-		user.FirstName,
-		user.LastName,
-		user.Phone,
-		user.UpdatedAt,
-		user.ID,
-	)
-	if err != nil {
-		return fmt.Errorf("%s: failed to update user: %w", op, err)
-	}
+		rowsAffected := result.RowsAffected()
+		if rowsAffected == 0 {
+			return fmt.Errorf("%s: user with ID %s not found: %w", op, user.ID, storage.ErrUserNotFound)
+		}
 
-	rowsAffected := result.RowsAffected()
-	if rowsAffected == 0 {
-		return fmt.Errorf("%s: user with ID %s not found: %w", op, user.ID, storage.ErrUserNotFound)
+	} else {
+		errRollback := tx.Rollback(ctx)
+		if errRollback != nil {
+			return fmt.Errorf("%s: failed to rollback transaction: %w", op, errRollback)
+		}
+		return fmt.Errorf("%s: user with this email already exists %w", op, storage.ErrUserAlreadyExists)
 	}
 
 	// Commit transaction

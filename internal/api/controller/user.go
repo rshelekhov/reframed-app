@@ -2,6 +2,7 @@ package controller
 
 import (
 	"errors"
+	"fmt"
 	"github.com/go-chi/render"
 	"github.com/rshelekhov/reframed/internal/entity"
 	"github.com/rshelekhov/reframed/internal/lib/api/parser"
@@ -30,7 +31,7 @@ func (c *UserController) CreateUser() http.HandlerFunc {
 
 		log := logger.LogWithRequest(c.Logger, op, r)
 
-		user := entity.CreateUser{}
+		user := &entity.CreateUser{}
 
 		// Decode the request body
 		err := DecodeJSON(w, r, log, user)
@@ -38,11 +39,15 @@ func (c *UserController) CreateUser() http.HandlerFunc {
 			return
 		}
 
+		fmt.Println(user)
+
 		// Validate the request
 		err = ValidateData(w, r, log, user)
 		if err != nil {
 			return
 		}
+
+		fmt.Println(user)
 
 		// Create the user
 		id, err := c.Usecase.CreateUser(r.Context(), user)
@@ -195,7 +200,7 @@ func (c *UserController) UpdateUser() http.HandlerFunc {
 
 		log := logger.LogWithRequest(c.Logger, op, r)
 
-		user := entity.UpdateUser{}
+		user := &entity.UpdateUser{}
 
 		id, err := GetID(w, r, log)
 		if err != nil {
