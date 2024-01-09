@@ -6,11 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/rshelekhov/reframed/internal/entity"
 	"github.com/rshelekhov/reframed/pkg/storage"
+	"strconv"
 )
 
 type UserStorage struct {
@@ -192,36 +192,12 @@ func (s *UserStorage) GetUsers(ctx context.Context, pgn entity.Pagination) ([]*e
 
 // UpdateUser updates a user by ID
 func (s *UserStorage) UpdateUser(ctx context.Context, user entity.User) error {
+
 	const (
 		op = "user.storage.UpdateUser"
 
-		queryCheckUserExists = `SELECT CASE
-										WHEN EXISTS(
-											SELECT 1 FROM users WHERE email = $1 AND deleted_at IS NULL
-										) THEN 'active' 
-										WHEN EXISTS(
-											SELECT 1 FROM users WHERE email = $1 and deleted_at IS NOT NULL
-										) THEN 'soft_deleted'
-										ELSE 'not_found' END AS status`
-
-		queryReplaceSoftDeletedUser = `WITH update_deleted AS (
-												UPDATE users SET deleted_at = NULL WHERE email = $1 RETURNING *
-											)
-											INSERT INTO users
-												(id, email, password, role_id, first_name, last_name, phone, updated_at)
-												VALUES ($2, $3, $4, $5, $6, $7, $8, $9)`
-
-		queryUpdateUser = `UPDATE users
-								SET email = $1,
-									password = $2,
-									first_name = $3,
-									last_name = $4,
-									phone = $5,
-									updated_at = $6
-								WHERE id = $7 AND deleted_at IS NULL`
+		queryCheckEmailUniqueness = `SELECT id FROM users WHERE email = $1 AND deleted_at IS NULL`
 	)
-
-	// TODO check if there are no changes
 
 	// Begin transaction
 	tx, err := s.Begin(ctx)
@@ -234,72 +210,50 @@ func (s *UserStorage) UpdateUser(ctx context.Context, user entity.User) error {
 		}
 	}()
 
-	// Check if the updating email already exists
-	var status string
-	err = tx.QueryRow(ctx, queryCheckUserExists, user.Email).Scan(&status)
-	if err != nil {
-		errRollback := tx.Rollback(ctx)
-		if errRollback != nil {
-			return fmt.Errorf("%s: failed to rollback transaction: %w", op, errRollback)
-		}
-		return fmt.Errorf("%s: failed to check if user exists: %w", op, err)
+	// Check if the user email exists for a different user
+	var existingUserID string
+	err = tx.QueryRow(ctx, queryCheckEmailUniqueness, user.Email).Scan(&existingUserID)
+	if !errors.Is(err, pgx.ErrNoRows) && existingUserID != user.ID {
+		return fmt.Errorf(
+			"%s: email already exists in the database for another user: %w", op, storage.ErrUserAlreadyExists,
+		)
+	} else if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return fmt.Errorf("%s: failed to check email uniqueness: %w", op, err)
 	}
 
-	if status == "soft_deleted" {
-		_, err = tx.Exec(ctx,
-			queryReplaceSoftDeletedUser,
-			user.Email,
-			user.ID,
-			user.Email,
-			user.Password,
-			user.RoleID,
-			user.FirstName,
-			user.LastName,
-			user.Phone,
-			user.UpdatedAt,
-		)
-		if err != nil {
-			errRollback := tx.Rollback(ctx)
-			if errRollback != nil {
-				return fmt.Errorf("%s: failed to rollback transaction: %w", op, errRollback)
-			}
+	// Prepare the dynamic update query based on the provided fields
+	queryUpdate := "UPDATE users SET updated_at = $1"
+	queryParams := []interface{}{user.UpdatedAt}
 
-			var pgErr *pgconn.PgError
-			if errors.As(err, &pgErr) && pgErr.Code == storage.UniqueConstraintViolation {
-				return fmt.Errorf("%s: email already exists: %w", op, storage.ErrUserAlreadyExists)
-			}
-			return fmt.Errorf("%s: failed to replace soft deleted user: %w", op, err)
-		}
-	} else if status == "not_found" {
-		result, err := tx.Exec(ctx,
-			queryUpdateUser,
-			user.Email,
-			user.Password,
-			user.FirstName,
-			user.LastName,
-			user.Phone,
-			user.UpdatedAt,
-			user.ID,
-		)
-		if err != nil {
-			errRollback := tx.Rollback(ctx)
-			if errRollback != nil {
-				return fmt.Errorf("%s: failed to rollback transaction: %w", op, errRollback)
-			}
-			return fmt.Errorf("%s: failed to update user: %w", op, err)
-		}
+	if user.Email != "" {
+		queryUpdate += ", email = $" + strconv.Itoa(len(queryParams)+1)
+		queryParams = append(queryParams, user.Email)
+	}
+	if user.Password != "" {
+		queryUpdate += ", password = $" + strconv.Itoa(len(queryParams)+1)
+		queryParams = append(queryParams, user.Password)
+	}
+	if user.FirstName != "" {
+		queryUpdate += ", first_name = $" + strconv.Itoa(len(queryParams)+1)
+		queryParams = append(queryParams, user.FirstName)
+	}
+	if user.LastName != "" {
+		queryUpdate += ", last_name = $" + strconv.Itoa(len(queryParams)+1)
+		queryParams = append(queryParams, user.LastName)
+	}
+	if user.Phone != "" {
+		queryUpdate += ", phone = $" + strconv.Itoa(len(queryParams)+1)
+		queryParams = append(queryParams, user.Phone)
+	}
 
-		rowsAffected := result.RowsAffected()
-		if rowsAffected == 0 {
-			return fmt.Errorf("%s: user with ID %s not found: %w", op, user.ID, storage.ErrUserNotFound)
-		}
+	// Add condition for the specific user ID
+	queryUpdate += " WHERE id = $" + strconv.Itoa(len(queryParams)+1)
+	queryParams = append(queryParams, user.ID)
 
-	} else {
-		errRollback := tx.Rollback(ctx)
-		if errRollback != nil {
-			return fmt.Errorf("%s: failed to rollback transaction: %w", op, errRollback)
-		}
-		return fmt.Errorf("%s: user with this email already exists %w", op, storage.ErrUserAlreadyExists)
+	// Execute the update query
+	_, err = tx.Exec(ctx, queryUpdate, queryParams...)
+	if err != nil {
+		return fmt.Errorf("%s: failed to execute update query: %w", op, err)
 	}
 
 	// Commit transaction
