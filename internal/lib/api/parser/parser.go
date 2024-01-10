@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"github.com/rshelekhov/reframed/internal/model"
+	"github.com/rshelekhov/reframed/internal/entity"
 	"net/http"
 	"strconv"
 )
@@ -11,7 +11,7 @@ const (
 	defaultOffset = 0
 )
 
-func ParseLimitAndOffset(r *http.Request) (model.Pagination, error) {
+func ParseLimitAndOffset(r *http.Request) (entity.Pagination, error) {
 	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
 	if err != nil {
 		limit = defaultLimit
@@ -30,7 +30,7 @@ func ParseLimitAndOffset(r *http.Request) (model.Pagination, error) {
 		limit = defaultOffset
 	}
 
-	pagination := model.Pagination{
+	pagination := entity.Pagination{
 		Limit:  limit,
 		Offset: offset,
 	}
