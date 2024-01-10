@@ -18,7 +18,6 @@ type (
 		GetUsers(ctx context.Context, pgn entity.Pagination) ([]*entity.GetUser, error)
 		UpdateUser(ctx context.Context, id string, user *entity.UpdateUser) error
 		DeleteUser(ctx context.Context, id string) error
-		GetUserRoles(ctx context.Context) ([]*entity.GetRole, error)
 	}
 
 	// UserStorage defines the user repository
@@ -28,6 +27,5 @@ type (
 		GetUsers(ctx context.Context, pgn entity.Pagination) ([]*entity.GetUser, error)
 		UpdateUser(ctx context.Context, user entity.User) error
 		DeleteUser(ctx context.Context, id string) error
-		GetUserRoles(ctx context.Context) ([]*entity.GetRole, error)
 	}
 )

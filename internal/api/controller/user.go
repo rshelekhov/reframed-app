@@ -59,17 +59,6 @@ func (c *UserController) CreateUser() http.HandlerFunc {
 
 			return
 		}
-		if errors.Is(err, storage.ErrRoleNotFound) {
-			log.Error("role not found", slog.Int("role", user.RoleID))
-
-			render.Status(r, http.StatusNotFound)
-			render.JSON(w, r, Response{
-				Response: resp.Error("role not found"),
-				RoleID:   user.RoleID,
-			})
-
-			return
-		}
 		if err != nil {
 			log.Error("failed to create user", logger.Err(err))
 
@@ -305,45 +294,6 @@ func (c *UserController) DeleteUser() http.HandlerFunc {
 		render.JSON(w, r, Response{
 			Response: resp.Success("user deleted"),
 			ID:       id,
-		})
-	}
-}
-
-// GetUserRoles get a list of roles
-func (c *UserController) GetUserRoles() http.HandlerFunc {
-	type Response struct {
-		resp.Response
-		Roles []*entity.GetRole `json:"roles"`
-	}
-	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.controller.GetUserRoles"
-
-		log := logger.LogWithRequest(c.Logger, op, r)
-
-		roles, err := c.Usecase.GetUserRoles(r.Context())
-		if errors.Is(err, storage.ErrNoRolesFound) {
-			log.Error("no roles found")
-
-			render.Status(r, http.StatusNotFound)
-			render.JSON(w, r, resp.Error("no roles found"))
-
-			return
-		}
-		if err != nil {
-			log.Error("failed to get roles", logger.Err(err))
-
-			render.Status(r, http.StatusInternalServerError)
-			render.JSON(w, r, resp.Error("failed to get roles"))
-
-			return
-		}
-
-		log.Info("roles found", slog.Int("count", len(roles)))
-
-		render.Status(r, http.StatusOK)
-		render.JSON(w, r, Response{
-			Response: resp.Success("roles found"),
-			Roles:    roles,
 		})
 	}
 }

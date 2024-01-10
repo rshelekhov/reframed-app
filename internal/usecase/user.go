@@ -28,7 +28,6 @@ func (uc *UserUsecase) CreateUser(ctx context.Context, user *entity.User) (strin
 		ID:        user.ID,
 		Email:     user.Email,
 		Password:  user.Password,
-		RoleID:    user.RoleID,
 		FirstName: user.FirstName,
 		LastName:  user.LastName,
 		Phone:     user.Phone,
@@ -81,10 +80,4 @@ func (uc *UserUsecase) UpdateUser(ctx context.Context, id string, user *entity.U
 func (uc *UserUsecase) DeleteUser(ctx context.Context, id string) error {
 	// const op = "user.usecase.DeleteUser"
 	return uc.storage.DeleteUser(ctx, id)
-}
-
-// GetUserRoles returns a list of roles
-func (uc *UserUsecase) GetUserRoles(ctx context.Context) ([]*entity.GetRole, error) {
-	// const op = "user.usecase.GetUserRoles"
-	return uc.storage.GetUserRoles(ctx)
 }

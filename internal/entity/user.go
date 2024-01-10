@@ -9,7 +9,6 @@ type User struct {
 	ID        string     `db:"id" json:"id" `
 	Email     string     `db:"email" json:"email" validate:"required,email"`
 	Password  string     `db:"password" json:"password" validate:"required,min=8"`
-	RoleID    int        `db:"role_id" json:"role_id" validate:"required"`
 	FirstName string     `db:"first_name" json:"first_name" validate:"required"`
 	LastName  string     `db:"last_name" json:"last_name" validate:"required"`
 	Phone     string     `db:"phone" json:"phone" validate:"required,e164"`
@@ -21,7 +20,6 @@ type User struct {
 type GetUser struct {
 	ID        string    `json:"id" db:"id"`
 	Email     string    `json:"email" db:"email"`
-	RoleID    int       `json:"role_id" db:"role_id"`
 	FirstName string    `json:"first_name" db:"first_name"`
 	LastName  string    `json:"last_name" db:"last_name"`
 	Phone     string    `json:"phone" db:"phone"`
@@ -35,10 +33,4 @@ type UpdateUser struct {
 	FirstName string `json:"first_name" db:"first_name"`
 	LastName  string `json:"last_name" db:"last_name"`
 	Phone     string `json:"phone" db:"phone" validate:"e164"`
-}
-
-// GetRole used in the response body and usecase layer
-type GetRole struct {
-	RoleID int    `json:"role_id" db:"id"`
-	Title  string `json:"title" db:"title"`
 }
