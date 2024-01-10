@@ -22,7 +22,6 @@
 | Get users   | GET         | /users/       |
 | Update user | PUT         | /users/{id}   |
 | Delete user | DELETE      | /users/{id}   |
-| Get roles   | GET         | /users/roles  |
 
 
 ## Database design
@@ -41,47 +40,54 @@ reframed
 │  └── reframed
 │     └── main.go
 │
+├── config
+│  └── config.go
+│
 ├── internal
-│  ├── config
-│  │  └── config.go
+│  ├── api
+│  │  │── controller
+│  │  │   ├── health.go
+│  │  │   ├── helpers.go
+│  │  │   └── entityName.go
+│  │  └── route
+│  │      ├── route.go
+│  │      └── entityName.go
 │  │
-│  ├── http-server
-│  │  ├── middleware
-│  │  ├── router
-│  │  └── server
+│  ├── entity
+│  │  └── entityName.go
 │  │
 │  ├── lib
 │  │  ├── api
-│  │  │  ├── entity
 │  │  │  ├── parser
 │  │  │  └── response
 │  │  │
 │  │  └── logger
 │  │
-│  ├── resource
-│  │  ├── common
-│  │  │  ├── err
-│  │  │  ├── helper
-│  │  │  └── entity
-│  │  │
-│  │  ├── health
-│  │  │
-│  │  └── resourceName
-│  │     ├── controller.go
-│  │     ├── entity.go
-│  │     ├── usecase.go
-│  │     └── storage.go
-│  │
-│  └── storage
-│     ├── postgres
-│     │  └── postgres.go
-│     └── storage.go
-│
+│  └── usecase
+│     ├── storage
+│     │  ├── storage.go
+│     │  └── entityName.go
+│     │
+│     │── interfaces.go
+│     └── entityName.go
+│   
 ├── migrations
 │  ├── 000001_init.down.sql
 │  ├── 000001_init.up.sql
 │  ├── 000002_zero_dump.down.sql
 │  └── 000002_zero_dump.up.sql
+│
+├── pkg
+│  ├── http-server
+│  │  ├── middleware
+│  │  └── server.go
+│  │
+│  ├── logger
+│  │  └── logger.go
+│  │
+│  └── storage
+│     └── postgres
+│        └── postgres.go
 │
 ├── test
 │
