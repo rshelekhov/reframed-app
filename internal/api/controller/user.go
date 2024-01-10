@@ -8,8 +8,8 @@ import (
 	"github.com/rshelekhov/reframed/internal/lib/api/parser"
 	resp "github.com/rshelekhov/reframed/internal/lib/api/response"
 	"github.com/rshelekhov/reframed/internal/usecase"
+	"github.com/rshelekhov/reframed/internal/usecase/storage"
 	"github.com/rshelekhov/reframed/pkg/logger"
-	"github.com/rshelekhov/reframed/pkg/storage"
 	"log/slog"
 	"net/http"
 )

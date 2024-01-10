@@ -66,12 +66,16 @@ func ValidateData(w http.ResponseWriter, r *http.Request, log logger.Interface, 
 
 		render.Status(r, http.StatusUnprocessableEntity)
 		render.JSON(w, r, resp.ValidationError(ve))
+
+		return fmt.Errorf("validation error")
 	}
 	if err != nil {
 		log.Error("failed to validate user", logger.Err(err))
 
 		render.Status(r, http.StatusInternalServerError)
 		render.JSON(w, r, resp.Error("failed to validate user"))
+
+		return fmt.Errorf("validation error")
 	}
 	return nil
 }

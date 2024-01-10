@@ -17,7 +17,6 @@ func NewUserRouter(r *chi.Mux, log logger.Interface, u usecase.User) {
 	r.Route("/users", func(r chi.Router) {
 		r.Post("/", c.CreateUser())
 		r.Get("/", c.GetUsers())
-		r.Get("/roles", c.GetUserRoles())
 
 		r.Route("/{id}", func(r chi.Router) {
 			r.Get("/", c.GetUser())
