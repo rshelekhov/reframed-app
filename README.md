@@ -1,6 +1,6 @@
-# Remedi
+# Reframed
 
-> Solution for managing physician and clinic assistant interactions with clients
+> ...
 
 ## What's included
 - The idiomatic structure based on the resource-oriented design.
@@ -27,18 +27,18 @@
 
 ## Database design
 
-| Column Name    | Datatype  | Not Null | Primary Key |
-|----------------|-----------|----------|-------------|
-| id             | UUID      | ✅       | ✅          |
+| Column Name    | Datatype | Not Null | Primary Key |
+|----------------|----------|----------|-------------|
+| id             | ksuid    | ✅       | ✅          |
 
 ## Project structure
 
 ```shell
-remedi
+reframed
 ├── cmd
 │  ├── migrate
 │  │  └── main.go
-│  └── remedi
+│  └── reframed
 │     └── main.go
 │
 ├── internal
@@ -52,7 +52,7 @@ remedi
 │  │
 │  ├── lib
 │  │  ├── api
-│  │  │  ├── model
+│  │  │  ├── entity
 │  │  │  ├── parser
 │  │  │  └── response
 │  │  │
@@ -62,14 +62,14 @@ remedi
 │  │  ├── common
 │  │  │  ├── err
 │  │  │  ├── helper
-│  │  │  └── model
+│  │  │  └── entity
 │  │  │
 │  │  ├── health
 │  │  │
 │  │  └── resourceName
-│  │     ├── handlers.go
-│  │     ├── model.go
-│  │     ├── service.go
+│  │     ├── controller.go
+│  │     ├── entity.go
+│  │     ├── usecase.go
 │  │     └── storage.go
 │  │
 │  └── storage
