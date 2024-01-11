@@ -3,7 +3,7 @@ package usecase
 import (
 	"context"
 	"fmt"
-	"github.com/rshelekhov/reframed/internal/entity"
+	"github.com/rshelekhov/reframed/internal/model"
 	"github.com/segmentio/ksuid"
 	"time"
 )
@@ -17,14 +17,14 @@ func NewUserUsecase(s UserStorage) *UserUsecase {
 }
 
 // CreateUser creates a new user
-func (uc *UserUsecase) CreateUser(ctx context.Context, user *entity.User) (string, error) {
+func (uc *UserUsecase) CreateUser(ctx context.Context, user *model.User) (string, error) {
 	const op = "user.usecase.CreateUser"
 
 	if user.ID == "" {
 		user.ID = ksuid.New().String()
 	}
 
-	newUser := entity.User{
+	newUser := model.User{
 		ID:        user.ID,
 		Email:     user.Email,
 		Password:  user.Password,
@@ -43,22 +43,22 @@ func (uc *UserUsecase) CreateUser(ctx context.Context, user *entity.User) (strin
 }
 
 // GetUser returns a user by ID
-func (uc *UserUsecase) GetUser(ctx context.Context, id string) (entity.GetUser, error) {
+func (uc *UserUsecase) GetUser(ctx context.Context, id string) (model.GetUser, error) {
 	// const op = "user.usecase.GetUser"
 	return uc.storage.GetUser(ctx, id)
 }
 
 // GetUsers returns a list of users
-func (uc *UserUsecase) GetUsers(ctx context.Context, pgn entity.Pagination) ([]*entity.GetUser, error) {
+func (uc *UserUsecase) GetUsers(ctx context.Context, pgn model.Pagination) ([]*model.GetUser, error) {
 	// const op = "user.usecase.GetUsers"
 	return uc.storage.GetUsers(ctx, pgn)
 }
 
 // UpdateUser updates a user by ID
-func (uc *UserUsecase) UpdateUser(ctx context.Context, id string, user *entity.UpdateUser) error {
+func (uc *UserUsecase) UpdateUser(ctx context.Context, id string, user *model.UpdateUser) error {
 	const op = "user.usecase.UpdateUser"
 
-	newUser := entity.User{
+	newUser := model.User{
 		ID:        id,
 		Email:     user.Email,
 		Password:  user.Password,

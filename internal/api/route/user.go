@@ -3,8 +3,8 @@ package route
 import (
 	"github.com/go-chi/chi"
 	"github.com/rshelekhov/reframed/internal/api/controller"
+	"github.com/rshelekhov/reframed/internal/logger"
 	"github.com/rshelekhov/reframed/internal/usecase"
-	"github.com/rshelekhov/reframed/pkg/logger"
 )
 
 // NewUserRouter create a handler struct and register the routes

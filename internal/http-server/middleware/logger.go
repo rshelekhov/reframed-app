@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"github.com/go-chi/chi/middleware"
-	"github.com/rshelekhov/reframed/pkg/logger"
+	"github.com/rshelekhov/reframed/internal/logger"
 	"log/slog"
 	"net/http"
 	"time"

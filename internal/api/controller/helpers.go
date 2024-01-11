@@ -6,14 +6,14 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator"
-	resp "github.com/rshelekhov/reframed/internal/lib/api/response"
-	"github.com/rshelekhov/reframed/pkg/logger"
+	resp "github.com/rshelekhov/reframed/internal/api/controller/response"
+	"github.com/rshelekhov/reframed/internal/logger"
 	"io"
 	"log/slog"
 	"net/http"
 )
 
-// GetID gets the entity id from the request
+// GetID gets the model id from the request
 func GetID(w http.ResponseWriter, r *http.Request, log logger.Interface) (string, error) {
 	id := chi.URLParam(r, "id")
 	if id == "" {

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"github.com/go-chi/chi"
 	"github.com/rshelekhov/reframed/config"
-	"github.com/rshelekhov/reframed/pkg/logger"
+	"github.com/rshelekhov/reframed/internal/logger"
 	"net/http"
 	"os"
 	"os/signal"

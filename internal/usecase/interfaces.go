@@ -3,7 +3,7 @@ package usecase
 
 import (
 	"context"
-	"github.com/rshelekhov/reframed/internal/entity"
+	"github.com/rshelekhov/reframed/internal/model"
 )
 
 type (
@@ -13,19 +13,19 @@ type (
 
 	// User defines the user use-cases
 	User interface {
-		CreateUser(ctx context.Context, user *entity.User) (string, error)
-		GetUser(ctx context.Context, id string) (entity.GetUser, error)
-		GetUsers(ctx context.Context, pgn entity.Pagination) ([]*entity.GetUser, error)
-		UpdateUser(ctx context.Context, id string, user *entity.UpdateUser) error
+		CreateUser(ctx context.Context, user *model.User) (string, error)
+		GetUser(ctx context.Context, id string) (model.GetUser, error)
+		GetUsers(ctx context.Context, pgn model.Pagination) ([]*model.GetUser, error)
+		UpdateUser(ctx context.Context, id string, user *model.UpdateUser) error
 		DeleteUser(ctx context.Context, id string) error
 	}
 
 	// UserStorage defines the user repository
 	UserStorage interface {
-		CreateUser(ctx context.Context, user entity.User) error
-		GetUser(ctx context.Context, id string) (entity.GetUser, error)
-		GetUsers(ctx context.Context, pgn entity.Pagination) ([]*entity.GetUser, error)
-		UpdateUser(ctx context.Context, user entity.User) error
+		CreateUser(ctx context.Context, user model.User) error
+		GetUser(ctx context.Context, id string) (model.GetUser, error)
+		GetUsers(ctx context.Context, pgn model.Pagination) ([]*model.GetUser, error)
+		UpdateUser(ctx context.Context, user model.User) error
 		DeleteUser(ctx context.Context, id string) error
 	}
 )
