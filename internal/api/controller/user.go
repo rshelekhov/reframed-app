@@ -2,7 +2,6 @@ package controller
 
 import (
 	"errors"
-	"fmt"
 	"github.com/go-chi/render"
 	"github.com/rshelekhov/reframed/internal/api/controller/parser"
 	resp "github.com/rshelekhov/reframed/internal/api/controller/response"
@@ -39,15 +38,11 @@ func (c *UserController) CreateUser() http.HandlerFunc {
 			return
 		}
 
-		fmt.Println(user)
-
 		// Validate the request
 		err = ValidateData(w, r, log, user)
 		if err != nil {
 			return
 		}
-
-		fmt.Println(user)
 
 		// Create the user
 		id, err := c.Usecase.CreateUser(r.Context(), user)

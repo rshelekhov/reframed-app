@@ -28,9 +28,6 @@ func (uc *UserUsecase) CreateUser(ctx context.Context, user *model.User) (string
 		ID:        user.ID,
 		Email:     user.Email,
 		Password:  user.Password,
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		Phone:     user.Phone,
 		UpdatedAt: time.Now().UTC(),
 	}
 
@@ -62,9 +59,6 @@ func (uc *UserUsecase) UpdateUser(ctx context.Context, id string, user *model.Up
 		ID:        id,
 		Email:     user.Email,
 		Password:  user.Password,
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		Phone:     user.Phone,
 		UpdatedAt: time.Now().UTC(),
 	}
 

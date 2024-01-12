@@ -86,8 +86,8 @@ func replaceSoftDeletedUser(ctx context.Context, tx pgx.Tx, user model.User) err
 						UPDATE users SET deleted_at = NULL WHERE email = $1 RETURNING *
 					)
 					INSERT INTO users
-						(id, email, password, first_name, last_name, phone, updated_at)
-						VALUES ($2, $3, $4, $5, $6, $7, $8)`
+						(id, email, password, updated_at)
+						VALUES ($2, $3, $4, $5)`
 	)
 
 	_, err := tx.Exec(
@@ -96,9 +96,6 @@ func replaceSoftDeletedUser(ctx context.Context, tx pgx.Tx, user model.User) err
 		user.Email,
 		user.ID,
 		user.Password,
-		user.FirstName,
-		user.LastName,
-		user.Phone,
 		user.UpdatedAt)
 	if err != nil {
 		RollbackOnError(&err, tx, ctx, op)
@@ -114,8 +111,8 @@ func insertUser(ctx context.Context, tx pgx.Tx, user model.User) error {
 		op = "user.storage.insertNewUser"
 
 		query = `INSERT INTO users
-    							(id, email, password, first_name, last_name, phone, updated_at)
-								VALUES ($1, $2, $3, $4, $5, $6, $7)`
+    							(id, email, password, updated_at)
+								VALUES ($1, $2, $3, $4)`
 	)
 
 	_, err := tx.Exec(
@@ -124,9 +121,6 @@ func insertUser(ctx context.Context, tx pgx.Tx, user model.User) error {
 		user.ID,
 		user.Email,
 		user.Password,
-		user.FirstName,
-		user.LastName,
-		user.Phone,
 		user.UpdatedAt,
 	)
 	if err != nil {
@@ -142,7 +136,7 @@ func (s *UserStorage) GetUser(ctx context.Context, id string) (model.GetUser, er
 	const (
 		op = "user.storage.GetUser"
 
-		query = `SELECT id, email, first_name, last_name, phone, updated_at
+		query = `SELECT id, email, updated_at
 							FROM users WHERE id = $1 AND deleted_at IS NULL`
 	)
 
@@ -151,9 +145,6 @@ func (s *UserStorage) GetUser(ctx context.Context, id string) (model.GetUser, er
 	err := s.QueryRow(ctx, query, id).Scan(
 		&user.ID,
 		&user.Email,
-		&user.FirstName,
-		&user.LastName,
-		&user.Phone,
 		&user.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return user, fmt.Errorf("%s: %w", op, storage.ErrUserNotFound)
@@ -170,7 +161,7 @@ func (s *UserStorage) GetUsers(ctx context.Context, pgn model.Pagination) ([]*mo
 	const (
 		op = "user.storage.GetUsers"
 
-		query = `SELECT id, email, first_name, last_name, phone, updated_at
+		query = `SELECT id, email, updated_at
 							FROM users WHERE deleted_at IS NULL ORDER BY id DESC LIMIT $1 OFFSET $2`
 	)
 
@@ -219,18 +210,6 @@ func (s *UserStorage) UpdateUser(ctx context.Context, user model.User) error {
 	if user.Password != "" {
 		queryUpdate += ", password = $" + strconv.Itoa(len(queryParams)+1)
 		queryParams = append(queryParams, user.Password)
-	}
-	if user.FirstName != "" {
-		queryUpdate += ", first_name = $" + strconv.Itoa(len(queryParams)+1)
-		queryParams = append(queryParams, user.FirstName)
-	}
-	if user.LastName != "" {
-		queryUpdate += ", last_name = $" + strconv.Itoa(len(queryParams)+1)
-		queryParams = append(queryParams, user.LastName)
-	}
-	if user.Phone != "" {
-		queryUpdate += ", phone = $" + strconv.Itoa(len(queryParams)+1)
-		queryParams = append(queryParams, user.Phone)
 	}
 
 	// Add condition for the specific user ID
