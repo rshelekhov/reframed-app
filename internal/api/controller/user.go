@@ -4,12 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-chi/render"
-	"github.com/rshelekhov/reframed/internal/entity"
-	"github.com/rshelekhov/reframed/internal/lib/api/parser"
-	resp "github.com/rshelekhov/reframed/internal/lib/api/response"
+	"github.com/rshelekhov/reframed/internal/api/controller/parser"
+	resp "github.com/rshelekhov/reframed/internal/api/controller/response"
+	"github.com/rshelekhov/reframed/internal/logger"
+	"github.com/rshelekhov/reframed/internal/model"
+	"github.com/rshelekhov/reframed/internal/storage"
 	"github.com/rshelekhov/reframed/internal/usecase"
-	"github.com/rshelekhov/reframed/internal/usecase/storage"
-	"github.com/rshelekhov/reframed/pkg/logger"
 	"log/slog"
 	"net/http"
 )
@@ -31,7 +31,7 @@ func (c *UserController) CreateUser() http.HandlerFunc {
 
 		log := logger.LogWithRequest(c.Logger, op, r)
 
-		user := &entity.User{}
+		user := &model.User{}
 
 		// Decode the request body
 		err := DecodeJSON(w, r, log, user)
@@ -83,7 +83,7 @@ func (c *UserController) CreateUser() http.HandlerFunc {
 func (c *UserController) GetUser() http.HandlerFunc {
 	type Response struct {
 		resp.Response
-		User entity.GetUser `json:"user"`
+		User model.GetUser `json:"user"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.controller.GetUser"
@@ -127,7 +127,7 @@ func (c *UserController) GetUser() http.HandlerFunc {
 func (c *UserController) GetUsers() http.HandlerFunc {
 	type Response struct {
 		resp.Response
-		Users []*entity.GetUser `json:"users"`
+		Users []*model.GetUser `json:"users"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.controller.GetUsers"
@@ -189,7 +189,7 @@ func (c *UserController) UpdateUser() http.HandlerFunc {
 
 		log := logger.LogWithRequest(c.Logger, op, r)
 
-		user := &entity.UpdateUser{}
+		user := &model.UpdateUser{}
 
 		id, err := GetID(w, r, log)
 		if err != nil {

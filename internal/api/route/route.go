@@ -6,8 +6,8 @@ import (
 	"github.com/go-chi/httprate"
 	"github.com/go-chi/render"
 	"github.com/rshelekhov/reframed/internal/api/controller"
-	mwlogger "github.com/rshelekhov/reframed/pkg/http-server/middleware"
-	"github.com/rshelekhov/reframed/pkg/logger"
+	mwlogger "github.com/rshelekhov/reframed/internal/http-server/middleware"
+	"github.com/rshelekhov/reframed/internal/logger"
 	"time"
 )
 

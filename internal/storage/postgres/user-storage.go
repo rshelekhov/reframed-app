@@ -1,4 +1,4 @@
-package storage
+package postgres
 
 import (
 	"context"
@@ -7,7 +7,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/rshelekhov/reframed/internal/entity"
+	"github.com/rshelekhov/reframed/internal/model"
+	"github.com/rshelekhov/reframed/internal/storage"
 	"strconv"
 )
 
@@ -20,7 +21,7 @@ func NewUserStorage(pg *pgxpool.Pool) *UserStorage {
 }
 
 // CreateUser creates a new user
-func (s *UserStorage) CreateUser(ctx context.Context, user entity.User) error {
+func (s *UserStorage) CreateUser(ctx context.Context, user model.User) error {
 	const op = "user.storage.CreateUser"
 
 	tx, err := BeginTransaction(s.Pool, ctx, op)
@@ -35,7 +36,7 @@ func (s *UserStorage) CreateUser(ctx context.Context, user entity.User) error {
 
 	switch userStatus {
 	case "active":
-		return fmt.Errorf("%s: user with this email already exists %w", op, ErrUserAlreadyExists)
+		return fmt.Errorf("%s: user with this email already exists %w", op, storage.ErrUserAlreadyExists)
 	case "soft_deleted":
 		if err = replaceSoftDeletedUser(ctx, tx, user); err != nil {
 			return err
@@ -77,7 +78,7 @@ func getUserStatus(ctx context.Context, tx pgx.Tx, email string) (string, error)
 }
 
 // replaceSoftDeletedUser replaces a soft deleted user with the given user
-func replaceSoftDeletedUser(ctx context.Context, tx pgx.Tx, user entity.User) error {
+func replaceSoftDeletedUser(ctx context.Context, tx pgx.Tx, user model.User) error {
 	const (
 		op = "user.storage.replaceSoftDeletedUser"
 
@@ -108,7 +109,7 @@ func replaceSoftDeletedUser(ctx context.Context, tx pgx.Tx, user entity.User) er
 }
 
 // insertUser inserts a new user
-func insertUser(ctx context.Context, tx pgx.Tx, user entity.User) error {
+func insertUser(ctx context.Context, tx pgx.Tx, user model.User) error {
 	const (
 		op = "user.storage.insertNewUser"
 
@@ -137,7 +138,7 @@ func insertUser(ctx context.Context, tx pgx.Tx, user entity.User) error {
 }
 
 // GetUser returns a user by ID
-func (s *UserStorage) GetUser(ctx context.Context, id string) (entity.GetUser, error) {
+func (s *UserStorage) GetUser(ctx context.Context, id string) (model.GetUser, error) {
 	const (
 		op = "user.storage.GetUser"
 
@@ -145,7 +146,7 @@ func (s *UserStorage) GetUser(ctx context.Context, id string) (entity.GetUser, e
 							FROM users WHERE id = $1 AND deleted_at IS NULL`
 	)
 
-	var user entity.GetUser
+	var user model.GetUser
 
 	err := s.QueryRow(ctx, query, id).Scan(
 		&user.ID,
@@ -155,7 +156,7 @@ func (s *UserStorage) GetUser(ctx context.Context, id string) (entity.GetUser, e
 		&user.Phone,
 		&user.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return user, fmt.Errorf("%s: %w", op, ErrUserNotFound)
+		return user, fmt.Errorf("%s: %w", op, storage.ErrUserNotFound)
 	}
 	if err != nil {
 		return user, fmt.Errorf("%s: failed to get user: %w", op, err)
@@ -165,7 +166,7 @@ func (s *UserStorage) GetUser(ctx context.Context, id string) (entity.GetUser, e
 }
 
 // GetUsers returns a list of users
-func (s *UserStorage) GetUsers(ctx context.Context, pgn entity.Pagination) ([]*entity.GetUser, error) {
+func (s *UserStorage) GetUsers(ctx context.Context, pgn model.Pagination) ([]*model.GetUser, error) {
 	const (
 		op = "user.storage.GetUsers"
 
@@ -179,21 +180,21 @@ func (s *UserStorage) GetUsers(ctx context.Context, pgn entity.Pagination) ([]*e
 	}
 	defer rows.Close()
 
-	var users []*entity.GetUser
-	users, err = pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[entity.GetUser])
+	var users []*model.GetUser
+	users, err = pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[model.GetUser])
 	if err != nil {
 		return nil, fmt.Errorf("%s: failed to collect rows: %w", op, err)
 	}
 
 	if len(users) == 0 {
-		return nil, fmt.Errorf("%s: no users found: %w", op, ErrNoUsersFound)
+		return nil, fmt.Errorf("%s: no users found: %w", op, storage.ErrNoUsersFound)
 	}
 
 	return users, nil
 }
 
 // UpdateUser updates a user by ID
-func (s *UserStorage) UpdateUser(ctx context.Context, user entity.User) error {
+func (s *UserStorage) UpdateUser(ctx context.Context, user model.User) error {
 	const op = "user.storage.UpdateUser"
 
 	// Begin transaction
@@ -260,7 +261,7 @@ func checkEmailUniqueness(ctx context.Context, tx pgx.Tx, email, id string) erro
 	err := tx.QueryRow(ctx, query, email).Scan(&existingUserID)
 	if !errors.Is(err, pgx.ErrNoRows) && existingUserID != id {
 		return fmt.Errorf(
-			"%s: email already exists in the database for another user: %w", op, ErrUserAlreadyExists,
+			"%s: email already exists in the database for another user: %w", op, storage.ErrUserAlreadyExists,
 		)
 	} else if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return fmt.Errorf("%s: failed to check email uniqueness: %w", op, err)
@@ -279,7 +280,7 @@ func (s *UserStorage) DeleteUser(ctx context.Context, id string) error {
 
 	result, err := s.Exec(ctx, query, id)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return fmt.Errorf("%s: user with this id not found %w", op, ErrUserNotFound)
+		return fmt.Errorf("%s: user with this id not found %w", op, storage.ErrUserNotFound)
 	}
 	if err != nil {
 		return fmt.Errorf("%s: failed to delete user: %w", op, err)
@@ -287,7 +288,7 @@ func (s *UserStorage) DeleteUser(ctx context.Context, id string) error {
 
 	rowsAffected := result.RowsAffected()
 	if rowsAffected == 0 {
-		return fmt.Errorf("%s: user with ID %s not found: %w", op, id, ErrUserNotFound)
+		return fmt.Errorf("%s: user with ID %s not found: %w", op, id, storage.ErrUserNotFound)
 	}
 
 	return nil
