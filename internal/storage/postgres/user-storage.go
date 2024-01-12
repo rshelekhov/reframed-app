@@ -194,6 +194,11 @@ func (s *UserStorage) UpdateUser(ctx context.Context, user model.User) error {
 		RollbackOnError(&err, tx, ctx, op)
 	}()
 
+	// Check if the user exists
+	if err = checkUserExists(ctx, tx, user.ID); err != nil {
+		return err
+	}
+
 	// Check if the user email exists for a different user
 	if err = checkEmailUniqueness(ctx, tx, user.Email, user.ID); err != nil {
 		return err
@@ -223,6 +228,26 @@ func (s *UserStorage) UpdateUser(ctx context.Context, user model.User) error {
 	}
 
 	CommitTransaction(&err, tx, ctx, op)
+
+	return nil
+}
+
+// checkUserExists checks if the user with the given ID exists
+func checkUserExists(ctx context.Context, tx pgx.Tx, id string) error {
+	const (
+		op = "user.storage.checkUserExists"
+
+		query = `SELECT id FROM users WHERE id = $1 AND deleted_at IS NULL`
+	)
+
+	var exist bool
+	err := tx.QueryRow(ctx, query, id).Scan(&exist)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return fmt.Errorf("%s: %w", op, storage.ErrUserNotFound)
+	}
+	if err != nil {
+		return fmt.Errorf("%s: failed to check if user exists: %w", op, err)
+	}
 
 	return nil
 }
