@@ -1,4 +1,4 @@
-package controller
+package handler
 
 import (
 	"github.com/rshelekhov/reframed/internal/model"

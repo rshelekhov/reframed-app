@@ -1,4 +1,4 @@
-package controller
+package handler
 
 import (
 	"errors"
@@ -11,17 +11,17 @@ import (
 	"net/http"
 )
 
-type UserController struct {
+type UserHandler struct {
 	Usecase usecase.User
 	Logger  logger.Interface
 }
 
 // CreateUser creates a new user
-func (c *UserController) CreateUser() http.HandlerFunc {
+func (h *UserHandler) CreateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.controller.CreateUser"
+		const op = "user.handler.CreateUser"
 
-		log := logger.LogWithRequest(c.Logger, op, r)
+		log := logger.LogWithRequest(h.Logger, op, r)
 
 		// user := &model.CreateUser{}
 		user := &model.User{}
@@ -39,7 +39,7 @@ func (c *UserController) CreateUser() http.HandlerFunc {
 		}
 
 		// Create the user
-		id, err := c.Usecase.CreateUser(r.Context(), user)
+		id, err := h.Usecase.CreateUser(r.Context(), user)
 		if errors.Is(err, storage.ErrUserAlreadyExists) {
 			log.Error(fmt.Sprintf("%v", storage.ErrUserAlreadyExists), slog.String("email", *user.Email))
 			responseError(w, r, http.StatusConflict, fmt.Sprintf("%v", storage.ErrUserAlreadyExists))
@@ -57,18 +57,18 @@ func (c *UserController) CreateUser() http.HandlerFunc {
 }
 
 // GetUserByID get a user by ID
-func (c *UserController) GetUserByID() http.HandlerFunc {
+func (h *UserHandler) GetUserByID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.controller.GetUserByID"
+		const op = "user.handler.GetUserByID"
 
-		log := logger.LogWithRequest(c.Logger, op, r)
+		log := logger.LogWithRequest(h.Logger, op, r)
 
 		id, err := GetID(w, r, log)
 		if err != nil {
 			return
 		}
 
-		user, err := c.Usecase.GetUserByID(r.Context(), id)
+		user, err := h.Usecase.GetUserByID(r.Context(), id)
 		if errors.Is(err, storage.ErrUserNotFound) {
 			log.Error(fmt.Sprintf("%v", storage.ErrUserNotFound), slog.String("user_id", id))
 			responseError(w, r, http.StatusNotFound, fmt.Sprintf("%v", storage.ErrUserNotFound))
@@ -86,11 +86,11 @@ func (c *UserController) GetUserByID() http.HandlerFunc {
 }
 
 // GetUsers get a list of users
-func (c *UserController) GetUsers() http.HandlerFunc {
+func (h *UserHandler) GetUsers() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.controller.GetUsers"
+		const op = "user.handler.GetUsers"
 
-		log := logger.LogWithRequest(c.Logger, op, r)
+		log := logger.LogWithRequest(h.Logger, op, r)
 
 		pagination, err := parseLimitAndOffset(r)
 		if err != nil {
@@ -99,7 +99,7 @@ func (c *UserController) GetUsers() http.HandlerFunc {
 			return
 		}
 
-		users, err := c.Usecase.GetUsers(r.Context(), pagination)
+		users, err := h.Usecase.GetUsers(r.Context(), pagination)
 		if errors.Is(err, storage.ErrNoUsersFound) {
 			log.Error(fmt.Sprintf("%v", storage.ErrNoUsersFound))
 			responseError(w, r, http.StatusNotFound, fmt.Sprintf("%v", storage.ErrNoUsersFound))
@@ -123,11 +123,11 @@ func (c *UserController) GetUsers() http.HandlerFunc {
 }
 
 // UpdateUser updates a user by ID
-func (c *UserController) UpdateUser() http.HandlerFunc {
+func (h *UserHandler) UpdateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.controller.UpdateUser"
+		const op = "user.handler.UpdateUser"
 
-		log := logger.LogWithRequest(c.Logger, op, r)
+		log := logger.LogWithRequest(h.Logger, op, r)
 
 		user := &model.UpdateUser{}
 
@@ -148,7 +148,7 @@ func (c *UserController) UpdateUser() http.HandlerFunc {
 			return
 		}
 
-		err = c.Usecase.UpdateUser(r.Context(), id, user)
+		err = h.Usecase.UpdateUser(r.Context(), id, user)
 		if errors.Is(err, storage.ErrUserNotFound) {
 			log.Error(fmt.Sprintf("%v", storage.ErrUserNotFound), slog.String("user_id", id))
 			responseError(w, r, http.StatusNotFound, fmt.Sprintf("%v", storage.ErrUserNotFound))
@@ -181,18 +181,18 @@ func (c *UserController) UpdateUser() http.HandlerFunc {
 }
 
 // DeleteUser deletes a user by ID
-func (c *UserController) DeleteUser() http.HandlerFunc {
+func (h *UserHandler) DeleteUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.controller.DeleteUser"
+		const op = "user.handler.DeleteUser"
 
-		log := logger.LogWithRequest(c.Logger, op, r)
+		log := logger.LogWithRequest(h.Logger, op, r)
 
 		id, err := GetID(w, r, log)
 		if err != nil {
 			return
 		}
 
-		err = c.Usecase.DeleteUser(r.Context(), id)
+		err = h.Usecase.DeleteUser(r.Context(), id)
 		if errors.Is(err, storage.ErrUserNotFound) {
 			log.Error(fmt.Sprintf("%v", storage.ErrUserNotFound), slog.String("user_id", id))
 			responseError(w, r, http.StatusNotFound, fmt.Sprintf("%v", storage.ErrUserNotFound))

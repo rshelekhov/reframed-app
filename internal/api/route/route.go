@@ -5,7 +5,7 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/httprate"
 	"github.com/go-chi/render"
-	"github.com/rshelekhov/reframed/internal/api/controller"
+	"github.com/rshelekhov/reframed/internal/api/handler"
 	mwlogger "github.com/rshelekhov/reframed/internal/http-server/middleware"
 	"github.com/rshelekhov/reframed/internal/logger"
 	"time"
@@ -26,7 +26,7 @@ func NewRouter(log logger.Interface) *chi.Mux {
 	// our own middleware to log requests:
 	r.Use(mwlogger.New(log))
 
-	// If a panic happens somewhere inside the server (request controller),
+	// If a panic happens somewhere inside the server (request handler),
 	// the application should not crash.
 	r.Use(middleware.Recoverer)
 
@@ -40,7 +40,7 @@ func NewRouter(log logger.Interface) *chi.Mux {
 	r.Use(httprate.LimitByIP(100, 1*time.Minute))
 
 	// Health check
-	r.Get("/health", controller.HealthRead())
+	r.Get("/health", handler.HealthRead())
 
 	return r
 }
