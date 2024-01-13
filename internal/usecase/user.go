@@ -17,16 +17,17 @@ func NewUserUsecase(s UserStorage) *UserUsecase {
 }
 
 // CreateUser creates a new user
-func (uc *UserUsecase) CreateUser(ctx context.Context, user *model.CreateUser) (string, error) {
+func (uc *UserUsecase) CreateUser(ctx context.Context, user *model.User) (string, error) {
 	const op = "user.usecase.CreateUser"
 
 	id := ksuid.New().String()
+	now := time.Now().UTC()
 
 	newUser := model.User{
 		ID:        id,
 		Email:     user.Email,
 		Password:  user.Password,
-		UpdatedAt: time.Now().UTC(),
+		UpdatedAt: &now,
 	}
 
 	err := uc.storage.CreateUser(ctx, newUser)
@@ -38,13 +39,13 @@ func (uc *UserUsecase) CreateUser(ctx context.Context, user *model.CreateUser) (
 }
 
 // GetUserByID returns a user by ID
-func (uc *UserUsecase) GetUserByID(ctx context.Context, id string) (model.GetUser, error) {
+func (uc *UserUsecase) GetUserByID(ctx context.Context, id string) (model.User, error) {
 	// const op = "user.usecase.GetUserByID"
 	return uc.storage.GetUserByID(ctx, id)
 }
 
 // GetUsers returns a list of users
-func (uc *UserUsecase) GetUsers(ctx context.Context, pgn model.Pagination) ([]*model.GetUser, error) {
+func (uc *UserUsecase) GetUsers(ctx context.Context, pgn model.Pagination) ([]model.User, error) {
 	// const op = "user.usecase.GetUsers"
 	return uc.storage.GetUsers(ctx, pgn)
 }
@@ -52,12 +53,13 @@ func (uc *UserUsecase) GetUsers(ctx context.Context, pgn model.Pagination) ([]*m
 // UpdateUser updates a user by ID
 func (uc *UserUsecase) UpdateUser(ctx context.Context, id string, user *model.UpdateUser) error {
 	const op = "user.usecase.UpdateUser"
+	now := time.Now().UTC()
 
 	newUser := model.User{
 		ID:        id,
-		Email:     user.Email,
-		Password:  user.Password,
-		UpdatedAt: time.Now().UTC(),
+		Email:     &user.Email,
+		Password:  &user.Password,
+		UpdatedAt: &now,
 	}
 
 	err := uc.storage.UpdateUser(ctx, newUser)

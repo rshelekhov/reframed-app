@@ -29,7 +29,7 @@ func (s *UserStorage) CreateUser(ctx context.Context, user model.User) error {
 		RollbackOnError(&err, tx, ctx, op)
 	}()
 
-	userStatus, err := getUserStatus(ctx, tx, user.Email)
+	userStatus, err := getUserStatus(ctx, tx, *user.Email)
 	if err != nil {
 		return err
 	}
@@ -129,7 +129,7 @@ func insertUser(ctx context.Context, tx pgx.Tx, user model.User) error {
 }
 
 // GetUserByID returns a user by ID
-func (s *UserStorage) GetUserByID(ctx context.Context, id string) (model.GetUser, error) {
+func (s *UserStorage) GetUserByID(ctx context.Context, id string) (model.User, error) {
 	const (
 		op = "user.storage.GetUserByID"
 
@@ -137,7 +137,7 @@ func (s *UserStorage) GetUserByID(ctx context.Context, id string) (model.GetUser
 							FROM users WHERE id = $1 AND deleted_at IS NULL`
 	)
 
-	var user model.GetUser
+	var user model.User
 
 	err := s.QueryRow(ctx, query, id).Scan(
 		&user.ID,
@@ -154,7 +154,7 @@ func (s *UserStorage) GetUserByID(ctx context.Context, id string) (model.GetUser
 }
 
 // GetUsers returns a list of users
-func (s *UserStorage) GetUsers(ctx context.Context, pgn model.Pagination) ([]*model.GetUser, error) {
+func (s *UserStorage) GetUsers(ctx context.Context, pgn model.Pagination) ([]model.User, error) {
 	const (
 		op = "user.storage.GetUsers"
 
@@ -168,14 +168,25 @@ func (s *UserStorage) GetUsers(ctx context.Context, pgn model.Pagination) ([]*mo
 	}
 	defer rows.Close()
 
-	var users []*model.GetUser
-	users, err = pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[model.GetUser])
-	if err != nil {
-		return nil, fmt.Errorf("%s: failed to collect rows: %w", op, err)
+	var users []model.User
+
+	for rows.Next() {
+		user := model.User{}
+
+		err = rows.Scan(&user.ID, &user.Email, &user.UpdatedAt)
+		if err != nil {
+			return nil, fmt.Errorf("%s: failed to scan row: %w", op, err)
+		}
+
+		users = append(users, user)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("%s: failed to iterate rows: %w", op, err)
 	}
 
 	if len(users) == 0 {
-		return nil, storage.ErrUserNotFound
+		return nil, storage.ErrNoUsersFound
 	}
 
 	return users, nil
@@ -192,51 +203,42 @@ func (s *UserStorage) UpdateUser(ctx context.Context, user model.User) error {
 	}()
 
 	// Check if the user exists
-	existingUser, err := s.GetUserByID(ctx, user.ID)
+	currentUser, err := s.GetUserByID(ctx, user.ID)
 	if err != nil {
 		return err
 	}
 
-	// TODO make a separate function for this
 	// Get user password
-	existingUserPassword, err := getUserPassword(ctx, tx, existingUser.ID)
+	currentUserPassword, err := getUserPassword(ctx, tx, currentUser.ID)
 	if err != nil {
 		return err
 	}
 
-	// Check if the user has changes
-	hasChanges := false
-	if user.Email != "" && user.Email != existingUser.Email {
-		hasChanges = true
-	}
-	if user.Password != "" && user.Password != existingUserPassword {
-		hasChanges = true
-	}
+	emailChanged := *user.Email != "" && *user.Email != *currentUser.Email
+	passwordChanged := *user.Password != ""
 
-	if !hasChanges {
-		RollbackOnError(&err, tx, ctx, op)
+	if !emailChanged && !passwordChanged {
 		return storage.ErrNoChangesDetected
 	}
 
-	if user.Password == existingUserPassword {
-		RollbackOnError(&err, tx, ctx, op)
-		return storage.ErrNoPasswordChangesDetected
+	// Check if the user email exists for a different user
+	if err = checkEmailUniqueness(ctx, tx, *user.Email, user.ID); err != nil {
+		return err
 	}
 
-	// Check if the user email exists for a different user
-	if err = checkEmailUniqueness(ctx, tx, user.Email, user.ID); err != nil {
-		return err
+	if passwordChanged && *user.Password == currentUserPassword {
+		return storage.ErrNoPasswordChangesDetected
 	}
 
 	// Prepare the dynamic update query based on the provided fields
 	queryUpdate := "UPDATE users SET updated_at = $1"
 	queryParams := []interface{}{user.UpdatedAt}
 
-	if user.Email != "" {
+	if *user.Email != "" {
 		queryUpdate += ", email = $" + strconv.Itoa(len(queryParams)+1)
 		queryParams = append(queryParams, user.Email)
 	}
-	if user.Password != "" {
+	if *user.Password != "" {
 		queryUpdate += ", password = $" + strconv.Itoa(len(queryParams)+1)
 		queryParams = append(queryParams, user.Password)
 	}

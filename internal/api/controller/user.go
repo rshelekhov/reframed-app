@@ -23,7 +23,8 @@ func (c *UserController) CreateUser() http.HandlerFunc {
 
 		log := logger.LogWithRequest(c.Logger, op, r)
 
-		user := &model.CreateUser{}
+		// user := &model.CreateUser{}
+		user := &model.User{}
 
 		// Decode the request body
 		err := decodeJSON(w, r, log, user)
@@ -40,7 +41,7 @@ func (c *UserController) CreateUser() http.HandlerFunc {
 		// Create the user
 		id, err := c.Usecase.CreateUser(r.Context(), user)
 		if errors.Is(err, storage.ErrUserAlreadyExists) {
-			log.Error(fmt.Sprintf("%v", storage.ErrUserAlreadyExists), slog.String("email", user.Email))
+			log.Error(fmt.Sprintf("%v", storage.ErrUserAlreadyExists), slog.String("email", *user.Email))
 			responseError(w, r, http.StatusConflict, fmt.Sprintf("%v", storage.ErrUserAlreadyExists))
 			return
 		}
@@ -51,7 +52,7 @@ func (c *UserController) CreateUser() http.HandlerFunc {
 		}
 
 		log.Info("User created", slog.Any("user_id", id))
-		responseSuccess(w, r, http.StatusCreated, "user created", model.UserResponse{ID: id})
+		responseSuccess(w, r, http.StatusCreated, "user created", model.User{ID: id})
 	}
 }
 
@@ -101,7 +102,7 @@ func (c *UserController) GetUsers() http.HandlerFunc {
 		users, err := c.Usecase.GetUsers(r.Context(), pagination)
 		if errors.Is(err, storage.ErrNoUsersFound) {
 			log.Error(fmt.Sprintf("%v", storage.ErrNoUsersFound))
-			responseError(w, r, http.StatusNotFound, fmt.Sprintf("%v", storage.ErrUserNotFound))
+			responseError(w, r, http.StatusNotFound, fmt.Sprintf("%v", storage.ErrNoUsersFound))
 			return
 		}
 		if err != nil {
@@ -175,7 +176,7 @@ func (c *UserController) UpdateUser() http.HandlerFunc {
 		}
 
 		log.Info("User updated", slog.String("user_id", id))
-		responseSuccess(w, r, http.StatusOK, "user updated", model.UserResponse{ID: id})
+		responseSuccess(w, r, http.StatusOK, "user updated", model.User{ID: id})
 	}
 }
 
@@ -205,6 +206,6 @@ func (c *UserController) DeleteUser() http.HandlerFunc {
 
 		log.Info("user deleted", slog.String("user_id", id))
 
-		responseSuccess(w, r, http.StatusOK, "user deleted", model.UserResponse{ID: id})
+		responseSuccess(w, r, http.StatusOK, "user deleted", model.User{ID: id})
 	}
 }
