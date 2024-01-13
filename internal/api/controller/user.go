@@ -2,9 +2,7 @@ package controller
 
 import (
 	"errors"
-	"github.com/go-chi/render"
-	"github.com/rshelekhov/reframed/internal/api/controller/parser"
-	resp "github.com/rshelekhov/reframed/internal/api/controller/response"
+	"fmt"
 	"github.com/rshelekhov/reframed/internal/logger"
 	"github.com/rshelekhov/reframed/internal/model"
 	"github.com/rshelekhov/reframed/internal/storage"
@@ -20,26 +18,21 @@ type UserController struct {
 
 // CreateUser creates a new user
 func (c *UserController) CreateUser() http.HandlerFunc {
-	type Response struct {
-		resp.Response
-		ID     string `json:"id,omitempty"`
-		RoleID int    `json:"role_id,omitempty"`
-	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.controller.CreateUser"
 
 		log := logger.LogWithRequest(c.Logger, op, r)
 
-		user := &model.User{}
+		user := &model.CreateUser{}
 
 		// Decode the request body
-		err := DecodeJSON(w, r, log, user)
+		err := decodeJSON(w, r, log, user)
 		if err != nil {
 			return
 		}
 
 		// Validate the request
-		err = ValidateData(w, r, log, user)
+		err = validateData(w, r, log, user)
 		if err != nil {
 			return
 		}
@@ -47,41 +40,25 @@ func (c *UserController) CreateUser() http.HandlerFunc {
 		// Create the user
 		id, err := c.Usecase.CreateUser(r.Context(), user)
 		if errors.Is(err, storage.ErrUserAlreadyExists) {
-			log.Error("user already exists", slog.String("email", user.Email))
-
-			render.Status(r, http.StatusConflict)
-			render.JSON(w, r, resp.Error("user with this email already exists"))
-
+			log.Error(fmt.Sprintf("%v", storage.ErrUserAlreadyExists), slog.String("email", user.Email))
+			responseError(w, r, http.StatusConflict, fmt.Sprintf("%v", storage.ErrUserAlreadyExists))
 			return
 		}
 		if err != nil {
 			log.Error("failed to create user", logger.Err(err))
-
-			render.Status(r, http.StatusInternalServerError)
-			render.JSON(w, r, resp.Error("failed to create user"))
-
+			responseError(w, r, http.StatusInternalServerError, "failed to create user")
 			return
 		}
 
 		log.Info("User created", slog.Any("user_id", id))
-
-		// Return the user id
-		render.Status(r, http.StatusCreated)
-		render.JSON(w, r, Response{
-			Response: resp.Success("user created"),
-			ID:       id,
-		})
+		responseSuccess(w, r, http.StatusCreated, "user created", model.UserResponse{ID: id})
 	}
 }
 
-// GetUser get a user by ID
-func (c *UserController) GetUser() http.HandlerFunc {
-	type Response struct {
-		resp.Response
-		User model.GetUser `json:"user"`
-	}
+// GetUserByID get a user by ID
+func (c *UserController) GetUserByID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.controller.GetUser"
+		const op = "user.controller.GetUserByID"
 
 		log := logger.LogWithRequest(c.Logger, op, r)
 
@@ -90,70 +67,46 @@ func (c *UserController) GetUser() http.HandlerFunc {
 			return
 		}
 
-		user, err := c.Usecase.GetUser(r.Context(), id)
+		user, err := c.Usecase.GetUserByID(r.Context(), id)
 		if errors.Is(err, storage.ErrUserNotFound) {
-			log.Error("user not found", slog.String("user_id", id))
-
-			render.Status(r, http.StatusNotFound)
-			render.JSON(w, r, resp.Error("user not found"))
-
+			log.Error(fmt.Sprintf("%v", storage.ErrUserNotFound), slog.String("user_id", id))
+			responseError(w, r, http.StatusNotFound, fmt.Sprintf("%v", storage.ErrUserNotFound))
 			return
 		}
 		if err != nil {
 			log.Error("failed to get user", logger.Err(err))
-
-			render.Status(r, http.StatusInternalServerError)
-			render.JSON(w, r, resp.Error("failed to get user"))
-
+			responseError(w, r, http.StatusInternalServerError, "failed to get user")
 			return
 		}
 
 		log.Info("User received", slog.Any("user", user))
-
-		render.Status(r, http.StatusOK)
-		render.JSON(w, r, Response{
-			Response: resp.Success("user received"),
-			User:     user,
-		})
+		responseSuccess(w, r, http.StatusOK, "user received", user)
 	}
 }
 
 // GetUsers get a list of users
 func (c *UserController) GetUsers() http.HandlerFunc {
-	type Response struct {
-		resp.Response
-		Users []*model.GetUser `json:"users"`
-	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.controller.GetUsers"
 
 		log := logger.LogWithRequest(c.Logger, op, r)
 
-		pagination, err := parser.ParseLimitAndOffset(r)
+		pagination, err := parseLimitAndOffset(r)
 		if err != nil {
 			log.Error("failed to parse limit and offset", logger.Err(err))
-
-			render.Status(r, http.StatusBadRequest)
-			render.JSON(w, r, resp.Error("failed to parse limit and offset"))
-
+			responseError(w, r, http.StatusBadRequest, "failed to parse limit and offset")
 			return
 		}
 
 		users, err := c.Usecase.GetUsers(r.Context(), pagination)
 		if errors.Is(err, storage.ErrNoUsersFound) {
-			log.Error("no users found")
-
-			render.Status(r, http.StatusNotFound)
-			render.JSON(w, r, resp.Error("no users found"))
-
+			log.Error(fmt.Sprintf("%v", storage.ErrNoUsersFound))
+			responseError(w, r, http.StatusNotFound, fmt.Sprintf("%v", storage.ErrUserNotFound))
 			return
 		}
 		if err != nil {
 			log.Error("failed to get users", logger.Err(err))
-
-			render.Status(r, http.StatusInternalServerError)
-			render.JSON(w, r, resp.Error("failed to get users"))
-
+			responseError(w, r, http.StatusInternalServerError, "failed to get users")
 			return
 		}
 
@@ -164,21 +117,12 @@ func (c *UserController) GetUsers() http.HandlerFunc {
 			slog.Int("offset", pagination.Offset),
 		)
 
-		render.Status(r, http.StatusOK)
-		render.JSON(w, r, Response{
-			Response: resp.Success("users found"),
-			Users:    users,
-		})
+		responseSuccess(w, r, http.StatusOK, "users found", users)
 	}
 }
 
 // UpdateUser updates a user by ID
 func (c *UserController) UpdateUser() http.HandlerFunc {
-	type Response struct {
-		resp.Response
-		ID    string `json:"id,omitempty"`
-		Email string `json:"email,omitempty"`
-	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.controller.UpdateUser"
 
@@ -192,66 +136,51 @@ func (c *UserController) UpdateUser() http.HandlerFunc {
 		}
 
 		// Decode the request body
-		err = DecodeJSON(w, r, log, user)
+		err = decodeJSON(w, r, log, user)
 		if err != nil {
 			return
 		}
 
 		// Validate the request
-		err = ValidateData(w, r, log, user)
+		err = validateData(w, r, log, user)
 		if err != nil {
 			return
 		}
 
 		err = c.Usecase.UpdateUser(r.Context(), id, user)
 		if errors.Is(err, storage.ErrUserNotFound) {
-			log.Error("user not found", slog.String("user_id", id))
-
-			render.Status(r, http.StatusNotFound)
-			render.JSON(w, r, Response{
-				Response: resp.Error("user not found"),
-				ID:       id,
-			})
-
+			log.Error(fmt.Sprintf("%v", storage.ErrUserNotFound), slog.String("user_id", id))
+			responseError(w, r, http.StatusNotFound, fmt.Sprintf("%v", storage.ErrUserNotFound))
 			return
 		}
-		if errors.Is(err, storage.ErrUserAlreadyExists) {
-			log.Error("this email already taken", slog.String("email", user.Email))
-
-			render.Status(r, http.StatusConflict)
-			render.JSON(w, r, Response{
-				Response: resp.Error("this email already taken"),
-				Email:    user.Email,
-			})
-
+		if errors.Is(err, storage.ErrEmailAlreadyTaken) {
+			log.Error(fmt.Sprintf("%v", storage.ErrEmailAlreadyTaken), slog.String("email", user.Email))
+			responseError(w, r, http.StatusConflict, fmt.Sprintf("%v", storage.ErrEmailAlreadyTaken))
+			return
+		}
+		if errors.Is(err, storage.ErrNoChangesDetected) {
+			log.Error(fmt.Sprintf("%v", storage.ErrNoChangesDetected), slog.String("user_id", id))
+			responseError(w, r, http.StatusBadRequest, fmt.Sprintf("%v", storage.ErrNoChangesDetected))
+			return
+		}
+		if errors.Is(err, storage.ErrNoPasswordChangesDetected) {
+			log.Error(fmt.Sprintf("%v", storage.ErrNoPasswordChangesDetected), slog.String("user_id", id))
+			responseError(w, r, http.StatusBadRequest, fmt.Sprintf("%v", storage.ErrNoPasswordChangesDetected))
 			return
 		}
 		if err != nil {
 			log.Error("failed to update user", logger.Err(err))
-
-			render.Status(r, http.StatusInternalServerError)
-			render.JSON(w, r, resp.Error("failed to update user"))
-
+			responseError(w, r, http.StatusInternalServerError, "failed to update user")
 			return
 		}
 
 		log.Info("User updated", slog.String("user_id", id))
-
-		render.Status(r, http.StatusOK)
-		render.JSON(w, r, Response{
-			Response: resp.Success("user updated"),
-			ID:       id,
-		})
-
+		responseSuccess(w, r, http.StatusOK, "user updated", model.UserResponse{ID: id})
 	}
 }
 
 // DeleteUser deletes a user by ID
 func (c *UserController) DeleteUser() http.HandlerFunc {
-	type Response struct {
-		resp.Response
-		ID string `json:"id,omitempty"`
-	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.controller.DeleteUser"
 
@@ -264,31 +193,18 @@ func (c *UserController) DeleteUser() http.HandlerFunc {
 
 		err = c.Usecase.DeleteUser(r.Context(), id)
 		if errors.Is(err, storage.ErrUserNotFound) {
-			log.Error("user not found", slog.String("user_id", id))
-
-			render.Status(r, http.StatusNotFound)
-			render.JSON(w, r, Response{
-				Response: resp.Error("user not found"),
-				ID:       id,
-			})
-
+			log.Error(fmt.Sprintf("%v", storage.ErrUserNotFound), slog.String("user_id", id))
+			responseError(w, r, http.StatusNotFound, fmt.Sprintf("%v", storage.ErrUserNotFound))
 			return
 		}
 		if err != nil {
 			log.Error("failed to delete user", logger.Err(err))
-
-			render.Status(r, http.StatusInternalServerError)
-			render.JSON(w, r, resp.Error("failed to delete user"))
-
+			responseError(w, r, http.StatusInternalServerError, "failed to delete user")
 			return
 		}
 
 		log.Info("user deleted", slog.String("user_id", id))
 
-		render.Status(r, http.StatusOK)
-		render.JSON(w, r, Response{
-			Response: resp.Success("user deleted"),
-			ID:       id,
-		})
+		responseSuccess(w, r, http.StatusOK, "user deleted", model.UserResponse{ID: id})
 	}
 }

@@ -17,15 +17,13 @@ func NewUserUsecase(s UserStorage) *UserUsecase {
 }
 
 // CreateUser creates a new user
-func (uc *UserUsecase) CreateUser(ctx context.Context, user *model.User) (string, error) {
+func (uc *UserUsecase) CreateUser(ctx context.Context, user *model.CreateUser) (string, error) {
 	const op = "user.usecase.CreateUser"
 
-	if user.ID == "" {
-		user.ID = ksuid.New().String()
-	}
+	id := ksuid.New().String()
 
 	newUser := model.User{
-		ID:        user.ID,
+		ID:        id,
 		Email:     user.Email,
 		Password:  user.Password,
 		UpdatedAt: time.Now().UTC(),
@@ -39,10 +37,10 @@ func (uc *UserUsecase) CreateUser(ctx context.Context, user *model.User) (string
 	return newUser.ID, nil
 }
 
-// GetUser returns a user by ID
-func (uc *UserUsecase) GetUser(ctx context.Context, id string) (model.GetUser, error) {
-	// const op = "user.usecase.GetUser"
-	return uc.storage.GetUser(ctx, id)
+// GetUserByID returns a user by ID
+func (uc *UserUsecase) GetUserByID(ctx context.Context, id string) (model.GetUser, error) {
+	// const op = "user.usecase.GetUserByID"
+	return uc.storage.GetUserByID(ctx, id)
 }
 
 // GetUsers returns a list of users

@@ -1,4 +1,4 @@
-package parser
+package controller
 
 import (
 	"github.com/rshelekhov/reframed/internal/model"
@@ -11,7 +11,8 @@ const (
 	defaultOffset = 0
 )
 
-func ParseLimitAndOffset(r *http.Request) (model.Pagination, error) {
+// parseLimitAndOffset parses limit and offset from the request and returns a pagination object
+func parseLimitAndOffset(r *http.Request) (model.Pagination, error) {
 	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
 	if err != nil {
 		limit = defaultLimit

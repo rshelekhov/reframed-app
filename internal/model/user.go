@@ -9,8 +9,13 @@ type User struct {
 	ID        string     `db:"id" json:"id" `
 	Email     string     `db:"email" json:"email" validate:"required,email"`
 	Password  string     `db:"password" json:"password" validate:"required,min=8"`
-	UpdatedAt time.Time  `db:"updated_at" json:"updated_at"`
+	UpdatedAt time.Time  `db:"updated_at" json:"updated_at,omitempty"`
 	DeletedAt *time.Time `db:"deleted_at"`
+}
+
+type CreateUser struct {
+	Email    string `json:"email" validate:"email"`
+	Password string `json:"password" validate:"min=8"`
 }
 
 // GetUser used in the response body and usecase layer for getting a user by ID
@@ -24,4 +29,8 @@ type GetUser struct {
 type UpdateUser struct {
 	Email    string `json:"email" db:"email" validate:"email"`
 	Password string `json:"password" db:"password" validate:"min=8"`
+}
+
+type UserResponse struct {
+	ID string `json:"id"`
 }
