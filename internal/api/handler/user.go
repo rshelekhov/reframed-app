@@ -7,13 +7,14 @@ import (
 	"github.com/rshelekhov/reframed/internal/logger"
 	"github.com/rshelekhov/reframed/internal/model"
 	"github.com/rshelekhov/reframed/internal/storage"
-	"github.com/rshelekhov/reframed/internal/usecase"
+	"github.com/segmentio/ksuid"
 	"log/slog"
 	"net/http"
+	"time"
 )
 
 type UserHandler struct {
-	Usecase usecase.UserUsecases
+	Storage storage.UserStorage
 	Logger  logger.Interface
 }
 
@@ -44,8 +45,18 @@ func (h *UserHandler) CreateUser() http.HandlerFunc {
 			return
 		}
 
+		id := ksuid.New().String()
+		now := time.Now().UTC()
+
+		newUser := model.User{
+			ID:        id,
+			Email:     user.Email,
+			Password:  user.Password,
+			UpdatedAt: &now,
+		}
+
 		// Create the user
-		id, err := h.Usecase.CreateUser(r.Context(), user)
+		err = h.Storage.CreateUser(r.Context(), newUser)
 		if errors.Is(err, storage.ErrUserAlreadyExists) {
 			log.Error(fmt.Sprintf("%v", storage.ErrUserAlreadyExists), slog.String("email", *user.Email))
 			responseError(w, r, http.StatusConflict, fmt.Sprintf("%v", storage.ErrUserAlreadyExists))
@@ -79,7 +90,7 @@ func (h *UserHandler) GetUserByID() http.HandlerFunc {
 			return
 		}
 
-		user, err := h.Usecase.GetUserByID(r.Context(), id)
+		user, err := h.Storage.GetUserByID(r.Context(), id)
 		if errors.Is(err, storage.ErrUserNotFound) {
 			log.Error(fmt.Sprintf("%v", storage.ErrUserNotFound), slog.String("user_id", id))
 			responseError(w, r, http.StatusNotFound, fmt.Sprintf("%v", storage.ErrUserNotFound))
@@ -115,7 +126,7 @@ func (h *UserHandler) GetUsers() http.HandlerFunc {
 			return
 		}
 
-		users, err := h.Usecase.GetUsers(r.Context(), pagination)
+		users, err := h.Storage.GetUsers(r.Context(), pagination)
 		if errors.Is(err, storage.ErrNoUsersFound) {
 			log.Error(fmt.Sprintf("%v", storage.ErrNoUsersFound))
 			responseError(w, r, http.StatusNotFound, fmt.Sprintf("%v", storage.ErrNoUsersFound))
@@ -169,7 +180,16 @@ func (h *UserHandler) UpdateUser() http.HandlerFunc {
 			return
 		}
 
-		err = h.Usecase.UpdateUser(r.Context(), id, user)
+		now := time.Now().UTC()
+
+		updatedUser := model.User{
+			ID:        id,
+			Email:     &user.Email,
+			Password:  &user.Password,
+			UpdatedAt: &now,
+		}
+
+		err = h.Storage.UpdateUser(r.Context(), updatedUser)
 		if errors.Is(err, storage.ErrUserNotFound) {
 			log.Error(fmt.Sprintf("%v", storage.ErrUserNotFound), slog.String("user_id", id))
 			responseError(w, r, http.StatusNotFound, fmt.Sprintf("%v", storage.ErrUserNotFound))
@@ -218,7 +238,7 @@ func (h *UserHandler) DeleteUser() http.HandlerFunc {
 			return
 		}
 
-		err = h.Usecase.DeleteUser(r.Context(), id)
+		err = h.Storage.DeleteUser(r.Context(), id)
 		if errors.Is(err, storage.ErrUserNotFound) {
 			log.Error(fmt.Sprintf("%v", storage.ErrUserNotFound), slog.String("user_id", id))
 			responseError(w, r, http.StatusNotFound, fmt.Sprintf("%v", storage.ErrUserNotFound))

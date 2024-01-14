@@ -7,7 +7,6 @@ import (
 	"github.com/rshelekhov/reframed/internal/http-server"
 	"github.com/rshelekhov/reframed/internal/logger"
 	"github.com/rshelekhov/reframed/internal/storage/postgres"
-	"github.com/rshelekhov/reframed/internal/usecase"
 	"log/slog"
 )
 
@@ -32,14 +31,11 @@ func main() {
 	}
 	log.Debug("storage initiated")
 
-	// Use cases
-	userUsecase := usecase.NewUserUsecase(postgres.NewUserStorage(pg))
-
 	// Router
 	r := route.NewRouter(log)
 
 	// Routers
-	route.NewUserRouter(r, log, userUsecase)
+	route.NewUserRouter(r, log, postgres.NewUserStorage(pg))
 
 	// HTTP Server
 	log.Info("starting server", slog.String("address", cfg.HTTPServer.Address))
