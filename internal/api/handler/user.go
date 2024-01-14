@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/rshelekhov/reframed/internal/logger"
@@ -12,8 +13,13 @@ import (
 )
 
 type UserHandler struct {
-	Usecase usecase.User
+	Usecase usecase.UserUsecases
 	Logger  logger.Interface
+}
+
+//go:generate go run github.com/vektra/mockery/v2@v2.40.1 --name=UserCreater
+type UserCreater interface {
+	CreateUser(ctx context.Context, user *model.User) (string, error)
 }
 
 // CreateUser creates a new user
@@ -51,9 +57,14 @@ func (h *UserHandler) CreateUser() http.HandlerFunc {
 			return
 		}
 
-		log.Info("User created", slog.Any("user_id", id))
+		log.Info("UserUsecase created", slog.Any("user_id", id))
 		responseSuccess(w, r, http.StatusCreated, "user created", model.User{ID: id})
 	}
+}
+
+//go:generate go run github.com/vektra/mockery/v2@v2.40.1 --name=UserIDGetter
+type UserIDGetter interface {
+	GetUserByID(ctx context.Context, id string) (model.User, error)
 }
 
 // GetUserByID get a user by ID
@@ -80,9 +91,14 @@ func (h *UserHandler) GetUserByID() http.HandlerFunc {
 			return
 		}
 
-		log.Info("User received", slog.Any("user", user))
+		log.Info("UserUsecase received", slog.Any("user", user))
 		responseSuccess(w, r, http.StatusOK, "user received", user)
 	}
+}
+
+//go:generate go run github.com/vektra/mockery/v2@v2.40.1 --name=UsersGetter
+type UsersGetter interface {
+	GetUsers(ctx context.Context, pgn model.Pagination) ([]model.User, error)
 }
 
 // GetUsers get a list of users
@@ -120,6 +136,11 @@ func (h *UserHandler) GetUsers() http.HandlerFunc {
 
 		responseSuccess(w, r, http.StatusOK, "users found", users)
 	}
+}
+
+//go:generate go run github.com/vektra/mockery/v2@v2.40.1 --name=UserUpdater
+type UserUpdater interface {
+	UpdateUser(ctx context.Context, id string, user *model.UpdateUser) error
 }
 
 // UpdateUser updates a user by ID
@@ -175,9 +196,14 @@ func (h *UserHandler) UpdateUser() http.HandlerFunc {
 			return
 		}
 
-		log.Info("User updated", slog.String("user_id", id))
+		log.Info("UserUsecase updated", slog.String("user_id", id))
 		responseSuccess(w, r, http.StatusOK, "user updated", model.User{ID: id})
 	}
+}
+
+//go:generate go run github.com/vektra/mockery/v2@v2.40.1 --name=UserDeleter
+type UserDeleter interface {
+	DeleteUser(ctx context.Context, id string) error
 }
 
 // DeleteUser deletes a user by ID

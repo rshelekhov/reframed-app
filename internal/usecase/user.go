@@ -4,15 +4,16 @@ import (
 	"context"
 	"fmt"
 	"github.com/rshelekhov/reframed/internal/model"
+	"github.com/rshelekhov/reframed/internal/storage"
 	"github.com/segmentio/ksuid"
 	"time"
 )
 
 type UserUsecase struct {
-	storage UserStorage
+	storage storage.UserStorage
 }
 
-func NewUserUsecase(s UserStorage) *UserUsecase {
+func NewUserUsecase(s storage.UserStorage) *UserUsecase {
 	return &UserUsecase{s}
 }
 

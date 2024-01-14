@@ -8,7 +8,7 @@ import (
 )
 
 // NewUserRouter create a handler struct and register the routes
-func NewUserRouter(r *chi.Mux, log logger.Interface, u usecase.User) {
+func NewUserRouter(r *chi.Mux, log logger.Interface, u usecase.UserUsecase) {
 	c := &handler.UserHandler{
 		Usecase: u,
 		Logger:  log,
