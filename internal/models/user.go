@@ -1,14 +1,14 @@
-package model
+package models
 
 import (
 	"time"
 )
 
-// User DB model
+// User DB models
 type User struct {
 	ID        string     `db:"id" json:"id,omitempty" `
-	Email     *string    `db:"email" json:"email,omitempty" validate:"required,email"`
-	Password  *string    `db:"password" json:"password,omitempty" validate:"required,min=8"`
+	Email     string     `db:"email" json:"email,omitempty" validate:"required,email"`
+	Password  string     `db:"password" json:"password,omitempty" validate:"required,min=8"`
 	UpdatedAt *time.Time `db:"updated_at" json:"updated_at,omitempty"`
 	DeletedAt *time.Time `db:"deleted_at" json:"deleted_at,omitempty"`
 }

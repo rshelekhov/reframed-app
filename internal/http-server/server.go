@@ -29,7 +29,6 @@ func NewServer(cfg *config.Config, log logger.Interface, router *chi.Mux) *Serve
 	return srv
 }
 
-// TODO: Get a better understanding of how it works
 func (s *Server) Start() {
 	srv := http.Server{
 		Addr:         s.cfg.HTTPServer.Address,

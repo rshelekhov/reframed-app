@@ -1,11 +1,10 @@
 with-expecter: True
-inpackage: True
-dir: mocks/
 mockname: "{{.InterfaceName}}"
-outpkg: "{{.PackageName}}"
+outpkg: "mocks"
 filename: "{{.InterfaceName}}.go"
 all: True
 packages:
   github.com/rshelekhov/reframed/internal/storage:
     config:
+      dir: internal/api/handlers/mocks
       recursive: True

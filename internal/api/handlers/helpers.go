@@ -1,4 +1,4 @@
-package handler
+package handlers
 
 import (
 	"errors"
@@ -12,7 +12,7 @@ import (
 	"net/http"
 )
 
-// GetID gets the model id from the request
+// GetID gets the models id from the request
 func GetID(w http.ResponseWriter, r *http.Request, log logger.Interface) (string, error) {
 	id := chi.URLParam(r, "id")
 	if id == "" {
@@ -22,6 +22,10 @@ func GetID(w http.ResponseWriter, r *http.Request, log logger.Interface) (string
 	}
 
 	return id, nil
+}
+
+type RequestDecoder interface {
+	decodeJSON(w http.ResponseWriter, r *http.Request, log logger.Interface, data any) error
 }
 
 // decodeJSON decodes the request body
@@ -108,7 +112,7 @@ func responseSuccess(w http.ResponseWriter, r *http.Request, statusCode int, msg
 		Data:        data,
 	}
 
-	render.Status(r, http.StatusOK)
+	render.Status(r, statusCode)
 	render.JSON(w, r, response)
 }
 

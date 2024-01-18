@@ -14,7 +14,7 @@ const (
 )
 
 type Interface interface {
-	With(attrs ...interface{}) *Logger
+	With(args ...any) *Logger
 	Debug(msg string, attrs ...interface{})
 	Info(msg string, attrs ...interface{})
 	Warn(msg string, attrs ...interface{})
@@ -22,7 +22,7 @@ type Interface interface {
 }
 
 type Logger struct {
-	logger *slog.Logger
+	Logger *slog.Logger
 }
 
 func SetupLogger(env string) *Logger {
@@ -37,7 +37,7 @@ func SetupLogger(env string) *Logger {
 		log = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	}
 
-	return &Logger{logger: log}
+	return &Logger{Logger: log}
 }
 
 // Err ...
@@ -56,23 +56,23 @@ func LogWithRequest(log Interface, op string, r *http.Request) Interface {
 	return log
 }
 
-func (l *Logger) With(attrs ...interface{}) *Logger {
-	l.logger.With(attrs...)
+func (l *Logger) With(args ...any) *Logger {
+	l.Logger.With(args...)
 	return l
 }
 
 func (l *Logger) Debug(msg string, attrs ...interface{}) {
-	l.logger.Debug(msg, attrs...)
+	l.Logger.Debug(msg, attrs...)
 }
 
 func (l *Logger) Info(msg string, attrs ...interface{}) {
-	l.logger.Info(msg, attrs...)
+	l.Logger.Info(msg, attrs...)
 }
 
 func (l *Logger) Warn(msg string, attrs ...interface{}) {
-	l.logger.Warn(msg, attrs...)
+	l.Logger.Warn(msg, attrs...)
 }
 
 func (l *Logger) Error(msg string, attrs ...interface{}) {
-	l.logger.Error(msg, attrs...)
+	l.Logger.Error(msg, attrs...)
 }
