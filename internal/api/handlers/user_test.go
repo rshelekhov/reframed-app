@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/rshelekhov/reframed/internal/api/handlers"
-	"github.com/rshelekhov/reframed/internal/api/handlers/mocks"
 	"github.com/rshelekhov/reframed/internal/logger/slogdiscard"
 	"github.com/rshelekhov/reframed/internal/models"
 	"github.com/rshelekhov/reframed/internal/storage"
+	"github.com/rshelekhov/reframed/internal/storage/mocks"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"net/http"
@@ -24,7 +24,7 @@ func TestUserHandler_CreateUser(t *testing.T) {
 		expectedError error
 	}{
 		{
-			name: "valid",
+			name: "success",
 			user: models.User{
 				Email:    "test@example.com",
 				Password: "password123",
@@ -33,16 +33,25 @@ func TestUserHandler_CreateUser(t *testing.T) {
 			expectedError: nil,
 		},
 		{
-			name: "Invalid email",
+			name: "invalid email",
 			user: models.User{
-				Email:    "invalid",
+				Email:    "testexample.com",
 				Password: "password123",
 			},
-			expectedCode:  http.StatusUnprocessableEntity,
+			expectedCode:  http.StatusBadRequest,
 			expectedError: errors.New("field Email must be a valid email address"),
 		},
 		{
-			name: "User already exists",
+			name: "invalid password",
+			user: models.User{
+				Email:    "test@example.com",
+				Password: "pass",
+			},
+			expectedCode:  http.StatusBadRequest,
+			expectedError: errors.New("field Password must be greater than or equal to 8"),
+		},
+		{
+			name: "user already exists",
 			user: models.User{
 				Email:    "test@example.com",
 				Password: "password123",
@@ -50,49 +59,28 @@ func TestUserHandler_CreateUser(t *testing.T) {
 			expectedCode:  http.StatusBadRequest,
 			expectedError: storage.ErrUserAlreadyExists,
 		},
-		// TODO: Add more test cases
-	}
-
-	// Create mocks
-	mockStorage := &mocks.UserStorage{}
-	mockLogger := slogdiscard.NewDiscardLogger()
-
-	// Create handler
-	handler := &handlers.UserHandler{
-		Storage: mockStorage,
-		Logger:  mockLogger,
 	}
 
 	for _, tc := range testCases {
-		tc := tc // Create a local copy for parallel tests
-
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
+			mockStorage := &mocks.UserStorage{}
+			mockLogger := slogdiscard.NewDiscardLogger()
 
-			// Mock storage create user
-			/*mockStorage.
-			On("CreateUser", mock.Anything, mock.Anything).
-			Return(tc.expectedError).
-			Once()*/
-			if tc.name == "User already exists" {
-				mockStorage.
-					On("CreateUser", mock.Anything, mock.Anything).
-					Return(storage.ErrUserAlreadyExists).
-					Once()
-			} else if tc.name == "Invalid email" {
-				mockStorage.
-					On("CreateUser", mock.Anything, mock.Anything).
-					Return(errors.New("field Email must be a valid email address")).
-					Once()
-			} else if tc.name == "valid" {
-				mockStorage.
-					On("CreateUser", mock.Anything, mock.Anything).
-					Return(nil).
-					Once()
+			// Create handler
+			handler := &handlers.UserHandler{
+				Storage: mockStorage,
+				Logger:  mockLogger,
 			}
 
+			testCase := tc
+
+			mockStorage.
+				On("CreateUser", mock.Anything, mock.AnythingOfType("models.User")).
+				Return(testCase.expectedError).
+				Once()
+
 			// Create request
-			reqBody, _ := json.Marshal(tc.user)
+			reqBody, _ := json.Marshal(testCase.user)
 			req, err := http.NewRequest(http.MethodPost, "/users", bytes.NewReader(reqBody))
 			require.NoError(t, err)
 
@@ -101,11 +89,10 @@ func TestUserHandler_CreateUser(t *testing.T) {
 			handler.CreateUser()(rr, req)
 
 			// Assert
-			require.Equal(t, tc.expectedCode, rr.Code)
-
-			// TODO: Assert other expectations
-
+			require.Equal(t, testCase.expectedCode, rr.Code)
+			if testCase.expectedError != nil {
+				require.Contains(t, rr.Body.String(), testCase.expectedError.Error())
+			}
 		})
 	}
-
 }

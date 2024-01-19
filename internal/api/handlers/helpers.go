@@ -24,10 +24,6 @@ func GetID(w http.ResponseWriter, r *http.Request, log logger.Interface) (string
 	return id, nil
 }
 
-type RequestDecoder interface {
-	decodeJSON(w http.ResponseWriter, r *http.Request, log logger.Interface, data any) error
-}
-
 // decodeJSON decodes the request body
 func decodeJSON(w http.ResponseWriter, r *http.Request, log logger.Interface, data any) error {
 	// Decode the request body
@@ -90,12 +86,12 @@ func responseValidationErrors(w http.ResponseWriter, r *http.Request, errs valid
 		StatusText string `json:"status_text"`
 		Data       any    `json:"data"`
 	}{
-		Code:       http.StatusUnprocessableEntity,
-		StatusText: http.StatusText(http.StatusUnprocessableEntity),
+		Code:       http.StatusBadRequest,
+		StatusText: http.StatusText(http.StatusBadRequest),
 		Data:       errMsgs,
 	}
 
-	render.Status(r, http.StatusUnprocessableEntity)
+	render.Status(r, http.StatusBadRequest)
 	render.JSON(w, r, response)
 }
 

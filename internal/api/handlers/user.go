@@ -58,10 +58,10 @@ func (h *UserHandler) CreateUser() http.HandlerFunc {
 			log.Error("failed to create user", logger.Err(err))
 			responseError(w, r, http.StatusInternalServerError, "failed to create user")
 			return
+		} else {
+			log.Info("user created", slog.Any("user_id", id))
+			responseSuccess(w, r, http.StatusCreated, "user created", models.User{ID: id})
 		}
-
-		log.Info("user created", slog.Any("user_id", id))
-		responseSuccess(w, r, http.StatusCreated, "user created", models.User{ID: id})
 	}
 }
 
