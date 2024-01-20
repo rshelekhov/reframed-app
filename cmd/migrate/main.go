@@ -30,7 +30,7 @@ func main() {
 	// Create a migrate object by passing the credentials to our database
 	m, err := migrate.New(
 		"file://"+migrationsPath,
-		cfg.Postgres.URL,
+		cfg.Postgres.ConnURL,
 	)
 	if err != nil {
 		panic(err)

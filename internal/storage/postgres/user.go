@@ -7,7 +7,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/rshelekhov/reframed/internal/model"
+	"github.com/rshelekhov/reframed/internal/models"
 	"github.com/rshelekhov/reframed/internal/storage"
 	"strconv"
 )
@@ -21,7 +21,7 @@ func NewUserStorage(pg *pgxpool.Pool) *UserStorage {
 }
 
 // CreateUser creates a new user
-func (s *UserStorage) CreateUser(ctx context.Context, user model.User) error {
+func (s *UserStorage) CreateUser(ctx context.Context, user models.User) error {
 	const op = "user.storage.CreateUser"
 
 	tx, err := BeginTransaction(s.Pool, ctx, op)
@@ -29,7 +29,7 @@ func (s *UserStorage) CreateUser(ctx context.Context, user model.User) error {
 		RollbackOnError(&err, tx, ctx, op)
 	}()
 
-	userStatus, err := getUserStatus(ctx, tx, *user.Email)
+	userStatus, err := getUserStatus(ctx, tx, user.Email)
 	if err != nil {
 		return err
 	}
@@ -80,7 +80,7 @@ func getUserStatus(ctx context.Context, tx pgx.Tx, email string) (string, error)
 }
 
 // replaceSoftDeletedUser replaces a soft deleted user with the given user
-func replaceSoftDeletedUser(ctx context.Context, tx pgx.Tx, user model.User) error {
+func replaceSoftDeletedUser(ctx context.Context, tx pgx.Tx, user models.User) error {
 	const (
 		op                    = "user.storage.replaceSoftDeletedUser"
 		querySetDeletedAtNull = `UPDATE users SET deleted_at = NULL WHERE email = $1`
@@ -103,7 +103,7 @@ func replaceSoftDeletedUser(ctx context.Context, tx pgx.Tx, user model.User) err
 }
 
 // insertUser inserts a new user
-func insertUser(ctx context.Context, tx pgx.Tx, user model.User) error {
+func insertUser(ctx context.Context, tx pgx.Tx, user models.User) error {
 	const (
 		op = "user.storage.insertNewUser"
 
@@ -129,7 +129,7 @@ func insertUser(ctx context.Context, tx pgx.Tx, user model.User) error {
 }
 
 // GetUserByID returns a user by ID
-func (s *UserStorage) GetUserByID(ctx context.Context, id string) (model.User, error) {
+func (s *UserStorage) GetUserByID(ctx context.Context, id string) (models.User, error) {
 	const (
 		op = "user.storage.GetUserByID"
 
@@ -137,7 +137,7 @@ func (s *UserStorage) GetUserByID(ctx context.Context, id string) (model.User, e
 							FROM users WHERE id = $1 AND deleted_at IS NULL`
 	)
 
-	var user model.User
+	var user models.User
 
 	err := s.QueryRow(ctx, query, id).Scan(
 		&user.ID,
@@ -154,7 +154,7 @@ func (s *UserStorage) GetUserByID(ctx context.Context, id string) (model.User, e
 }
 
 // GetUsers returns a list of users
-func (s *UserStorage) GetUsers(ctx context.Context, pgn model.Pagination) ([]model.User, error) {
+func (s *UserStorage) GetUsers(ctx context.Context, pgn models.Pagination) ([]models.User, error) {
 	const (
 		op = "user.storage.GetUsers"
 
@@ -168,10 +168,10 @@ func (s *UserStorage) GetUsers(ctx context.Context, pgn model.Pagination) ([]mod
 	}
 	defer rows.Close()
 
-	var users []model.User
+	var users []models.User
 
 	for rows.Next() {
-		user := model.User{}
+		user := models.User{}
 
 		err = rows.Scan(&user.ID, &user.Email, &user.UpdatedAt)
 		if err != nil {
@@ -193,7 +193,7 @@ func (s *UserStorage) GetUsers(ctx context.Context, pgn model.Pagination) ([]mod
 }
 
 // UpdateUser updates a user by ID
-func (s *UserStorage) UpdateUser(ctx context.Context, user model.User) error {
+func (s *UserStorage) UpdateUser(ctx context.Context, user models.User) error {
 	const op = "user.storage.UpdateUser"
 
 	// Begin transaction
@@ -214,19 +214,19 @@ func (s *UserStorage) UpdateUser(ctx context.Context, user model.User) error {
 		return err
 	}
 
-	emailChanged := *user.Email != "" && *user.Email != *currentUser.Email
-	passwordChanged := *user.Password != ""
+	emailChanged := user.Email != "" && user.Email != currentUser.Email
+	passwordChanged := user.Password != ""
 
 	if !emailChanged && !passwordChanged {
 		return storage.ErrNoChangesDetected
 	}
 
 	// Check if the user email exists for a different user
-	if err = checkEmailUniqueness(ctx, tx, *user.Email, user.ID); err != nil {
+	if err = checkEmailUniqueness(ctx, tx, user.Email, user.ID); err != nil {
 		return err
 	}
 
-	if passwordChanged && *user.Password == currentUserPassword {
+	if passwordChanged && user.Password == currentUserPassword {
 		return storage.ErrNoPasswordChangesDetected
 	}
 
@@ -234,11 +234,11 @@ func (s *UserStorage) UpdateUser(ctx context.Context, user model.User) error {
 	queryUpdate := "UPDATE users SET updated_at = $1"
 	queryParams := []interface{}{user.UpdatedAt}
 
-	if *user.Email != "" {
+	if user.Email != "" {
 		queryUpdate += ", email = $" + strconv.Itoa(len(queryParams)+1)
 		queryParams = append(queryParams, user.Email)
 	}
-	if *user.Password != "" {
+	if user.Password != "" {
 		queryUpdate += ", password = $" + strconv.Itoa(len(queryParams)+1)
 		queryParams = append(queryParams, user.Password)
 	}

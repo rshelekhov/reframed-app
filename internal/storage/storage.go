@@ -3,7 +3,7 @@ package storage
 import (
 	"context"
 	"errors"
-	"github.com/rshelekhov/reframed/internal/model"
+	"github.com/rshelekhov/reframed/internal/models"
 )
 
 var (
@@ -17,9 +17,9 @@ var (
 
 // UserStorage defines the user repository
 type UserStorage interface {
-	CreateUser(ctx context.Context, user model.User) error
-	GetUserByID(ctx context.Context, id string) (model.User, error)
-	GetUsers(ctx context.Context, pgn model.Pagination) ([]model.User, error)
-	UpdateUser(ctx context.Context, user model.User) error
+	CreateUser(ctx context.Context, user models.User) error
+	GetUserByID(ctx context.Context, id string) (models.User, error)
+	GetUsers(ctx context.Context, pgn models.Pagination) ([]models.User, error)
+	UpdateUser(ctx context.Context, user models.User) error
 	DeleteUser(ctx context.Context, id string) error
 }

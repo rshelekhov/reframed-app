@@ -1,11 +1,10 @@
-package handler
+package handlers
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"github.com/rshelekhov/reframed/internal/logger"
-	"github.com/rshelekhov/reframed/internal/model"
+	"github.com/rshelekhov/reframed/internal/models"
 	"github.com/rshelekhov/reframed/internal/storage"
 	"github.com/segmentio/ksuid"
 	"log/slog"
@@ -18,29 +17,23 @@ type UserHandler struct {
 	Logger  logger.Interface
 }
 
-//go:generate go run github.com/vektra/mockery/v2@v2.40.1 --name=UserCreater
-type UserCreater interface {
-	CreateUser(ctx context.Context, user *model.User) (string, error)
-}
-
 // CreateUser creates a new user
 func (h *UserHandler) CreateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.handler.CreateUser"
+		const op = "user.handlers.CreateUser"
 
 		log := logger.LogWithRequest(h.Logger, op, r)
 
-		// user := &model.CreateUser{}
-		user := &model.User{}
+		user := &models.User{}
 
 		// Decode the request body
-		err := decodeJSON(w, r, log, user)
+		err := DecodeJSON(w, r, log, user)
 		if err != nil {
 			return
 		}
 
 		// Validate the request
-		err = validateData(w, r, log, user)
+		err = ValidateData(w, r, log, user)
 		if err != nil {
 			return
 		}
@@ -48,7 +41,7 @@ func (h *UserHandler) CreateUser() http.HandlerFunc {
 		id := ksuid.New().String()
 		now := time.Now().UTC()
 
-		newUser := model.User{
+		newUser := models.User{
 			ID:        id,
 			Email:     user.Email,
 			Password:  user.Password,
@@ -58,30 +51,24 @@ func (h *UserHandler) CreateUser() http.HandlerFunc {
 		// Create the user
 		err = h.Storage.CreateUser(r.Context(), newUser)
 		if errors.Is(err, storage.ErrUserAlreadyExists) {
-			log.Error(fmt.Sprintf("%v", storage.ErrUserAlreadyExists), slog.String("email", *user.Email))
-			responseError(w, r, http.StatusConflict, fmt.Sprintf("%v", storage.ErrUserAlreadyExists))
+			log.Error(fmt.Sprintf("%v", storage.ErrUserAlreadyExists), slog.String("email", user.Email))
+			responseError(w, r, http.StatusBadRequest, fmt.Sprintf("%v", storage.ErrUserAlreadyExists))
 			return
-		}
-		if err != nil {
+		} else if err != nil {
 			log.Error("failed to create user", logger.Err(err))
 			responseError(w, r, http.StatusInternalServerError, "failed to create user")
 			return
+		} else {
+			log.Info("user created", slog.Any("user_id", id))
+			responseSuccess(w, r, http.StatusCreated, "user created", models.User{ID: id})
 		}
-
-		log.Info("UserUsecase created", slog.Any("user_id", id))
-		responseSuccess(w, r, http.StatusCreated, "user created", model.User{ID: id})
 	}
-}
-
-//go:generate go run github.com/vektra/mockery/v2@v2.40.1 --name=UserIDGetter
-type UserIDGetter interface {
-	GetUserByID(ctx context.Context, id string) (model.User, error)
 }
 
 // GetUserByID get a user by ID
 func (h *UserHandler) GetUserByID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.handler.GetUserByID"
+		const op = "user.handlers.GetUserByID"
 
 		log := logger.LogWithRequest(h.Logger, op, r)
 
@@ -102,20 +89,15 @@ func (h *UserHandler) GetUserByID() http.HandlerFunc {
 			return
 		}
 
-		log.Info("UserUsecase received", slog.Any("user", user))
+		log.Info("user received", slog.Any("user", user))
 		responseSuccess(w, r, http.StatusOK, "user received", user)
 	}
-}
-
-//go:generate go run github.com/vektra/mockery/v2@v2.40.1 --name=UsersGetter
-type UsersGetter interface {
-	GetUsers(ctx context.Context, pgn model.Pagination) ([]model.User, error)
 }
 
 // GetUsers get a list of users
 func (h *UserHandler) GetUsers() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.handler.GetUsers"
+		const op = "user.handlers.GetUsers"
 
 		log := logger.LogWithRequest(h.Logger, op, r)
 
@@ -149,19 +131,14 @@ func (h *UserHandler) GetUsers() http.HandlerFunc {
 	}
 }
 
-//go:generate go run github.com/vektra/mockery/v2@v2.40.1 --name=UserUpdater
-type UserUpdater interface {
-	UpdateUser(ctx context.Context, id string, user *model.UpdateUser) error
-}
-
 // UpdateUser updates a user by ID
 func (h *UserHandler) UpdateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.handler.UpdateUser"
+		const op = "user.handlers.UpdateUser"
 
 		log := logger.LogWithRequest(h.Logger, op, r)
 
-		user := &model.UpdateUser{}
+		user := &models.UpdateUser{}
 
 		id, err := GetID(w, r, log)
 		if err != nil {
@@ -169,23 +146,23 @@ func (h *UserHandler) UpdateUser() http.HandlerFunc {
 		}
 
 		// Decode the request body
-		err = decodeJSON(w, r, log, user)
+		err = DecodeJSON(w, r, log, user)
 		if err != nil {
 			return
 		}
 
 		// Validate the request
-		err = validateData(w, r, log, user)
+		err = ValidateData(w, r, log, user)
 		if err != nil {
 			return
 		}
 
 		now := time.Now().UTC()
 
-		updatedUser := model.User{
+		updatedUser := models.User{
 			ID:        id,
-			Email:     &user.Email,
-			Password:  &user.Password,
+			Email:     user.Email,
+			Password:  user.Password,
 			UpdatedAt: &now,
 		}
 
@@ -216,20 +193,15 @@ func (h *UserHandler) UpdateUser() http.HandlerFunc {
 			return
 		}
 
-		log.Info("UserUsecase updated", slog.String("user_id", id))
-		responseSuccess(w, r, http.StatusOK, "user updated", model.User{ID: id})
+		log.Info("user updated", slog.String("user_id", id))
+		responseSuccess(w, r, http.StatusOK, "user updated", models.User{ID: id})
 	}
-}
-
-//go:generate go run github.com/vektra/mockery/v2@v2.40.1 --name=UserDeleter
-type UserDeleter interface {
-	DeleteUser(ctx context.Context, id string) error
 }
 
 // DeleteUser deletes a user by ID
 func (h *UserHandler) DeleteUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.handler.DeleteUser"
+		const op = "user.handlers.DeleteUser"
 
 		log := logger.LogWithRequest(h.Logger, op, r)
 
@@ -252,6 +224,6 @@ func (h *UserHandler) DeleteUser() http.HandlerFunc {
 
 		log.Info("user deleted", slog.String("user_id", id))
 
-		responseSuccess(w, r, http.StatusOK, "user deleted", model.User{ID: id})
+		responseSuccess(w, r, http.StatusOK, "user deleted", models.User{ID: id})
 	}
 }

@@ -1,7 +1,7 @@
-package handler
+package handlers
 
 import (
-	"github.com/rshelekhov/reframed/internal/model"
+	"github.com/rshelekhov/reframed/internal/models"
 	"net/http"
 	"strconv"
 )
@@ -12,7 +12,7 @@ const (
 )
 
 // parseLimitAndOffset parses limit and offset from the request and returns a pagination object
-func parseLimitAndOffset(r *http.Request) (model.Pagination, error) {
+func parseLimitAndOffset(r *http.Request) (models.Pagination, error) {
 	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
 	if err != nil {
 		limit = defaultLimit
@@ -31,7 +31,7 @@ func parseLimitAndOffset(r *http.Request) (model.Pagination, error) {
 		limit = defaultOffset
 	}
 
-	pagination := model.Pagination{
+	pagination := models.Pagination{
 		Limit:  limit,
 		Offset: offset,
 	}

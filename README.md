@@ -10,6 +10,7 @@
 - The usage of [go-chi](https://github.com/go-chi/chi) as the HTTP router.
 - The usage of [validator](https://github.com/go-playground/validator) as the form validator.
 - The usage of [ksuid](https://github.com/segmentio/ksuid) as the unique identifier.
+- The usage of [mockery](https://github.com/vektra/mockery) as the mocks generator.
 
 ## Endpoints
 
