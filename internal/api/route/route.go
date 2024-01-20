@@ -1,8 +1,8 @@
 package route
 
 import (
-	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/httprate"
 	"github.com/go-chi/render"
 	"github.com/rshelekhov/reframed/internal/api/handlers"

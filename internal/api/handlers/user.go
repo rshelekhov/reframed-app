@@ -27,13 +27,13 @@ func (h *UserHandler) CreateUser() http.HandlerFunc {
 		user := &models.User{}
 
 		// Decode the request body
-		err := decodeJSON(w, r, log, user)
+		err := DecodeJSON(w, r, log, user)
 		if err != nil {
 			return
 		}
 
 		// Validate the request
-		err = validateData(w, r, log, user)
+		err = ValidateData(w, r, log, user)
 		if err != nil {
 			return
 		}
@@ -146,13 +146,13 @@ func (h *UserHandler) UpdateUser() http.HandlerFunc {
 		}
 
 		// Decode the request body
-		err = decodeJSON(w, r, log, user)
+		err = DecodeJSON(w, r, log, user)
 		if err != nil {
 			return
 		}
 
 		// Validate the request
-		err = validateData(w, r, log, user)
+		err = ValidateData(w, r, log, user)
 		if err != nil {
 			return
 		}

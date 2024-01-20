@@ -59,6 +59,14 @@ func TestUserHandler_CreateUser(t *testing.T) {
 			expectedCode:  http.StatusBadRequest,
 			expectedError: storage.ErrUserAlreadyExists,
 		},
+		{
+			name: "email is required",
+			user: models.User{
+				Password: "password123",
+			},
+			expectedCode:  http.StatusBadRequest,
+			expectedError: errors.New("field Email is required"),
+		},
 	}
 
 	for _, tc := range testCases {
@@ -81,8 +89,7 @@ func TestUserHandler_CreateUser(t *testing.T) {
 
 			// Create request
 			reqBody, _ := json.Marshal(testCase.user)
-			req, err := http.NewRequest(http.MethodPost, "/users", bytes.NewReader(reqBody))
-			require.NoError(t, err)
+			req := httptest.NewRequest(http.MethodPost, "/users", bytes.NewReader(reqBody))
 
 			// Call handler
 			rr := httptest.NewRecorder()

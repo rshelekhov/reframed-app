@@ -3,7 +3,7 @@ package http_server
 import (
 	"context"
 	"errors"
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	"github.com/rshelekhov/reframed/config"
 	"github.com/rshelekhov/reframed/internal/logger"
 	"net/http"
