@@ -3,9 +3,9 @@ package http_server
 import (
 	"context"
 	"errors"
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	"github.com/rshelekhov/reframed/config"
-	"github.com/rshelekhov/reframed/pkg/logger"
+	"github.com/rshelekhov/reframed/internal/logger"
 	"net/http"
 	"os"
 	"os/signal"
@@ -29,7 +29,6 @@ func NewServer(cfg *config.Config, log logger.Interface, router *chi.Mux) *Serve
 	return srv
 }
 
-// TODO: Get a better understanding of how it works
 func (s *Server) Start() {
 	srv := http.Server{
 		Addr:         s.cfg.HTTPServer.Address,

@@ -10,6 +10,7 @@
 - The usage of [go-chi](https://github.com/go-chi/chi) as the HTTP router.
 - The usage of [validator](https://github.com/go-playground/validator) as the form validator.
 - The usage of [ksuid](https://github.com/segmentio/ksuid) as the unique identifier.
+- The usage of [mockery](https://github.com/vektra/mockery) as the mocks generator.
 
 ## Endpoints
 
@@ -22,7 +23,6 @@
 | Get users   | GET         | /users/       |
 | Update user | PUT         | /users/{id}   |
 | Delete user | DELETE      | /users/{id}   |
-| Get roles   | GET         | /users/roles  |
 
 
 ## Database design
@@ -30,67 +30,3 @@
 | Column Name    | Datatype | Not Null | Primary Key |
 |----------------|----------|----------|-------------|
 | id             | ksuid    | ✅       | ✅          |
-
-## Project structure
-
-```shell
-reframed
-├── cmd
-│  ├── migrate
-│  │  └── main.go
-│  └── reframed
-│     └── main.go
-│
-├── internal
-│  ├── config
-│  │  └── config.go
-│  │
-│  ├── http-server
-│  │  ├── middleware
-│  │  ├── router
-│  │  └── server
-│  │
-│  ├── lib
-│  │  ├── api
-│  │  │  ├── entity
-│  │  │  ├── parser
-│  │  │  └── response
-│  │  │
-│  │  └── logger
-│  │
-│  ├── resource
-│  │  ├── common
-│  │  │  ├── err
-│  │  │  ├── helper
-│  │  │  └── entity
-│  │  │
-│  │  ├── health
-│  │  │
-│  │  └── resourceName
-│  │     ├── controller.go
-│  │     ├── entity.go
-│  │     ├── usecase.go
-│  │     └── storage.go
-│  │
-│  └── storage
-│     ├── postgres
-│     │  └── postgres.go
-│     └── storage.go
-│
-├── migrations
-│  ├── 000001_init.down.sql
-│  ├── 000001_init.up.sql
-│  ├── 000002_zero_dump.down.sql
-│  └── 000002_zero_dump.up.sql
-│
-├── test
-│
-├── .env.example
-│
-├── .gitignore
-│
-├── go.mod
-│
-├── Makefile
-
-```

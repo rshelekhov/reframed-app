@@ -1,4 +1,4 @@
-package entity
+package models
 
 // Pagination represents pagination parameters
 type Pagination struct {

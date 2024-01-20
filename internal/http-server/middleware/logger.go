@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"github.com/go-chi/chi/middleware"
-	"github.com/rshelekhov/reframed/pkg/logger"
+	"github.com/rshelekhov/reframed/internal/logger"
 	"log/slog"
 	"net/http"
 	"time"
@@ -43,11 +43,11 @@ func New(log logger.Interface) func(next http.Handler) http.Handler {
 				)
 			}()
 
-			// Pass control to the next controller in the middleware chain
+			// Pass control to the next handlers in the middleware chain
 			next.ServeHTTP(ww, r)
 		}
 
-		// Return the controller created above by casting it
+		// Return the handlers created above by casting it
 		// to the type http.HandlerFunc
 		return http.HandlerFunc(fn)
 	}

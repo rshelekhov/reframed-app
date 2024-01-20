@@ -2,14 +2,15 @@ package slogdiscard
 
 import (
 	"context"
+	"github.com/rshelekhov/reframed/internal/logger"
 	"log/slog"
 )
 
 // In this form, the logger will ignore all messages we send to it -
 // we will need this in tests.
 
-func NewDiscardLogger() *slog.Logger {
-	return slog.New(NewDiscardHandler())
+func NewDiscardLogger() *logger.Logger {
+	return &logger.Logger{Logger: slog.New(NewDiscardHandler())}
 }
 
 type DiscardHandler struct{}
@@ -24,12 +25,12 @@ func (d DiscardHandler) Handle(_ context.Context, _ slog.Record) error {
 }
 
 func (d DiscardHandler) WithAttrs(_ []slog.Attr) slog.Handler {
-	// Returns the same controller, since there is no group to be saved
+	// Returns the same handlers, since there is no group to be saved
 	return d
 }
 
 func (d DiscardHandler) WithGroup(_ string) slog.Handler {
-	// Returns the same controller, since there is no group to be saved
+	// Returns the same handlers, since there is no group to be saved
 	return d
 }
 
