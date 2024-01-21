@@ -83,10 +83,8 @@ func TestDecodeJSON(t *testing.T) {
 			err := handlers.DecodeJSON(rr, req, mockLogger, &TestData{})
 
 			if err != nil {
-				response := rr.Result()
-
 				assert.Equal(t, tc.expectedError, err)
-				assert.Equal(t, tc.expectedCode, response.StatusCode)
+				assert.Equal(t, tc.expectedCode, rr.Code)
 			}
 		})
 	}
@@ -130,8 +128,7 @@ func TestValidateData(t *testing.T) {
 			if err != nil {
 				assert.Equal(t, tc.expectedError, err)
 				if errors.Is(tc.expectedError, handlers.ErrInvalidData) {
-					response := rec.Body.String()
-					assert.Contains(t, response, "invalid data")
+					assert.Contains(t, rec.Body.String(), "invalid data")
 				}
 				assert.Equal(t, tc.expectedCode, rec.Code)
 			} else {

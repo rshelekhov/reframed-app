@@ -19,6 +19,8 @@ var (
 	ErrInvalidJSON      = errors.New("failed to decode request body")
 
 	ErrInvalidData = errors.New("failed to validate data")
+
+	ErrFailedToGetData = errors.New("failed to get data")
 )
 
 // GetID gets the models id from the request

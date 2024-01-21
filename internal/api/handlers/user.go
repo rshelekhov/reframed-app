@@ -85,8 +85,8 @@ func (h *UserHandler) GetUserByID() http.HandlerFunc {
 			return
 		}
 		if err != nil {
-			log.Error("failed to get user", logger.Err(err))
-			responseError(w, r, http.StatusInternalServerError, "failed to get user")
+			log.Error(fmt.Sprintf("%v", ErrFailedToGetData), logger.Err(err))
+			responseError(w, r, http.StatusInternalServerError, fmt.Sprintf("%v", ErrFailedToGetData))
 			return
 		}
 

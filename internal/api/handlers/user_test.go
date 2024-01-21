@@ -78,7 +78,6 @@ func TestUserHandler_CreateUser(t *testing.T) {
 			mockStorage := &mocks.UserStorage{}
 			mockLogger := slogdiscard.NewDiscardLogger()
 
-			// Create handler
 			handler := &handlers.UserHandler{
 				Storage: mockStorage,
 				Logger:  mockLogger,
@@ -89,15 +88,12 @@ func TestUserHandler_CreateUser(t *testing.T) {
 				Return(tc.expectedError).
 				Once()
 
-			// Create request
 			reqBody, _ := json.Marshal(tc.user)
 			req := httptest.NewRequest(http.MethodPost, "/users", bytes.NewReader(reqBody))
 
-			// Call handler
 			rr := httptest.NewRecorder()
 			handler.CreateUser()(rr, req)
 
-			// Assert
 			require.Equal(t, tc.expectedCode, rr.Code)
 			if tc.expectedError != nil {
 				require.Contains(t, rr.Body.String(), tc.expectedError.Error())
@@ -107,78 +103,78 @@ func TestUserHandler_CreateUser(t *testing.T) {
 }
 
 func TestUserHandler_GetUserByID(t *testing.T) {
-	// Setup
-	mockStorage := &mocks.UserStorage{}
-	mockLogger := slogdiscard.NewDiscardLogger()
-
-	handler := &handlers.UserHandler{
-		Storage: mockStorage,
-		Logger:  mockLogger,
-	}
-
-	router := chi.NewRouter()
-	router.HandleFunc("/user/{id}", handler.GetUserByID())
-
-	t.Run("Get User By ID", func(t *testing.T) {
-		// Create a request to get user by ID
-		req := httptest.NewRequest("GET", "/user/123", nil)
-		rr := httptest.NewRecorder()
-
-		mockStorage.On("GetUserByID", mock.Anything, mock.AnythingOfType("string")).
-			Return(models.User{
+	testCases := []struct {
+		name          string
+		userID        string
+		user          models.User
+		expectedCode  int
+		expectedError error
+	}{
+		{
+			name:   "success",
+			userID: "123",
+			user: models.User{
 				ID:    "123",
 				Email: "test@example.com",
-			}, nil).
-			Once()
+			},
+			expectedCode:  http.StatusOK,
+			expectedError: nil,
+		},
+		{
+			name:          "user not found",
+			userID:        "123",
+			user:          models.User{},
+			expectedCode:  http.StatusNotFound,
+			expectedError: storage.ErrUserNotFound,
+		},
+		{
+			name:          "empty ID",
+			userID:        "",
+			user:          models.User{},
+			expectedCode:  http.StatusBadRequest,
+			expectedError: handlers.ErrEmptyID,
+		},
+		{
+			name:          "failed to get user",
+			userID:        "123",
+			user:          models.User{},
+			expectedCode:  http.StatusInternalServerError,
+			expectedError: handlers.ErrFailedToGetData,
+		},
+	}
 
-		// Serve the request using the router
-		router.ServeHTTP(rr, req)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			mockStorage := &mocks.UserStorage{}
+			mockLogger := slogdiscard.NewDiscardLogger()
 
-		resp := rr.Result()
+			handler := &handlers.UserHandler{
+				Storage: mockStorage,
+				Logger:  mockLogger,
+			}
 
-		// Verify the response
-		assert.Equal(t, http.StatusOK, resp.StatusCode)
-		// Add more assertions for response content, if necessary
-	})
+			mockStorage.On("GetUserByID", mock.Anything, mock.AnythingOfType("string")).
+				Return(tc.user, tc.expectedError).
+				Once()
 
-	t.Run("User Not Found", func(t *testing.T) {
-		// Create a request with invalid user ID
-		req := httptest.NewRequest("GET", "/user/456", nil)
-		rr := httptest.NewRecorder()
+			req := httptest.NewRequest("GET", "/user/{id}", nil)
 
-		mockStorage.On("GetUserByID", mock.Anything, mock.AnythingOfType("string")).
-			Return(models.User{}, storage.ErrUserNotFound).
-			Once()
+			rctx := chi.NewRouteContext()
+			rctx.URLParams.Add("id", tc.userID)
 
-		router.ServeHTTP(rr, req)
+			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
-		resp := rr.Result()
+			rr := httptest.NewRecorder()
+			handler.GetUserByID()(rr, req)
 
-		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+			assert.Equal(t, tc.expectedCode, rr.Code)
 
-		body, err := io.ReadAll(resp.Body)
-		defer func(Body io.ReadCloser) {
-			_ = Body.Close()
-		}(resp.Body)
+			if tc.name == "user not found" {
+				body, err := io.ReadAll(rr.Body)
 
-		assert.Nil(t, err)
-		assert.Contains(t, string(body), storage.ErrUserNotFound.Error())
-	})
-
-	t.Run("Empty ID", func(t *testing.T) {
-		// Create a request with empty user ID
-		req := httptest.NewRequest("GET", "/user/{id}", nil)
-		rr := httptest.NewRecorder()
-
-		rctx := chi.NewRouteContext()
-		rctx.URLParams.Add("id", "")
-
-		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
-
-		handler.GetUserByID()(rr, req)
-
-		resp := rr.Result()
-
-		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
-	})
+				assert.Nil(t, err)
+				assert.Contains(t, string(body), storage.ErrUserNotFound.Error())
+			}
+		})
+	}
 }
