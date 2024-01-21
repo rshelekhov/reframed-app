@@ -2,14 +2,44 @@ package handlers_test
 
 import (
 	"bytes"
-	"fmt"
-	"github.com/magiconair/properties/assert"
+	"errors"
+	"github.com/go-chi/chi/v5"
 	"github.com/rshelekhov/reframed/internal/api/handlers"
 	"github.com/rshelekhov/reframed/internal/logger/slogdiscard"
+	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
+
+func TestGetID(t *testing.T) {
+	mockLogger := slogdiscard.NewDiscardLogger()
+
+	t.Run("Valid ID", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/path/123", nil)
+		rr := httptest.NewRecorder()
+
+		router := chi.NewRouter()
+		router.Get("/path/{id}", func(w http.ResponseWriter, r *http.Request) {
+			id, statusCode, err := handlers.GetID(r, mockLogger)
+			assert.NoError(t, err)
+			assert.Equal(t, "123", id)
+			assert.Equal(t, http.StatusOK, statusCode)
+		})
+
+		router.ServeHTTP(rr, req)
+	})
+
+	t.Run("Empty ID", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/path/", nil)
+
+		_, statusCode, err := handlers.GetID(req, mockLogger)
+
+		assert.Equal(t, handlers.ErrEmptyID, err)
+		assert.Equal(t, http.StatusBadRequest, statusCode)
+
+	})
+}
 
 func TestDecodeJSON(t *testing.T) {
 	type TestData struct {
@@ -32,25 +62,25 @@ func TestDecodeJSON(t *testing.T) {
 			name:          "invalid JSON",
 			body:          `{invalid}`,
 			expectedCode:  http.StatusBadRequest,
-			expectedError: fmt.Errorf(handlers.ErrInvalidJSON),
+			expectedError: handlers.ErrInvalidJSON,
 		},
 		{
 			name:          "empty body",
 			body:          "",
 			expectedCode:  http.StatusBadRequest,
-			expectedError: fmt.Errorf(handlers.ErrEmptyRequestBody),
+			expectedError: handlers.ErrEmptyRequestBody,
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 
-			loggerMock := slogdiscard.NewDiscardLogger()
+			mockLogger := slogdiscard.NewDiscardLogger()
 
 			reqBody := bytes.NewBufferString(tc.body)
 			req := httptest.NewRequest(http.MethodPost, "/", reqBody)
 			rr := httptest.NewRecorder()
 
-			err := handlers.DecodeJSON(rr, req, loggerMock, &TestData{})
+			err := handlers.DecodeJSON(rr, req, mockLogger, &TestData{})
 
 			if err != nil {
 				response := rr.Result()
@@ -62,96 +92,51 @@ func TestDecodeJSON(t *testing.T) {
 	}
 }
 
-/*
 func TestValidateData(t *testing.T) {
 	type TestData struct {
-		Name string `validate:"required"`
+		Email    string `json:"email" validate:"required,email"`
+		Password string `json:"password" validate:"required,min=8"`
 	}
 
 	testCases := []struct {
 		name          string
-		data          TestData
+		data          interface{}
 		expectedCode  int
 		expectedError error
 	}{
-		{},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-
-			loggerMock := slogdiscard.NewDiscardLogger()
-
-			req := httptest.NewRequest(http.MethodPost, "/", nil)
-			rr := httptest.NewRecorder()
-
-			data := struct {
-				Name string `validate:"required"`
-			}{}
-
-			err := handlers.ValidateData(rr, req, loggerMock, data)*/
-/*
-	var ve validator.ValidationErrors
-	if errors.As(err, &ve) {
-		response := rr.Result()
-		assert.Equal(t, tc.expectedError, err)
-		assert.Equal(t, tc.expectedCode, response.StatusCode)
-	}
-
-	if err != nil {
-		response := rr.Result()
-		assert.Equal(t, tc.expectedError, err)
-		assert.Equal(t, tc.expectedCode, response.StatusCode)
-	}*/
-
-/*if err := handlers.ValidateData(tt.args.w, tt.args.r, tt.args.log, tt.args.data); (err != nil) != tt.wantErr {
-	t.Errorf("ValidateData() error = %v, wantErr %v", err, tt.wantErr)
-}*/
-/*})
-	}
-}*/
-
-func TestValidateData2(t *testing.T) {
-	type TestData struct {
-		Name  string `json:"name" validate:"required,email"`
-		Age   int    `json:"age" validate:"required,min=18"`
-		Email string `json:"email" validate:"required,email"`
-	}
-	// var mockData TestData
-
-	testCases := []struct {
-		name       string
-		data       interface{}
-		wantErrMsg string
-	}{
 		{
-			name:       "Valid Data",
-			data:       TestData{Name: "John", Age: 25, Email: "john@example.com"},
-			wantErrMsg: "",
+			name:          "Valid Data",
+			data:          TestData{Email: "john@example.com", Password: "password123"},
+			expectedCode:  http.StatusOK,
+			expectedError: nil,
 		},
 		{
-			name:       "Invalid Data",
-			data:       TestData{Name: "Alice", Email: "alice.example.com"},
-			wantErrMsg: handlers.ErrInvalidData,
+			name:          "Invalid Data",
+			data:          TestData{Email: "alice.example.com", Password: "pass"},
+			expectedCode:  http.StatusBadRequest,
+			expectedError: handlers.ErrInvalidData,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			loggerMock := slogdiscard.NewDiscardLogger()
+			mockLogger := slogdiscard.NewDiscardLogger()
 
 			rec := httptest.NewRecorder()
-			req := httptest.NewRequest("POST", "/", nil)
+			req := httptest.NewRequest(http.MethodPost, "/", nil)
 
-			err := handlers.ValidateData(rec, req, loggerMock, tc.data)
+			err := handlers.ValidateData(rec, req, mockLogger, tc.data)
 
 			if err != nil {
-				assert.Equal(t, tc.wantErrMsg, err.Error())
-				response := rec.Result()
-				assert.Equal(t, http.StatusBadRequest, response.StatusCode)
+				assert.Equal(t, tc.expectedError, err)
+				if errors.Is(tc.expectedError, handlers.ErrInvalidData) {
+					response := rec.Body.String()
+					assert.Contains(t, response, "invalid data")
+				}
+				assert.Equal(t, tc.expectedCode, rec.Code)
 			} else {
-				assert.Equal(t, "", tc.wantErrMsg)
 				response := rec.Result()
-				assert.Equal(t, http.StatusOK, response.StatusCode)
+				assert.Equal(t, tc.expectedCode, response.StatusCode)
 			}
 		})
 	}

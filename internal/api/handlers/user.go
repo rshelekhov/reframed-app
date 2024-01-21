@@ -72,8 +72,9 @@ func (h *UserHandler) GetUserByID() http.HandlerFunc {
 
 		log := logger.LogWithRequest(h.Logger, op, r)
 
-		id, err := GetID(w, r, log)
+		id, statusCode, err := GetID(r, log)
 		if err != nil {
+			responseError(w, r, statusCode, err.Error())
 			return
 		}
 
@@ -140,8 +141,9 @@ func (h *UserHandler) UpdateUser() http.HandlerFunc {
 
 		user := &models.UpdateUser{}
 
-		id, err := GetID(w, r, log)
+		id, statusCode, err := GetID(r, log)
 		if err != nil {
+			responseError(w, r, statusCode, err.Error())
 			return
 		}
 
@@ -205,8 +207,9 @@ func (h *UserHandler) DeleteUser() http.HandlerFunc {
 
 		log := logger.LogWithRequest(h.Logger, op, r)
 
-		id, err := GetID(w, r, log)
+		id, statusCode, err := GetID(r, log)
 		if err != nil {
+			responseError(w, r, statusCode, err.Error())
 			return
 		}
 
