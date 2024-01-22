@@ -13,7 +13,6 @@ CREATE TABLE IF NOT EXISTS lists
 (
     id          character varying PRIMARY KEY,
     title       character varying NOT NULL,
-    description character varying NOT NULL,
     user_id     character varying NOT NULL,
     updated_at  timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
     deleted_at  timestamp WITH TIME ZONE DEFAULT NULL
@@ -31,8 +30,8 @@ CREATE TABLE IF NOT EXISTS tasks
     start_time  time WITH TIME ZONE,
     end_time    time WITH TIME ZONE,
     status_id   int NOT NULL,
-    user_id     character varying NOT NULL,
     list_id     character varying NOT NULL,
+    user_id     character varying NOT NULL,
     updated_at  timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
     deleted_at  timestamp WITH TIME ZONE DEFAULT NULL
 );
@@ -54,6 +53,13 @@ CREATE TABLE IF NOT EXISTS tags
     deleted_at timestamp WITH TIME ZONE DEFAULT NULL
 );
 
+CREATE TABLE IF NOT EXISTS tasks_tags
+(
+    task_id character varying NOT NULL,
+    tag_id  character varying NOT NULL,
+    CONSTRAINT tasks_tags_pkey PRIMARY KEY (task_id, tag_id)
+);
+
 CREATE INDEX IF NOT EXISTS idx_tag_user_id ON tags(user_id);
 
 CREATE TABLE IF NOT EXISTS reminders
@@ -67,7 +73,7 @@ CREATE TABLE IF NOT EXISTS reminders
     deleted_at     timestamp WITH TIME ZONE DEFAULT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_remind_action_id ON reminders(action_id);
+CREATE INDEX IF NOT EXISTS idx_remind_task_id ON reminders(task_id);
 
 CREATE TABLE IF NOT EXISTS reminder_settings
 (
@@ -76,9 +82,9 @@ CREATE TABLE IF NOT EXISTS reminder_settings
 );
 
 ALTER TABLE lists ADD FOREIGN KEY (user_id) REFERENCES users(id);
-ALTER TABLE goals ADD FOREIGN KEY (user_id) REFERENCES users(id);
-ALTER TABLE tasks ADD FOREIGN KEY (status_id) REFERENCES goal_statuses (id);
+ALTER TABLE tasks ADD FOREIGN KEY (status_id) REFERENCES statuses (id);
 ALTER TABLE tasks ADD FOREIGN KEY (list_id) REFERENCES lists (id);
+ALTER TABLE tasks ADD FOREIGN KEY (user_id) REFERENCES users(id);
 ALTER TABLE tags ADD FOREIGN KEY (user_id) REFERENCES users(id);
 ALTER TABLE reminders ADD FOREIGN KEY (task_id) REFERENCES tasks(id);
 ALTER TABLE reminders ADD FOREIGN KEY (user_id) REFERENCES users(id);
