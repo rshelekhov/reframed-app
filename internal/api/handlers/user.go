@@ -176,7 +176,7 @@ func (h *UserHandler) UpdateUser() http.HandlerFunc {
 		}
 		if errors.Is(err, storage.ErrEmailAlreadyTaken) {
 			log.Error(fmt.Sprintf("%v", storage.ErrEmailAlreadyTaken), slog.String("email", user.Email))
-			responseError(w, r, http.StatusConflict, fmt.Sprintf("%v", storage.ErrEmailAlreadyTaken))
+			responseError(w, r, http.StatusBadRequest, fmt.Sprintf("%v", storage.ErrEmailAlreadyTaken))
 			return
 		}
 		if errors.Is(err, storage.ErrNoChangesDetected) {

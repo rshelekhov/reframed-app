@@ -2,7 +2,6 @@ package handlers_test
 
 import (
 	"bytes"
-	"errors"
 	"github.com/go-chi/chi/v5"
 	"github.com/rshelekhov/reframed/internal/api/handlers"
 	"github.com/rshelekhov/reframed/internal/logger/slogdiscard"
@@ -103,16 +102,22 @@ func TestValidateData(t *testing.T) {
 		expectedError error
 	}{
 		{
-			name:          "Valid Data",
+			name:          "valid data",
 			data:          TestData{Email: "john@example.com", Password: "password123"},
 			expectedCode:  http.StatusOK,
 			expectedError: nil,
 		},
 		{
-			name:          "Invalid Data",
+			name:          "invalid data",
 			data:          TestData{Email: "alice.example.com", Password: "pass"},
 			expectedCode:  http.StatusBadRequest,
 			expectedError: handlers.ErrInvalidData,
+		},
+		{
+			name:          "empty data",
+			data:          nil,
+			expectedCode:  http.StatusBadRequest,
+			expectedError: handlers.ErrEmptyData,
 		},
 	}
 
@@ -120,20 +125,19 @@ func TestValidateData(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			mockLogger := slogdiscard.NewDiscardLogger()
 
-			rec := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodPost, "/", nil)
+			rr := httptest.NewRecorder()
 
-			err := handlers.ValidateData(rec, req, mockLogger, tc.data)
+			err := handlers.ValidateData(rr, req, mockLogger, tc.data)
 
-			if err != nil {
+			if tc.expectedError != nil {
+				assert.Error(t, err)
 				assert.Equal(t, tc.expectedError, err)
-				if errors.Is(tc.expectedError, handlers.ErrInvalidData) {
-					assert.Contains(t, rec.Body.String(), "invalid data")
-				}
-				assert.Equal(t, tc.expectedCode, rec.Code)
+				assert.Equal(t, tc.expectedCode, rr.Code)
+				assert.Contains(t, rr.Body.String(), tc.expectedError.Error())
 			} else {
-				response := rec.Result()
-				assert.Equal(t, tc.expectedCode, response.StatusCode)
+				assert.NoError(t, err)
+				assert.Equal(t, tc.expectedCode, rr.Code)
 			}
 		})
 	}

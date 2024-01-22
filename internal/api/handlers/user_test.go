@@ -74,7 +74,11 @@ func TestUserHandler_CreateUser(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		tc := tc
+
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			mockStorage := &mocks.UserStorage{}
 			mockLogger := slogdiscard.NewDiscardLogger()
 
@@ -94,9 +98,11 @@ func TestUserHandler_CreateUser(t *testing.T) {
 			rr := httptest.NewRecorder()
 			handler.CreateUser()(rr, req)
 
-			require.Equal(t, tc.expectedCode, rr.Code)
 			if tc.expectedError != nil {
+				assert.Equal(t, tc.expectedCode, rr.Code)
 				require.Contains(t, rr.Body.String(), tc.expectedError.Error())
+			} else {
+				require.Equal(t, tc.expectedCode, rr.Code)
 			}
 		})
 	}
@@ -144,7 +150,11 @@ func TestUserHandler_GetUserByID(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		tc := tc
+
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			mockStorage := &mocks.UserStorage{}
 			mockLogger := slogdiscard.NewDiscardLogger()
 
@@ -157,7 +167,7 @@ func TestUserHandler_GetUserByID(t *testing.T) {
 				Return(tc.user, tc.expectedError).
 				Once()
 
-			req := httptest.NewRequest("GET", "/user/{id}", nil)
+			req := httptest.NewRequest(http.MethodGet, "/user/{id}", nil)
 
 			rctx := chi.NewRouteContext()
 			rctx.URLParams.Add("id", tc.userID)
@@ -220,7 +230,11 @@ func TestUserHandler_GetUsers(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		tc := tc
+
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			mockStorage := &mocks.UserStorage{}
 			mockLogger := slogdiscard.NewDiscardLogger()
 
@@ -254,6 +268,175 @@ func TestUserHandler_GetUsers(t *testing.T) {
 				require.Contains(t, string(body), tc.expectedError.Error())
 			}
 
+		})
+	}
+}
+
+func TestUserHandler_UpdateUser(t *testing.T) {
+	testCases := []struct {
+		name          string
+		userID        string
+		user          models.UpdateUser
+		expectedCode  int
+		expectedError error
+	}{
+		{
+			name:   "success",
+			userID: "123",
+			user: models.UpdateUser{
+				Email:    "test@example.com",
+				Password: "password123",
+			},
+			expectedCode:  http.StatusOK,
+			expectedError: nil,
+		},
+		{
+			name:          "user not found",
+			userID:        "123",
+			user:          models.UpdateUser{},
+			expectedCode:  http.StatusNotFound,
+			expectedError: storage.ErrUserNotFound,
+		},
+		{
+			name:          "email already taken",
+			userID:        "123",
+			user:          models.UpdateUser{},
+			expectedCode:  http.StatusBadRequest,
+			expectedError: storage.ErrEmailAlreadyTaken,
+		},
+		{
+			name:          "no changes detected",
+			userID:        "123",
+			user:          models.UpdateUser{},
+			expectedCode:  http.StatusBadRequest,
+			expectedError: storage.ErrNoChangesDetected,
+		},
+		{
+			name:          "no password changes detected (the same password)",
+			userID:        "123",
+			user:          models.UpdateUser{},
+			expectedCode:  http.StatusBadRequest,
+			expectedError: storage.ErrNoPasswordChangesDetected,
+		},
+		{
+			name:          "failed to update user",
+			userID:        "123",
+			user:          models.UpdateUser{},
+			expectedCode:  http.StatusInternalServerError,
+			expectedError: errors.New("failed to update user"),
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			mockStorage := &mocks.UserStorage{}
+			mockLogger := slogdiscard.NewDiscardLogger()
+
+			handler := &handlers.UserHandler{
+				Storage: mockStorage,
+				Logger:  mockLogger,
+			}
+
+			mockStorage.
+				On("UpdateUser", mock.Anything, mock.AnythingOfType("models.User")).
+				Return(tc.expectedError).
+				Once()
+
+			reqBody, _ := json.Marshal(tc.user)
+
+			req := httptest.NewRequest(http.MethodPut, "/user/{id}", bytes.NewReader(reqBody))
+
+			rctx := chi.NewRouteContext()
+			rctx.URLParams.Add("id", tc.userID)
+
+			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+			rr := httptest.NewRecorder()
+			handler.UpdateUser()(rr, req)
+
+			require.Equal(t, tc.expectedCode, rr.Code)
+			if tc.expectedError != nil {
+				require.Contains(t, rr.Body.String(), tc.expectedError.Error())
+			}
+
+			if tc.name == "user not found" {
+				body, err := io.ReadAll(rr.Body)
+
+				assert.Nil(t, err)
+				assert.Contains(t, string(body), storage.ErrUserNotFound.Error())
+			}
+		})
+	}
+}
+
+func TestUserHandler_DeleteUser(t *testing.T) {
+	testCases := []struct {
+		name          string
+		userID        string
+		expectedCode  int
+		expectedError error
+	}{
+		{
+			name:          "success",
+			userID:        "123",
+			expectedCode:  http.StatusOK,
+			expectedError: nil,
+		},
+		{
+			name:          "user not fount",
+			userID:        "123",
+			expectedCode:  http.StatusNotFound,
+			expectedError: storage.ErrUserNotFound,
+		},
+		{
+			name:          "failed to delete user",
+			userID:        "123",
+			expectedCode:  http.StatusInternalServerError,
+			expectedError: errors.New("failed to delete user"),
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			mockStorage := &mocks.UserStorage{}
+			mockLogger := slogdiscard.NewDiscardLogger()
+
+			handler := &handlers.UserHandler{
+				Storage: mockStorage,
+				Logger:  mockLogger,
+			}
+
+			mockStorage.
+				On("DeleteUser", mock.Anything, mock.AnythingOfType("string")).
+				Return(tc.expectedError).
+				Once()
+
+			req := httptest.NewRequest(http.MethodDelete, "/user/{id}", nil)
+
+			rctx := chi.NewRouteContext()
+			rctx.URLParams.Add("id", tc.userID)
+
+			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+			rr := httptest.NewRecorder()
+			handler.DeleteUser()(rr, req)
+
+			assert.Equal(t, tc.expectedCode, rr.Code)
+
+			if tc.name == "user not found" {
+				body, err := io.ReadAll(rr.Body)
+
+				assert.Nil(t, err)
+				assert.Contains(t, string(body), storage.ErrUserNotFound.Error())
+			}
 		})
 	}
 }

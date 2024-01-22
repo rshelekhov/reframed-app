@@ -10,17 +10,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-)
-
-var (
-	ErrEmptyID = errors.New("id is empty")
-
-	ErrEmptyRequestBody = errors.New("request body is empty")
-	ErrInvalidJSON      = errors.New("failed to decode request body")
-
-	ErrInvalidData             = errors.New("failed to validate data")
-	ErrFailedToGetData         = errors.New("failed to get data")
-	ErrFailedToParsePagination = errors.New("failed to parse limit and offset")
+	"reflect"
 )
 
 // GetID gets the models id from the request
@@ -56,6 +46,12 @@ func DecodeJSON(w http.ResponseWriter, r *http.Request, log logger.Interface, da
 
 // ValidateData validates the request
 func ValidateData(w http.ResponseWriter, r *http.Request, log logger.Interface, data any) error {
+	if data == nil || reflect.DeepEqual(data, reflect.Zero(reflect.TypeOf(data)).Interface()) {
+		log.Error(ErrEmptyData.Error())
+		responseError(w, r, http.StatusBadRequest, ErrEmptyData.Error())
+		return ErrEmptyData
+	}
+
 	// TODO: initiate validator in the main file
 	v := validator.New()
 	var ve validator.ValidationErrors
@@ -67,9 +63,9 @@ func ValidateData(w http.ResponseWriter, r *http.Request, log logger.Interface, 
 		return ErrInvalidData
 	}
 	if err != nil {
-		log.Error(ErrInvalidData.Error(), logger.Err(err))
-		responseError(w, r, http.StatusInternalServerError, ErrInvalidData.Error())
-		return ErrInvalidData
+		log.Error(ErrFailedToValidateData.Error(), logger.Err(err))
+		responseError(w, r, http.StatusInternalServerError, ErrFailedToValidateData.Error())
+		return ErrFailedToValidateData
 	}
 	return nil
 }

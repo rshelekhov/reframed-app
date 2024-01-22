@@ -29,10 +29,19 @@ func TestParseLimitAndOffset(t *testing.T) {
 			url:        "https://example.com?limit=abc&offset=xyz",
 			pagination: models.Pagination{Limit: handlers.DefaultLimit, Offset: handlers.DefaultOffset},
 		},
+		{
+			name:       "negative limit and offset",
+			url:        "https://example.com?limit=-1&offset=-1",
+			pagination: models.Pagination{Limit: handlers.DefaultLimit, Offset: handlers.DefaultOffset},
+		},
 	}
 
 	for _, tc := range testCases {
+		tc := tc
+
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			url, _ := url.Parse(tc.url)
 			req := &http.Request{URL: url}
 
