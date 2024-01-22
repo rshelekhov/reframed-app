@@ -15,7 +15,7 @@ import (
 func TestGetID(t *testing.T) {
 	mockLogger := slogdiscard.NewDiscardLogger()
 
-	t.Run("Valid ID", func(t *testing.T) {
+	t.Run("valid ID", func(t *testing.T) {
 		req := httptest.NewRequest("GET", "/path/123", nil)
 		rr := httptest.NewRecorder()
 
@@ -30,7 +30,7 @@ func TestGetID(t *testing.T) {
 		router.ServeHTTP(rr, req)
 	})
 
-	t.Run("Empty ID", func(t *testing.T) {
+	t.Run("empty ID", func(t *testing.T) {
 		req := httptest.NewRequest("GET", "/path/", nil)
 
 		_, statusCode, err := handlers.GetID(req, mockLogger)

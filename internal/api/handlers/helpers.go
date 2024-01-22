@@ -18,9 +18,9 @@ var (
 	ErrEmptyRequestBody = errors.New("request body is empty")
 	ErrInvalidJSON      = errors.New("failed to decode request body")
 
-	ErrInvalidData = errors.New("failed to validate data")
-
-	ErrFailedToGetData = errors.New("failed to get data")
+	ErrInvalidData             = errors.New("failed to validate data")
+	ErrFailedToGetData         = errors.New("failed to get data")
+	ErrFailedToParsePagination = errors.New("failed to parse limit and offset")
 )
 
 // GetID gets the models id from the request

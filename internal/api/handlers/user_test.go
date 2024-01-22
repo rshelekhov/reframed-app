@@ -178,3 +178,82 @@ func TestUserHandler_GetUserByID(t *testing.T) {
 		})
 	}
 }
+
+func TestUserHandler_GetUsers(t *testing.T) {
+	testCases := []struct {
+		name          string
+		url           string
+		users         []models.User
+		expectedCode  int
+		expectedError error
+	}{
+		{
+			name: "success",
+			url:  "/users?limit=100&offset=0",
+			users: []models.User{
+				{
+					ID:    "123",
+					Email: "test@example.com",
+				},
+				{
+					ID:    "456",
+					Email: "test2@example.com",
+				},
+			},
+			expectedCode:  http.StatusOK,
+			expectedError: nil,
+		},
+		{
+			name:          "no users found",
+			url:           "/users?limit=100&offset=0",
+			users:         []models.User{},
+			expectedCode:  http.StatusNotFound,
+			expectedError: storage.ErrNoUsersFound,
+		},
+		{
+			name:          "failed to get users",
+			url:           "/users?limit=100&offset=0",
+			users:         []models.User{},
+			expectedCode:  http.StatusInternalServerError,
+			expectedError: errors.New("failed to get users"),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			mockStorage := &mocks.UserStorage{}
+			mockLogger := slogdiscard.NewDiscardLogger()
+
+			handler := &handlers.UserHandler{
+				Storage: mockStorage,
+				Logger:  mockLogger,
+			}
+
+			mockStorage.On("GetUsers", mock.Anything, mock.AnythingOfType("models.Pagination")).
+				Return(tc.users, tc.expectedError).
+				Once()
+
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				handler.GetUsers()(w, r)
+			}))
+			defer ts.Close()
+
+			resp, err := http.Get(ts.URL + tc.url)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer resp.Body.Close()
+
+			assert.Equal(t, tc.expectedCode, resp.StatusCode)
+
+			if tc.expectedError != nil {
+				body, err := io.ReadAll(resp.Body)
+				if err != nil {
+					t.Fatal(err)
+				}
+				require.Contains(t, string(body), tc.expectedError.Error())
+			}
+
+		})
+	}
+}

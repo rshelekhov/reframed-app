@@ -102,10 +102,10 @@ func (h *UserHandler) GetUsers() http.HandlerFunc {
 
 		log := logger.LogWithRequest(h.Logger, op, r)
 
-		pagination, err := parseLimitAndOffset(r)
+		pagination, err := ParseLimitAndOffset(r)
 		if err != nil {
-			log.Error("failed to parse limit and offset", logger.Err(err))
-			responseError(w, r, http.StatusBadRequest, "failed to parse limit and offset")
+			log.Error(ErrFailedToParsePagination.Error(), logger.Err(err))
+			responseError(w, r, http.StatusBadRequest, ErrFailedToParsePagination.Error())
 			return
 		}
 
