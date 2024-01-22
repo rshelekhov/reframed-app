@@ -72,8 +72,9 @@ func (h *UserHandler) GetUserByID() http.HandlerFunc {
 
 		log := logger.LogWithRequest(h.Logger, op, r)
 
-		id, err := GetID(w, r, log)
+		id, statusCode, err := GetID(r, log)
 		if err != nil {
+			responseError(w, r, statusCode, err.Error())
 			return
 		}
 
@@ -84,8 +85,8 @@ func (h *UserHandler) GetUserByID() http.HandlerFunc {
 			return
 		}
 		if err != nil {
-			log.Error("failed to get user", logger.Err(err))
-			responseError(w, r, http.StatusInternalServerError, "failed to get user")
+			log.Error(fmt.Sprintf("%v", ErrFailedToGetData), logger.Err(err))
+			responseError(w, r, http.StatusInternalServerError, fmt.Sprintf("%v", ErrFailedToGetData))
 			return
 		}
 
@@ -101,10 +102,10 @@ func (h *UserHandler) GetUsers() http.HandlerFunc {
 
 		log := logger.LogWithRequest(h.Logger, op, r)
 
-		pagination, err := parseLimitAndOffset(r)
+		pagination, err := ParseLimitAndOffset(r)
 		if err != nil {
-			log.Error("failed to parse limit and offset", logger.Err(err))
-			responseError(w, r, http.StatusBadRequest, "failed to parse limit and offset")
+			log.Error(ErrFailedToParsePagination.Error(), logger.Err(err))
+			responseError(w, r, http.StatusBadRequest, ErrFailedToParsePagination.Error())
 			return
 		}
 
@@ -140,8 +141,9 @@ func (h *UserHandler) UpdateUser() http.HandlerFunc {
 
 		user := &models.UpdateUser{}
 
-		id, err := GetID(w, r, log)
+		id, statusCode, err := GetID(r, log)
 		if err != nil {
+			responseError(w, r, statusCode, err.Error())
 			return
 		}
 
@@ -174,7 +176,7 @@ func (h *UserHandler) UpdateUser() http.HandlerFunc {
 		}
 		if errors.Is(err, storage.ErrEmailAlreadyTaken) {
 			log.Error(fmt.Sprintf("%v", storage.ErrEmailAlreadyTaken), slog.String("email", user.Email))
-			responseError(w, r, http.StatusConflict, fmt.Sprintf("%v", storage.ErrEmailAlreadyTaken))
+			responseError(w, r, http.StatusBadRequest, fmt.Sprintf("%v", storage.ErrEmailAlreadyTaken))
 			return
 		}
 		if errors.Is(err, storage.ErrNoChangesDetected) {
@@ -205,8 +207,9 @@ func (h *UserHandler) DeleteUser() http.HandlerFunc {
 
 		log := logger.LogWithRequest(h.Logger, op, r)
 
-		id, err := GetID(w, r, log)
+		id, statusCode, err := GetID(r, log)
 		if err != nil {
+			responseError(w, r, statusCode, err.Error())
 			return
 		}
 

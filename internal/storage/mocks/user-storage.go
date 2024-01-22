@@ -22,16 +22,16 @@ func (u *UserStorage) GetUserByID(ctx context.Context, id string) (models.User, 
 }
 
 func (u *UserStorage) GetUsers(ctx context.Context, pgn models.Pagination) ([]models.User, error) {
-	//TODO implement me
-	panic("implement me")
+	args := u.Called(ctx, pgn)
+	return args.Get(0).([]models.User), args.Error(1)
 }
 
 func (u *UserStorage) UpdateUser(ctx context.Context, user models.User) error {
-	//TODO implement me
-	panic("implement me")
+	args := u.Called(ctx, user)
+	return args.Error(0)
 }
 
 func (u *UserStorage) DeleteUser(ctx context.Context, id string) error {
-	//TODO implement me
-	panic("implement me")
+	args := u.Called(ctx, id)
+	return args.Error(0)
 }

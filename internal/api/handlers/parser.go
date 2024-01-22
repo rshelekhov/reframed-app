@@ -7,28 +7,20 @@ import (
 )
 
 const (
-	defaultLimit  = 100
-	defaultOffset = 0
+	DefaultLimit  = 100
+	DefaultOffset = 0
 )
 
-// parseLimitAndOffset parses limit and offset from the request and returns a pagination object
-func parseLimitAndOffset(r *http.Request) (models.Pagination, error) {
+// ParseLimitAndOffset parses limit and offset from the request and returns a pagination object
+func ParseLimitAndOffset(r *http.Request) (models.Pagination, error) {
 	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
-	if err != nil {
-		limit = defaultLimit
+	if err != nil || limit < 0 {
+		limit = DefaultLimit
 	}
 
 	offset, err := strconv.Atoi(r.URL.Query().Get("offset"))
-	if err != nil {
-		offset = defaultOffset
-	}
-
-	if limit < 0 {
-		limit = defaultLimit
-	}
-
-	if offset < 0 {
-		limit = defaultOffset
+	if err != nil || offset < 0 {
+		offset = DefaultOffset
 	}
 
 	pagination := models.Pagination{
