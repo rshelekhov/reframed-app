@@ -13,8 +13,9 @@ import (
 )
 
 type UserHandler struct {
-	Storage storage.UserStorage
-	Logger  logger.Interface
+	UserStorage storage.UserStorage
+	ListStorage storage.ListStorage
+	Logger      logger.Interface
 }
 
 // CreateUser creates a new user
@@ -49,7 +50,7 @@ func (h *UserHandler) CreateUser() http.HandlerFunc {
 		}
 
 		// Create the user
-		err = h.Storage.CreateUser(r.Context(), newUser)
+		err = h.UserStorage.CreateUser(r.Context(), newUser)
 		if errors.Is(err, storage.ErrUserAlreadyExists) {
 			log.Error(fmt.Sprintf("%v", storage.ErrUserAlreadyExists), slog.String("email", user.Email))
 			responseError(w, r, http.StatusBadRequest, fmt.Sprintf("%v", storage.ErrUserAlreadyExists))
@@ -58,10 +59,28 @@ func (h *UserHandler) CreateUser() http.HandlerFunc {
 			log.Error("failed to create user", logger.Err(err))
 			responseError(w, r, http.StatusInternalServerError, "failed to create user")
 			return
-		} else {
-			log.Info("user created", slog.Any("user_id", id))
-			responseSuccess(w, r, http.StatusCreated, "user created", models.User{ID: id})
 		}
+
+		// Create "Inbox" list
+		listID := ksuid.New().String()
+		now = time.Now().UTC()
+
+		newList := models.List{
+			ID:        listID,
+			Title:     "Inbox",
+			UserID:    newUser.ID,
+			UpdatedAt: &now,
+		}
+
+		err = h.ListStorage.CreateList(r.Context(), newList)
+		if err != nil {
+			log.Error("failed to create list", logger.Err(err))
+			responseError(w, r, http.StatusInternalServerError, "failed to create list")
+			// return
+		}
+
+		log.Info("user created", slog.Any("user_id", id))
+		responseSuccess(w, r, http.StatusCreated, "user created", models.User{ID: id})
 	}
 }
 
@@ -78,7 +97,7 @@ func (h *UserHandler) GetUserByID() http.HandlerFunc {
 			return
 		}
 
-		user, err := h.Storage.GetUserByID(r.Context(), id)
+		user, err := h.UserStorage.GetUserByID(r.Context(), id)
 		if errors.Is(err, storage.ErrUserNotFound) {
 			log.Error(fmt.Sprintf("%v", storage.ErrUserNotFound), slog.String("user_id", id))
 			responseError(w, r, http.StatusNotFound, fmt.Sprintf("%v", storage.ErrUserNotFound))
@@ -109,7 +128,7 @@ func (h *UserHandler) GetUsers() http.HandlerFunc {
 			return
 		}
 
-		users, err := h.Storage.GetUsers(r.Context(), pagination)
+		users, err := h.UserStorage.GetUsers(r.Context(), pagination)
 		if errors.Is(err, storage.ErrNoUsersFound) {
 			log.Error(fmt.Sprintf("%v", storage.ErrNoUsersFound))
 			responseError(w, r, http.StatusNotFound, fmt.Sprintf("%v", storage.ErrNoUsersFound))
@@ -168,7 +187,7 @@ func (h *UserHandler) UpdateUser() http.HandlerFunc {
 			UpdatedAt: &now,
 		}
 
-		err = h.Storage.UpdateUser(r.Context(), updatedUser)
+		err = h.UserStorage.UpdateUser(r.Context(), updatedUser)
 		if errors.Is(err, storage.ErrUserNotFound) {
 			log.Error(fmt.Sprintf("%v", storage.ErrUserNotFound), slog.String("user_id", id))
 			responseError(w, r, http.StatusNotFound, fmt.Sprintf("%v", storage.ErrUserNotFound))
@@ -213,7 +232,7 @@ func (h *UserHandler) DeleteUser() http.HandlerFunc {
 			return
 		}
 
-		err = h.Storage.DeleteUser(r.Context(), id)
+		err = h.UserStorage.DeleteUser(r.Context(), id)
 		if errors.Is(err, storage.ErrUserNotFound) {
 			log.Error(fmt.Sprintf("%v", storage.ErrUserNotFound), slog.String("user_id", id))
 			responseError(w, r, http.StatusNotFound, fmt.Sprintf("%v", storage.ErrUserNotFound))
@@ -226,7 +245,6 @@ func (h *UserHandler) DeleteUser() http.HandlerFunc {
 		}
 
 		log.Info("user deleted", slog.String("user_id", id))
-
 		responseSuccess(w, r, http.StatusOK, "user deleted", models.User{ID: id})
 	}
 }

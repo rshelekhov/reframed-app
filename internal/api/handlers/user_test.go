@@ -22,10 +22,11 @@ import (
 
 func TestUserHandler_CreateUser(t *testing.T) {
 	testCases := []struct {
-		name          string
-		user          models.User
-		expectedCode  int
-		expectedError error
+		name                     string
+		user                     models.User
+		expectedCode             int
+		expectedUserStorageError error
+		expectedListStorageError error
 	}{
 		{
 			name: "success",
@@ -33,8 +34,9 @@ func TestUserHandler_CreateUser(t *testing.T) {
 				Email:    "test@example.com",
 				Password: "password123",
 			},
-			expectedCode:  http.StatusCreated,
-			expectedError: nil,
+			expectedCode:             http.StatusCreated,
+			expectedUserStorageError: nil,
+			expectedListStorageError: nil,
 		},
 		{
 			name: "invalid email",
@@ -42,8 +44,9 @@ func TestUserHandler_CreateUser(t *testing.T) {
 				Email:    "testexample.com",
 				Password: "password123",
 			},
-			expectedCode:  http.StatusBadRequest,
-			expectedError: errors.New("field Email must be a valid email address"),
+			expectedCode:             http.StatusBadRequest,
+			expectedUserStorageError: errors.New("field Email must be a valid email address"),
+			expectedListStorageError: nil,
 		},
 		{
 			name: "invalid password",
@@ -51,8 +54,9 @@ func TestUserHandler_CreateUser(t *testing.T) {
 				Email:    "test@example.com",
 				Password: "pass",
 			},
-			expectedCode:  http.StatusBadRequest,
-			expectedError: errors.New("field Password must be greater than or equal to 8"),
+			expectedCode:             http.StatusBadRequest,
+			expectedUserStorageError: errors.New("field Password must be greater than or equal to 8"),
+			expectedListStorageError: nil,
 		},
 		{
 			name: "user already exists",
@@ -60,16 +64,28 @@ func TestUserHandler_CreateUser(t *testing.T) {
 				Email:    "test@example.com",
 				Password: "password123",
 			},
-			expectedCode:  http.StatusBadRequest,
-			expectedError: storage.ErrUserAlreadyExists,
+			expectedCode:             http.StatusBadRequest,
+			expectedUserStorageError: storage.ErrUserAlreadyExists,
+			expectedListStorageError: nil,
 		},
 		{
 			name: "email is required",
 			user: models.User{
 				Password: "password123",
 			},
-			expectedCode:  http.StatusBadRequest,
-			expectedError: errors.New("field Email is required"),
+			expectedCode:             http.StatusBadRequest,
+			expectedUserStorageError: errors.New("field Email is required"),
+			expectedListStorageError: nil,
+		},
+		{
+			name: "failed to create Inbox list",
+			user: models.User{
+				Email:    "test@example.com",
+				Password: "password123",
+			},
+			expectedCode:             http.StatusInternalServerError,
+			expectedUserStorageError: nil,
+			expectedListStorageError: errors.New("failed to create list"),
 		},
 	}
 
@@ -79,17 +95,24 @@ func TestUserHandler_CreateUser(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			mockStorage := &mocks.UserStorage{}
+			mockUserStorage := &mocks.UserStorage{}
+			mockListStorage := &mocks.ListStorage{}
 			mockLogger := slogdiscard.NewDiscardLogger()
 
 			handler := &handlers.UserHandler{
-				Storage: mockStorage,
-				Logger:  mockLogger,
+				UserStorage: mockUserStorage,
+				ListStorage: mockListStorage,
+				Logger:      mockLogger,
 			}
 
-			mockStorage.
+			mockUserStorage.
 				On("CreateUser", mock.Anything, mock.AnythingOfType("models.User")).
-				Return(tc.expectedError).
+				Return(tc.expectedUserStorageError).
+				Once()
+
+			mockListStorage.
+				On("CreateList", mock.Anything, mock.AnythingOfType("models.List")).
+				Return(tc.expectedListStorageError).
 				Once()
 
 			reqBody, _ := json.Marshal(tc.user)
@@ -98,9 +121,12 @@ func TestUserHandler_CreateUser(t *testing.T) {
 			rr := httptest.NewRecorder()
 			handler.CreateUser()(rr, req)
 
-			if tc.expectedError != nil {
+			if tc.expectedUserStorageError != nil {
 				assert.Equal(t, tc.expectedCode, rr.Code)
-				require.Contains(t, rr.Body.String(), tc.expectedError.Error())
+				require.Contains(t, rr.Body.String(), tc.expectedUserStorageError.Error())
+			} else if tc.expectedListStorageError != nil {
+				assert.Equal(t, tc.expectedCode, rr.Code)
+				require.Contains(t, rr.Body.String(), tc.expectedListStorageError.Error())
 			} else {
 				require.Equal(t, tc.expectedCode, rr.Code)
 			}
@@ -159,8 +185,8 @@ func TestUserHandler_GetUserByID(t *testing.T) {
 			mockLogger := slogdiscard.NewDiscardLogger()
 
 			handler := &handlers.UserHandler{
-				Storage: mockStorage,
-				Logger:  mockLogger,
+				UserStorage: mockStorage,
+				Logger:      mockLogger,
 			}
 
 			mockStorage.On("GetUserByID", mock.Anything, mock.AnythingOfType("string")).
@@ -239,8 +265,8 @@ func TestUserHandler_GetUsers(t *testing.T) {
 			mockLogger := slogdiscard.NewDiscardLogger()
 
 			handler := &handlers.UserHandler{
-				Storage: mockStorage,
-				Logger:  mockLogger,
+				UserStorage: mockStorage,
+				Logger:      mockLogger,
 			}
 
 			mockStorage.On("GetUsers", mock.Anything, mock.AnythingOfType("models.Pagination")).
@@ -337,8 +363,8 @@ func TestUserHandler_UpdateUser(t *testing.T) {
 			mockLogger := slogdiscard.NewDiscardLogger()
 
 			handler := &handlers.UserHandler{
-				Storage: mockStorage,
-				Logger:  mockLogger,
+				UserStorage: mockStorage,
+				Logger:      mockLogger,
 			}
 
 			mockStorage.
@@ -410,8 +436,8 @@ func TestUserHandler_DeleteUser(t *testing.T) {
 			mockLogger := slogdiscard.NewDiscardLogger()
 
 			handler := &handlers.UserHandler{
-				Storage: mockStorage,
-				Logger:  mockLogger,
+				UserStorage: mockStorage,
+				Logger:      mockLogger,
 			}
 
 			mockStorage.

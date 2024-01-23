@@ -24,18 +24,22 @@ func main() {
 		slog.String("address", cfg.HTTPServer.Address))
 	log.Debug("logger debug mode enabled")
 
-	// Storage
+	// UserStorage
 	pg, err := postgres.NewStorage(cfg)
 	if err != nil {
 		log.Error("failed to init storage", logger.Err(err))
 	}
 	log.Debug("storage initiated")
 
+	userStorage := postgres.NewUserStorage(pg)
+	listStorage := postgres.NewListStorage(pg)
+
 	// Router
 	r := route.NewRouter(log)
 
 	// Routers
-	route.NewUserRouter(r, log, postgres.NewUserStorage(pg))
+	route.NewUserRouter(r, log, userStorage, listStorage)
+	route.NewListRouter(r, log, listStorage)
 
 	// HTTP Server
 	log.Info("starting server", slog.String("address", cfg.HTTPServer.Address))

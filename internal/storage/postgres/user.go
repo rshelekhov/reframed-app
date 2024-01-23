@@ -16,8 +16,8 @@ type UserStorage struct {
 	*pgxpool.Pool
 }
 
-func NewUserStorage(pg *pgxpool.Pool) *UserStorage {
-	return &UserStorage{pg}
+func NewUserStorage(pool *pgxpool.Pool) *UserStorage {
+	return &UserStorage{Pool: pool}
 }
 
 // CreateUser creates a new user
@@ -34,6 +34,7 @@ func (s *UserStorage) CreateUser(ctx context.Context, user models.User) error {
 		return err
 	}
 
+	// TODO: add a function for creating the default "Inbox" list in the db
 	switch userStatus {
 	case "active":
 		return storage.ErrUserAlreadyExists
@@ -73,8 +74,6 @@ func getUserStatus(ctx context.Context, tx pgx.Tx, email string) (string, error)
 		RollbackOnError(&err, tx, ctx, op)
 		return "", fmt.Errorf("%s: failed to check if user exists: %w", op, err)
 	}
-
-	fmt.Println("STATUS HERE", status)
 
 	return status, nil
 }

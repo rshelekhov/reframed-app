@@ -7,11 +7,12 @@ import (
 	"github.com/rshelekhov/reframed/internal/storage"
 )
 
-// NewUserRouter create a handlers struct and register the routes
-func NewUserRouter(r *chi.Mux, log logger.Interface, s storage.UserStorage) {
+// NewUserRouter creates a new user router and registers the routes
+func NewUserRouter(r *chi.Mux, log logger.Interface, us storage.UserStorage, ls storage.ListStorage) {
 	h := &handlers.UserHandler{
-		Storage: s,
-		Logger:  log,
+		UserStorage: us,
+		ListStorage: ls,
+		Logger:      log,
 	}
 
 	r.Route("/users", func(r chi.Router) {
