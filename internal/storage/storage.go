@@ -13,6 +13,8 @@ var (
 	ErrEmailAlreadyTaken         = errors.New("this email already taken")
 	ErrNoChangesDetected         = errors.New("no changes detected")
 	ErrNoPasswordChangesDetected = errors.New("no password changes detected")
+
+	ErrNoListsFound = errors.New("no lists found")
 )
 
 type (
@@ -29,7 +31,7 @@ type (
 	ListStorage interface {
 		CreateList(ctx context.Context, list models.List) error
 		GetListByID(ctx context.Context, id string) (models.List, error)
-		GetLists(ctx context.Context, pgn models.Pagination) ([]models.List, error)
+		GetLists(ctx context.Context, userID string, pgn models.Pagination) ([]models.List, error)
 		UpdateList(ctx context.Context, list models.List) error
 		DeleteList(ctx context.Context, id string) error
 	}
