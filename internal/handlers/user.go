@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"github.com/rshelekhov/reframed/internal/http-server/middleware/auth"
 	"github.com/rshelekhov/reframed/internal/logger"
 	"github.com/rshelekhov/reframed/internal/models"
 	"github.com/rshelekhov/reframed/internal/storage"
@@ -13,9 +15,92 @@ import (
 )
 
 type UserHandler struct {
+	Logger      logger.Interface
+	TokenAuth   *auth.JWTAuth
 	UserStorage storage.UserStorage
 	ListStorage storage.ListStorage
-	Logger      logger.Interface
+}
+
+func NewUserHandler(
+	log logger.Interface,
+	tokenAuth *auth.JWTAuth,
+	userStorage storage.UserStorage,
+	listStorage storage.ListStorage,
+) *UserHandler {
+	return &UserHandler{
+		Logger:      log,
+		TokenAuth:   tokenAuth,
+		UserStorage: userStorage,
+		ListStorage: listStorage,
+	}
+}
+
+func (h *UserHandler) Login() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		const op = "user.handlers.Login"
+
+		log := logger.LogWithRequest(h.Logger, op, r)
+
+		userInput := &models.User{}
+
+		// Decode the request body
+		err := DecodeJSON(w, r, log, userInput)
+		if err != nil {
+			return
+		}
+
+		// Validate the request
+		err = ValidateData(w, r, log, userInput)
+		if err != nil {
+			return
+		}
+
+		userDB, err := h.UserStorage.GetUserCredentials(r.Context(), userInput)
+		if errors.Is(err, storage.ErrUserNotFound) {
+			log.Error(fmt.Sprintf("%v", storage.ErrUserNotFound), slog.String("email", userInput.Email))
+			responseError(w, r, http.StatusNotFound, fmt.Sprintf("%v", storage.ErrUserNotFound))
+			return
+		}
+		if err != nil {
+			log.Error(fmt.Sprintf("%v", ErrFailedToGetData), logger.Err(err))
+			responseError(w, r, http.StatusInternalServerError, fmt.Sprintf("%v", ErrFailedToGetData))
+			return
+		}
+
+		// TODO: add validate the password using bcrypt
+
+		// Validate token
+		/*if userInput.Email == userDB.Email && userInput.Password == userDB.Password {
+			tokenString, err := auth.CreateToken(userDB.ID)
+			if err != nil {
+				log.Error(fmt.Sprintf("%v", ErrFailedToCreateToken), logger.Err(err))
+				responseError(w, r, http.StatusInternalServerError, fmt.Sprintf("%v", ErrFailedToCreateToken))
+				return
+			}
+
+			log.Info("token created", slog.String("token", tokenString))
+			responseSuccess(w, r, http.StatusOK, "token created", models.TokenResponse{AccessToken: tokenString})
+			return
+		} else {
+			log.Error(fmt.Sprintf("%v", ErrInvalidCredentials), slog.String("email", userInput.Email))
+			responseError(w, r, http.StatusUnauthorized, fmt.Sprintf("%v", ErrInvalidCredentials))
+		}*/
+	}
+}
+
+func (h *UserHandler) RefreshTokens() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		const op = "user.handlers.RefreshTokens"
+
+		h.createSession(r.Context(), user.ID, h.TokenAuth.AccessTokenTTL, h.TokenAuth.RefreshTokenTTL)
+	}
+}
+
+// TODO: add logout
+func (h *UserHandler) Logout() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		const op = "user.handlers.Logout"
+	}
 }
 
 // CreateUser creates a new user
@@ -82,6 +167,40 @@ func (h *UserHandler) CreateUser() http.HandlerFunc {
 		log.Info("user created", slog.Any("user_id", id))
 		responseSuccess(w, r, http.StatusCreated, "user created", models.User{ID: id})
 	}
+}
+
+func (h *UserHandler) createSession(
+	ctx context.Context,
+	userID string,
+	accessTokenTTL,
+	refreshTokenTTL time.Duration,
+) (models.TokenResponse, error) {
+	var (
+		resp models.TokenResponse
+		err  error
+	)
+
+	resp.AccessToken, err = h.TokenAuth.CreateToken(userID, accessTokenTTL)
+	if err != nil {
+		return resp, err
+	}
+
+	resp.RefreshToken, err = h.TokenAuth.NewRefreshToken()
+	if err != nil {
+		return resp, err
+	}
+
+	session := models.Session{
+		RefreshToken: resp.RefreshToken,
+		ExpiresAt:    time.Now().Add(refreshTokenTTL), // TODO: move ttl to config and set 720h
+	}
+
+	err = h.UserStorage.SetSession(ctx, userID, session)
+	if err != nil {
+		return resp, err
+	}
+
+	return resp, nil
 }
 
 // GetUserByID get a user by ID

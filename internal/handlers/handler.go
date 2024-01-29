@@ -14,4 +14,7 @@ var (
 
 	ErrFailedToGetData         = errors.New("failed to get data")
 	ErrFailedToParsePagination = errors.New("failed to parse limit and offset")
+
+	ErrFailedToCreateToken = errors.New("failed to create token")
+	ErrInvalidCredentials  = errors.New("invalid credentials")
 )

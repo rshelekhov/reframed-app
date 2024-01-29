@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"fmt"
+	"github.com/rshelekhov/reframed/internal/http-server/middleware/auth"
 	"github.com/rshelekhov/reframed/internal/logger"
 	"github.com/rshelekhov/reframed/internal/models"
 	"github.com/rshelekhov/reframed/internal/storage"
@@ -13,8 +14,21 @@ import (
 )
 
 type ListHandler struct {
-	Storage storage.ListStorage
-	Logger  logger.Interface
+	Logger      logger.Interface
+	TokenAuth   *auth.JWTAuth
+	ListStorage storage.ListStorage
+}
+
+func NewListHandler(
+	log logger.Interface,
+	tokenAuth *auth.JWTAuth,
+	listStorage storage.ListStorage,
+) *ListHandler {
+	return &ListHandler{
+		Logger:      log,
+		TokenAuth:   tokenAuth,
+		ListStorage: listStorage,
+	}
 }
 
 func (h *ListHandler) CreateList() http.HandlerFunc {
@@ -41,7 +55,7 @@ func (h *ListHandler) CreateList() http.HandlerFunc {
 			UpdatedAt: &now,
 		}
 
-		err = h.Storage.CreateList(r.Context(), newList)
+		err = h.ListStorage.CreateList(r.Context(), newList)
 		if err != nil {
 			log.Error("failed to create list", logger.Err(err))
 			responseError(w, r, http.StatusInternalServerError, "failed to create list")
@@ -79,7 +93,7 @@ func (h *ListHandler) GetLists() http.HandlerFunc {
 			return
 		}
 
-		lists, err := h.Storage.GetLists(r.Context(), userID, pagination)
+		lists, err := h.ListStorage.GetLists(r.Context(), userID, pagination)
 		if errors.Is(err, storage.ErrNoListsFound) {
 			log.Error(fmt.Sprintf("%v", storage.ErrNoListsFound))
 			responseError(w, r, http.StatusNotFound, fmt.Sprintf("%v", storage.ErrNoListsFound))
