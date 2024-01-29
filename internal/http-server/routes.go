@@ -73,7 +73,7 @@ func (s *Server) initRoutes(jwtAuth *auth.JWTAuth) *chi.Mux {
 		// Auth routes
 		r.Route("/auth", func(r chi.Router) {
 			r.Post("/refresh-tokens", s.user.RefreshJWTTokens())
-			r.Post("/logout", s.user.Logout())
+			// r.Post("/logout", s.user.Logout())
 		})
 	})
 

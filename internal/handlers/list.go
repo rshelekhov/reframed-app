@@ -69,13 +69,19 @@ func (h *ListHandler) CreateList() http.HandlerFunc {
 
 func (h *ListHandler) GetListByID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "list.handlers.GetListByID"
+		const (
+			op  = "list.handlers.GetListByID"
+			key = "listID"
+		)
 	}
 }
 
-func (h *ListHandler) GetLists() http.HandlerFunc {
+func (h *ListHandler) GetListsByUserID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "list.handlers.GetLists"
+		const (
+			op  = "list.handlers.GetLists"
+			key = "user_id"
+		)
 
 		log := logger.LogWithRequest(h.Logger, op, r)
 
@@ -87,7 +93,7 @@ func (h *ListHandler) GetLists() http.HandlerFunc {
 		}
 
 		// TODO: implement JWT auth
-		userID, statusCode, err := GetID(r, log)
+		userID, statusCode, err := GetID(r, log, key)
 		if err != nil {
 			responseError(w, r, statusCode, err.Error())
 			return

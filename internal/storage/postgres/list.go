@@ -20,6 +20,7 @@ func (l ListStorage) CreateList(ctx context.Context, list models.List) error {
 	const (
 		op = "list.storage.CreateList"
 
+		// TODO: UPDATE IF EXISTS
 		query = `INSERT INTO lists (id, title, user_id, updated_at) VALUES ($1, $2, $3, $4)`
 	)
 

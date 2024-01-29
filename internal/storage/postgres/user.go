@@ -10,6 +10,7 @@ import (
 	"github.com/rshelekhov/reframed/internal/models"
 	"github.com/rshelekhov/reframed/internal/storage"
 	"strconv"
+	"time"
 )
 
 type UserStorage struct {
@@ -34,7 +35,6 @@ func (s *UserStorage) CreateUser(ctx context.Context, user models.User) error {
 		return err
 	}
 
-	// TODO: add a function for creating the default "Inbox" list in the db
 	switch userStatus {
 	case "active":
 		return storage.ErrUserAlreadyExists
@@ -125,6 +125,130 @@ func insertUser(ctx context.Context, tx pgx.Tx, user models.User) error {
 	}
 
 	return nil
+}
+
+func (s *UserStorage) GetUserCredentials(ctx context.Context, user *models.User) (models.User, error) {
+	const (
+		op = "user.storage.GetUserCredentials"
+
+		query = `SELECT id, email, password, updated_at
+					FROM users WHERE email = $1 AND password = $2 AND deleted_at IS NULL`
+	)
+
+	var userDB models.User
+	err := s.QueryRow(ctx, query, user.Email, user.Password).Scan(
+		&userDB.ID,
+		&userDB.Email,
+		&userDB.Password,
+		&userDB.UpdatedAt,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return userDB, storage.ErrUserNotFound
+	}
+	if err != nil {
+		return userDB, fmt.Errorf("%s: failed to get user credentials: %w", op, err)
+	}
+
+	return userDB, nil
+}
+
+func (s *UserStorage) SaveSession(ctx context.Context, userID, deviceID string, session models.Session) error {
+	// TODO: add constraint that user can have only active sessions for 5 devices
+	const (
+		op = "user.storage.SaveSession"
+
+		query = `INSERT INTO refresh_sessions (user_id, device_id, refresh_token, last_visit_at, expires_at)
+					VALUES ($1, $2, $3, $4, $5)`
+	)
+
+	_, err := s.Exec(ctx, query, userID, deviceID, session.RefreshToken, time.Now(), session.ExpiresAt)
+	if err != nil {
+		return fmt.Errorf("%s: failed to create session: %w", op, err)
+	}
+	return nil
+}
+
+func (s *UserStorage) GetSessionByRefreshToken(ctx context.Context, refreshToken string) (models.Session, error) {
+	const (
+		op = "user.storage.GetSessionByRefreshToken"
+
+		querySelect = `SELECT user_id, device_id, last_visit_at, expires_at FROM refresh_sessions
+               		WHERE refresh_token = $1`
+
+		queryDelete = `DELETE FROM refresh_sessions WHERE refresh_token = $1`
+	)
+
+	var session models.Session
+	session.RefreshToken = refreshToken
+
+	err := s.QueryRow(ctx, querySelect, refreshToken).
+		Scan(&session.UserID, &session.DeviceID, &session.LastVisitAt, &session.ExpiresAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return session, storage.ErrSessionNotFound
+	}
+	if err != nil {
+		return session, fmt.Errorf("%s: failed to get session: %w", op, err)
+	}
+
+	_, err = s.Exec(ctx, queryDelete, refreshToken)
+	if err != nil {
+		return session, fmt.Errorf("%s: failed to delete expired session: %w", op, err)
+	}
+
+	return session, nil
+}
+
+func (s *UserStorage) AddDevice(ctx context.Context, device models.UserDevice) error {
+	const (
+		op = "user.storage.AddDevice"
+
+		query = `INSERT INTO user_devices (id, user_id, user_agent, ip, detached, latest_login_at)
+					VALUES ($1, $2, $3, $4, $5, $6)`
+	)
+
+	_, err := s.Exec(
+		ctx,
+		query,
+		device.ID,
+		device.UserID,
+		device.UserAgent,
+		device.IP,
+		device.Detached,
+		device.LatestLoginAt,
+	)
+	if err != nil {
+		return fmt.Errorf("%s: failed to add device: %w", op, err)
+	}
+
+	return nil
+}
+
+func (s *UserStorage) GetUserDevice(ctx context.Context, userID, userAgent string) (models.UserDevice, error) {
+	const (
+		op = "user.storage.GetUserDevice"
+
+		query = `SELECT id, user_id, user_agent, ip, detached, latest_login_at
+							FROM user_devices
+							WHERE user_id = $1 AND user_agent = $2 AND detached = false`
+	)
+
+	var device models.UserDevice
+	err := s.QueryRow(ctx, query, userID, userAgent).Scan(
+		&device.ID,
+		&device.UserID,
+		&device.UserAgent,
+		&device.IP,
+		&device.Detached,
+		&device.LatestLoginAt,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return device, storage.ErrUserDeviceNotFound
+	}
+	if err != nil {
+		return device, fmt.Errorf("%s: failed to get user device: %w", op, err)
+	}
+
+	return device, nil
 }
 
 // GetUserByID returns a user by ID
@@ -303,6 +427,7 @@ func (s *UserStorage) DeleteUser(ctx context.Context, id string) error {
 		op = "user.storage.DeleteUser"
 
 		query = `UPDATE users SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL`
+		// TODO: add deleting session
 	)
 
 	result, err := s.Exec(ctx, query, id)

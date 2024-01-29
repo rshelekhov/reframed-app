@@ -3,7 +3,7 @@ package handlers_test
 import (
 	"bytes"
 	"github.com/go-chi/chi/v5"
-	"github.com/rshelekhov/reframed/internal/api/handlers"
+	handlers2 "github.com/rshelekhov/reframed/internal/handlers"
 	"github.com/rshelekhov/reframed/internal/logger/slogdiscard"
 	"github.com/stretchr/testify/assert"
 	"net/http"
@@ -20,7 +20,7 @@ func TestGetID(t *testing.T) {
 
 		router := chi.NewRouter()
 		router.Get("/path/{id}", func(w http.ResponseWriter, r *http.Request) {
-			id, statusCode, err := handlers.GetID(r, mockLogger)
+			id, statusCode, err := handlers2.GetID(r, mockLogger)
 			assert.NoError(t, err)
 			assert.Equal(t, "123", id)
 			assert.Equal(t, http.StatusOK, statusCode)
@@ -32,9 +32,9 @@ func TestGetID(t *testing.T) {
 	t.Run("empty ID", func(t *testing.T) {
 		req := httptest.NewRequest("GET", "/path/", nil)
 
-		_, statusCode, err := handlers.GetID(req, mockLogger)
+		_, statusCode, err := handlers2.GetID(req, mockLogger)
 
-		assert.Equal(t, handlers.ErrEmptyID, err)
+		assert.Equal(t, handlers2.ErrEmptyID, err)
 		assert.Equal(t, http.StatusBadRequest, statusCode)
 
 	})
@@ -61,13 +61,13 @@ func TestDecodeJSON(t *testing.T) {
 			name:          "invalid JSON",
 			body:          `{invalid}`,
 			expectedCode:  http.StatusBadRequest,
-			expectedError: handlers.ErrInvalidJSON,
+			expectedError: handlers2.ErrInvalidJSON,
 		},
 		{
 			name:          "empty body",
 			body:          "",
 			expectedCode:  http.StatusBadRequest,
-			expectedError: handlers.ErrEmptyRequestBody,
+			expectedError: handlers2.ErrEmptyRequestBody,
 		},
 	}
 	for _, tc := range testCases {
@@ -79,7 +79,7 @@ func TestDecodeJSON(t *testing.T) {
 			req := httptest.NewRequest(http.MethodPost, "/", reqBody)
 			rr := httptest.NewRecorder()
 
-			err := handlers.DecodeJSON(rr, req, mockLogger, &TestData{})
+			err := handlers2.DecodeJSON(rr, req, mockLogger, &TestData{})
 
 			if err != nil {
 				assert.Equal(t, tc.expectedError, err)
@@ -111,13 +111,13 @@ func TestValidateData(t *testing.T) {
 			name:          "invalid data",
 			data:          TestData{Email: "alice.example.com", Password: "pass"},
 			expectedCode:  http.StatusBadRequest,
-			expectedError: handlers.ErrInvalidData,
+			expectedError: handlers2.ErrInvalidData,
 		},
 		{
 			name:          "empty data",
 			data:          nil,
 			expectedCode:  http.StatusBadRequest,
-			expectedError: handlers.ErrEmptyData,
+			expectedError: handlers2.ErrEmptyData,
 		},
 	}
 
@@ -128,7 +128,7 @@ func TestValidateData(t *testing.T) {
 			req := httptest.NewRequest(http.MethodPost, "/", nil)
 			rr := httptest.NewRecorder()
 
-			err := handlers.ValidateData(rr, req, mockLogger, tc.data)
+			err := handlers2.ValidateData(rr, req, mockLogger, tc.data)
 
 			if tc.expectedError != nil {
 				assert.Error(t, err)

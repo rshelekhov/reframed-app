@@ -14,8 +14,8 @@ import (
 )
 
 // GetID gets the models id from the request
-func GetID(r *http.Request, log logger.Interface) (string, int, error) {
-	id := chi.URLParam(r, "id")
+func GetID(r *http.Request, log logger.Interface, key string) (string, int, error) {
+	id := chi.URLParam(r, key)
 	if id == "" {
 		log.Error(ErrEmptyID.Error())
 		return "", http.StatusBadRequest, ErrEmptyID

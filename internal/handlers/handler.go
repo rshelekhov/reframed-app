@@ -15,6 +15,11 @@ var (
 	ErrFailedToGetData         = errors.New("failed to get data")
 	ErrFailedToParsePagination = errors.New("failed to parse limit and offset")
 
-	ErrFailedToCreateToken = errors.New("failed to create token")
-	ErrInvalidCredentials  = errors.New("invalid credentials")
+	ErrFailedToRegisterDevice = errors.New("failed to register device")
+	ErrFailedToCheckDevice    = errors.New("failed to check device")
+	ErrDeviceNotFound         = errors.New("device not found")
+
+	ErrFailedToCreateSession   = errors.New("failed to create session")
+	ErrInvalidCredentials      = errors.New("invalid credentials")
+	ErrFailedToGetRefreshToken = errors.New("failed to get refresh token from context")
 )

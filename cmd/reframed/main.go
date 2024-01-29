@@ -3,8 +3,9 @@ package main
 
 import (
 	"github.com/rshelekhov/reframed/config"
-	"github.com/rshelekhov/reframed/internal/api/route"
+	"github.com/rshelekhov/reframed/internal/handlers"
 	"github.com/rshelekhov/reframed/internal/http-server"
+	"github.com/rshelekhov/reframed/internal/http-server/middleware/auth"
 	"github.com/rshelekhov/reframed/internal/logger"
 	"github.com/rshelekhov/reframed/internal/storage/postgres"
 	"log/slog"
@@ -24,7 +25,14 @@ func main() {
 		slog.String("address", cfg.HTTPServer.Address))
 	log.Debug("logger debug mode enabled")
 
-	// UserStorage
+	tokenAuth := auth.NewJWTAuth(
+		cfg.JWTAuth.Secret,
+		cfg.JWTAuth.AccessTokenTTL,
+		cfg.JWTAuth.RefreshTokenTTL,
+		cfg.JWTAuth.RefreshTokenCookiePath,
+	)
+
+	// Storage
 	pg, err := postgres.NewStorage(cfg)
 	if err != nil {
 		log.Error("failed to init storage", logger.Err(err))
@@ -34,16 +42,17 @@ func main() {
 	userStorage := postgres.NewUserStorage(pg)
 	listStorage := postgres.NewListStorage(pg)
 
-	// Router
-	r := route.NewRouter(log)
+	// Handlers
+	user := handlers.NewUserHandler(log, tokenAuth, userStorage, listStorage)
+	list := handlers.NewListHandler(log, tokenAuth, listStorage)
 
 	// Routers
-	route.NewUserRouter(r, log, userStorage, listStorage)
-	route.NewListRouter(r, log, listStorage)
+	/*route.NewUserRouter(r, log, tokenAuth, userStorage, listStorage)
+	route.NewListRouter(r, log, tokenAuth, listStorage)*/
 
 	// HTTP Server
 	log.Info("starting server", slog.String("address", cfg.HTTPServer.Address))
 
-	srv := http_server.NewServer(cfg, log, r)
+	srv := http_server.NewServer(cfg, log, tokenAuth, user, list)
 	srv.Start()
 }

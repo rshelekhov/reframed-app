@@ -1,7 +1,7 @@
 package handlers_test
 
 import (
-	"github.com/rshelekhov/reframed/internal/api/handlers"
+	"github.com/rshelekhov/reframed/internal/handlers"
 	"github.com/rshelekhov/reframed/internal/models"
 	"net/http"
 	"net/url"

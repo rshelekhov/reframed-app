@@ -3,8 +3,9 @@ package http_server
 import (
 	"context"
 	"errors"
-	"github.com/go-chi/chi/v5"
 	"github.com/rshelekhov/reframed/config"
+	"github.com/rshelekhov/reframed/internal/handlers"
+	"github.com/rshelekhov/reframed/internal/http-server/middleware/auth"
 	"github.com/rshelekhov/reframed/internal/logger"
 	"net/http"
 	"os"
@@ -14,33 +15,45 @@ import (
 )
 
 type Server struct {
-	cfg    *config.Config
-	log    logger.Interface
-	Router *chi.Mux
+	cfg       *config.Config
+	log       logger.Interface
+	tokenAuth *auth.JWTAuth
+	user      *handlers.UserHandler
+	list      *handlers.ListHandler
 }
 
-func NewServer(cfg *config.Config, log logger.Interface, router *chi.Mux) *Server {
+func NewServer(
+	cfg *config.Config,
+	log logger.Interface,
+	tokenAuth *auth.JWTAuth,
+	user *handlers.UserHandler,
+	list *handlers.ListHandler,
+) *Server {
 	srv := &Server{
-		cfg:    cfg,
-		log:    log,
-		Router: router,
+		cfg:       cfg,
+		log:       log,
+		tokenAuth: tokenAuth,
+		list:      list,
+		user:      user,
 	}
 
 	return srv
 }
 
 func (s *Server) Start() {
+	// TODO: move timeout to config
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	routes := s.initRoutes(s.tokenAuth)
+
 	srv := http.Server{
 		Addr:         s.cfg.HTTPServer.Address,
-		Handler:      s.Router,
+		Handler:      routes,
 		ReadTimeout:  s.cfg.HTTPServer.Timeout,
 		WriteTimeout: s.cfg.HTTPServer.Timeout,
 		IdleTimeout:  s.cfg.HTTPServer.IdleTimeout,
 	}
-
-	// TODO: move timeout to config
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
 
 	shutdownComplete := handleShutdown(func() {
 		if err := srv.Shutdown(ctx); err != nil {

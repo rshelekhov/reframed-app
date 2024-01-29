@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/go-chi/chi/v5"
-	"github.com/rshelekhov/reframed/internal/api/handlers"
+	handlers2 "github.com/rshelekhov/reframed/internal/handlers"
 	"github.com/rshelekhov/reframed/internal/logger/slogdiscard"
 	"github.com/rshelekhov/reframed/internal/models"
 	"github.com/rshelekhov/reframed/internal/storage"
@@ -99,7 +99,7 @@ func TestUserHandler_CreateUser(t *testing.T) {
 			mockListStorage := &mocks.ListStorage{}
 			mockLogger := slogdiscard.NewDiscardLogger()
 
-			handler := &handlers.UserHandler{
+			handler := &handlers2.UserHandler{
 				UserStorage: mockUserStorage,
 				ListStorage: mockListStorage,
 				Logger:      mockLogger,
@@ -164,14 +164,14 @@ func TestUserHandler_GetUserByID(t *testing.T) {
 			userID:        "",
 			user:          models.User{},
 			expectedCode:  http.StatusBadRequest,
-			expectedError: handlers.ErrEmptyID,
+			expectedError: handlers2.ErrEmptyID,
 		},
 		{
 			name:          "failed to get user",
 			userID:        "123",
 			user:          models.User{},
 			expectedCode:  http.StatusInternalServerError,
-			expectedError: handlers.ErrFailedToGetData,
+			expectedError: handlers2.ErrFailedToGetData,
 		},
 	}
 
@@ -184,7 +184,7 @@ func TestUserHandler_GetUserByID(t *testing.T) {
 			mockStorage := &mocks.UserStorage{}
 			mockLogger := slogdiscard.NewDiscardLogger()
 
-			handler := &handlers.UserHandler{
+			handler := &handlers2.UserHandler{
 				UserStorage: mockStorage,
 				Logger:      mockLogger,
 			}
@@ -264,7 +264,7 @@ func TestUserHandler_GetUsers(t *testing.T) {
 			mockStorage := &mocks.UserStorage{}
 			mockLogger := slogdiscard.NewDiscardLogger()
 
-			handler := &handlers.UserHandler{
+			handler := &handlers2.UserHandler{
 				UserStorage: mockStorage,
 				Logger:      mockLogger,
 			}
@@ -362,7 +362,7 @@ func TestUserHandler_UpdateUser(t *testing.T) {
 			mockStorage := &mocks.UserStorage{}
 			mockLogger := slogdiscard.NewDiscardLogger()
 
-			handler := &handlers.UserHandler{
+			handler := &handlers2.UserHandler{
 				UserStorage: mockStorage,
 				Logger:      mockLogger,
 			}
@@ -435,7 +435,7 @@ func TestUserHandler_DeleteUser(t *testing.T) {
 			mockStorage := &mocks.UserStorage{}
 			mockLogger := slogdiscard.NewDiscardLogger()
 
-			handler := &handlers.UserHandler{
+			handler := &handlers2.UserHandler{
 				UserStorage: mockStorage,
 				Logger:      mockLogger,
 			}
