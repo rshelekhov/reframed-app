@@ -7,7 +7,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/rshelekhov/reframed/src/le"
+	c "github.com/rshelekhov/reframed/src/constants"
 	"github.com/rshelekhov/reframed/src/models"
 	"strconv"
 	"time"
@@ -37,7 +37,7 @@ func (s *UserStorage) CreateUser(ctx context.Context, user models.User) error {
 
 	switch userStatus {
 	case "active":
-		return le.ErrUserAlreadyExists
+		return c.ErrUserAlreadyExists
 	case "soft_deleted":
 		if err = replaceSoftDeletedUser(ctx, tx, user); err != nil {
 			return err
@@ -144,7 +144,7 @@ func (s *UserStorage) GetUserCredentials(ctx context.Context, user *models.User)
 		&userDB.UpdatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return userDB, le.ErrUserNotFound
+		return userDB, c.ErrUserNotFound
 	}
 	if err != nil {
 		return userDB, fmt.Errorf("%s: failed to get user credentials: %w", op, err)
@@ -185,7 +185,7 @@ func (s *UserStorage) GetSessionByRefreshToken(ctx context.Context, refreshToken
 	err := s.QueryRow(ctx, querySelect, refreshToken).
 		Scan(&session.UserID, &session.DeviceID, &session.LastVisitAt, &session.ExpiresAt)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return session, le.ErrSessionNotFound
+		return session, c.ErrSessionNotFound
 	}
 	if err != nil {
 		return session, fmt.Errorf("%s: failed to get session: %w", op, err)
@@ -243,7 +243,7 @@ func (s *UserStorage) GetUserDevice(ctx context.Context, userID, userAgent strin
 		&device.LatestLoginAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return device, le.ErrUserDeviceNotFound
+		return device, c.ErrUserDeviceNotFound
 	}
 	if err != nil {
 		return device, fmt.Errorf("%s: failed to get user device: %w", op, err)
@@ -263,12 +263,9 @@ func (s *UserStorage) GetUser(ctx context.Context, id string) (models.User, erro
 
 	var user models.User
 
-	err := s.QueryRow(ctx, query, id).Scan(
-		&user.ID,
-		&user.Email,
-		&user.UpdatedAt)
+	err := s.QueryRow(ctx, query, id).Scan(&user.ID, &user.Email, &user.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return user, le.ErrUserNotFound
+		return user, c.ErrUserNotFound
 	}
 	if err != nil {
 		return user, fmt.Errorf("%s: failed to get user: %w", op, err)
@@ -310,7 +307,7 @@ func (s *UserStorage) GetUsers(ctx context.Context, pgn models.Pagination) ([]mo
 	}
 
 	if len(users) == 0 {
-		return nil, le.ErrNoUsersFound
+		return nil, c.ErrNoUsersFound
 	}
 
 	return users, nil
@@ -342,7 +339,7 @@ func (s *UserStorage) UpdateUser(ctx context.Context, user models.User) error {
 	passwordChanged := user.Password != ""
 
 	if !emailChanged && !passwordChanged {
-		return le.ErrNoChangesDetected
+		return c.ErrNoChangesDetected
 	}
 
 	// Check if the user email exists for a different user
@@ -351,7 +348,7 @@ func (s *UserStorage) UpdateUser(ctx context.Context, user models.User) error {
 	}
 
 	if passwordChanged && user.Password == currentUserPassword {
-		return le.ErrNoPasswordChangesDetected
+		return c.ErrNoPasswordChangesDetected
 	}
 
 	// Prepare the dynamic update query based on the provided fields
@@ -393,7 +390,7 @@ func getUserPassword(ctx context.Context, tx pgx.Tx, id string) (string, error) 
 	var password string
 	err := tx.QueryRow(ctx, query, id).Scan(&password)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return "", le.ErrUserNotFound
+		return "", c.ErrUserNotFound
 	}
 	if err != nil {
 		return "", fmt.Errorf("%s: failed to get user password: %w", op, err)
@@ -414,7 +411,7 @@ func checkEmailUniqueness(ctx context.Context, tx pgx.Tx, email, id string) erro
 
 	err := tx.QueryRow(ctx, query, email).Scan(&existingUserID)
 	if !errors.Is(err, pgx.ErrNoRows) && existingUserID != id {
-		return le.ErrEmailAlreadyTaken
+		return c.ErrEmailAlreadyTaken
 	} else if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return fmt.Errorf("%s: failed to check email uniqueness: %w", op, err)
 	}
@@ -431,14 +428,12 @@ func (s *UserStorage) DeleteUser(ctx context.Context, id string) error {
 		// TODO: add deleting session
 	)
 
-	result, err := s.Exec(ctx, query, id)
+	_, err := s.Exec(ctx, query, id)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return c.ErrUserNotFound
+	}
 	if err != nil {
 		return fmt.Errorf("%s: failed to delete user: %w", op, err)
-	}
-
-	rowsAffected := result.RowsAffected()
-	if rowsAffected == 0 {
-		return le.ErrUserNotFound
 	}
 
 	return nil

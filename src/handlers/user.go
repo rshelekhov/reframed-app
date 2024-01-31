@@ -3,7 +3,7 @@ package handlers
 import (
 	"context"
 	"errors"
-	"github.com/rshelekhov/reframed/src/le"
+	c "github.com/rshelekhov/reframed/src/constants"
 	"github.com/rshelekhov/reframed/src/logger"
 	"github.com/rshelekhov/reframed/src/models"
 	"github.com/rshelekhov/reframed/src/server/middleware/jwtoken"
@@ -45,27 +45,14 @@ func (h *UserHandler) CreateUser() http.HandlerFunc {
 
 		user := &models.User{}
 
-		/*
-			// Decode the request body
-			if err = DecodeJSON(w, r, log, user); err != nil {
-				return
-			}
-
-			// Validate the request
-			if err = ValidateData(w, r, log, user); err != nil {
-				return
-			}
-		*/
-
 		if err := DecodeAndValidateJSON(w, r, log, user); err != nil {
 			return
 		}
 
-		userID := ksuid.New().String()
 		now := time.Now().UTC()
 
 		newUser := models.User{
-			ID:        userID,
+			ID:        ksuid.New().String(),
 			Email:     user.Email,
 			Password:  user.Password,
 			UpdatedAt: &now,
@@ -73,11 +60,12 @@ func (h *UserHandler) CreateUser() http.HandlerFunc {
 
 		// Create the user
 		err := h.UserStorage.CreateUser(r.Context(), newUser)
-		if errors.Is(err, le.ErrUserAlreadyExists) {
-			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrUserAlreadyExists, slog.String("email", user.Email))
+		if errors.Is(err, c.ErrUserAlreadyExists) {
+			handleResponseError(w, r, log, http.StatusBadRequest, c.ErrUserAlreadyExists, slog.String(c.EmailKey, user.Email))
 			return
-		} else if err != nil {
-			handleInternalServerError(w, r, log, le.ErrFailedToCreateUser, err)
+		}
+		if err != nil {
+			handleInternalServerError(w, r, log, c.ErrFailedToCreateUser, err)
 			return
 		}
 
@@ -95,7 +83,7 @@ func (h *UserHandler) CreateUser() http.HandlerFunc {
 
 			err = h.ListStorage.CreateList(r.Context(), newList)
 			if err != nil {
-				handleInternalServerError(w, r, log, le.ErrFailedToCreateList, err)
+				handleInternalServerError(w, r, log, constants.ErrFailedToCreateList, err)
 				return
 			}
 		*/
@@ -103,18 +91,18 @@ func (h *UserHandler) CreateUser() http.HandlerFunc {
 		// Register user device
 		device, err := h.registerDevice(r, newUser.ID)
 		if err != nil {
-			handleInternalServerError(w, r, log, le.ErrFailedToRegisterDevice, err)
+			handleInternalServerError(w, r, log, c.ErrFailedToRegisterDevice, err)
 			return
 		}
 
 		// Create session
-		tokens, expiresAt, err := h.createSession(r.Context(), userID, device.ID, h.TokenAuth.RefreshTokenTTL)
+		tokens, expiresAt, err := h.createSession(r.Context(), newUser.ID, device.ID, h.TokenAuth.RefreshTokenTTL)
 		if err != nil {
-			handleInternalServerError(w, r, log, le.ErrFailedToCreateSession, err)
+			handleInternalServerError(w, r, log, c.ErrFailedToCreateSession, err)
 			return
 		}
 
-		additionalFields := map[string]string{"userID": userID}
+		additionalFields := map[string]string{c.UserIDKey: newUser.ID}
 		tokenData := jwtoken.TokenData{
 			AccessToken:      tokens.AccessToken,
 			RefreshToken:     tokens.RefreshToken,
@@ -125,11 +113,7 @@ func (h *UserHandler) CreateUser() http.HandlerFunc {
 			AdditionalFields: additionalFields,
 		}
 
-		log.Info(
-			"user and tokens created",
-			slog.String("user_id", userID),
-			slog.Any("tokens", tokens),
-		)
+		log.Info("user and tokens created", slog.String(c.UserIDKey, newUser.ID), slog.Any(c.TokensKey, tokens))
 		jwtoken.SendTokensToWeb(w, tokenData)
 	}
 }
@@ -142,29 +126,17 @@ func (h *UserHandler) LoginWithPassword() http.HandlerFunc {
 
 		userInput := &models.User{}
 
-		/*
-			// Decode the request body
-			if err := DecodeJSON(w, r, log, userInput); err != nil {
-				return
-			}
-
-			// Validate the request
-			if err := ValidateData(w, r, log, userInput); err != nil {
-				return
-			}
-		*/
-
 		if err := DecodeAndValidateJSON(w, r, log, userInput); err != nil {
 			return
 		}
 
 		userDB, err := h.UserStorage.GetUserCredentials(r.Context(), userInput)
-		if errors.Is(err, le.ErrUserNotFound) {
-			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrInvalidCredentials, slog.String("email", userInput.Email))
+		if errors.Is(err, c.ErrUserNotFound) {
+			handleResponseError(w, r, log, http.StatusUnauthorized, c.ErrInvalidCredentials, slog.String(c.EmailKey, userInput.Email))
 			return
 		}
 		if err != nil {
-			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
+			handleInternalServerError(w, r, log, c.ErrFailedToGetData, err)
 			return
 		}
 
@@ -172,26 +144,26 @@ func (h *UserHandler) LoginWithPassword() http.HandlerFunc {
 
 		// Check if device exists (if not, register it)
 		device, err := h.checkDevice(r, userDB.ID)
-		if errors.Is(err, le.ErrUserDeviceNotFound) {
+		if errors.Is(err, c.ErrUserDeviceNotFound) {
 			device, err = h.registerDevice(r, userDB.ID)
 			if err != nil {
-				handleInternalServerError(w, r, log, le.ErrFailedToRegisterDevice, err)
+				handleInternalServerError(w, r, log, c.ErrFailedToRegisterDevice, err)
 				return
 			}
 		}
 		if err != nil {
-			handleInternalServerError(w, r, log, le.ErrFailedToCheckDevice, err)
+			handleInternalServerError(w, r, log, c.ErrFailedToCheckDevice, err)
 			return
 		}
 
 		// Create session
 		tokens, expiresAt, err := h.createSession(r.Context(), userDB.ID, device.ID, h.TokenAuth.RefreshTokenTTL)
 		if err != nil {
-			handleInternalServerError(w, r, log, le.ErrFailedToCreateSession, err)
+			handleInternalServerError(w, r, log, c.ErrFailedToCreateSession, err)
 			return
 		}
 
-		additionalFields := map[string]string{"userID": userDB.ID}
+		additionalFields := map[string]string{c.UserIDKey: userDB.ID}
 		tokenData := jwtoken.TokenData{
 			AccessToken:      tokens.AccessToken,
 			RefreshToken:     tokens.RefreshToken,
@@ -204,8 +176,8 @@ func (h *UserHandler) LoginWithPassword() http.HandlerFunc {
 
 		log.Info(
 			"user logged in, tokens created",
-			slog.String("user_id", userDB.ID),
-			slog.Any("tokens", tokens),
+			slog.String(c.UserIDKey, userDB.ID),
+			slog.Any(c.TokensKey, tokens),
 		)
 		jwtoken.SendTokensToWeb(w, tokenData)
 	}
@@ -220,38 +192,38 @@ func (h *UserHandler) RefreshJWTTokens() http.HandlerFunc {
 
 		refreshToken, err := jwtoken.FindRefreshToken(r)
 		if err != nil {
-			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrFailedToGetRefreshToken, err)
+			handleResponseError(w, r, log, http.StatusUnauthorized, c.ErrFailedToGetRefreshToken, err)
 			return
 		}
 
 		// Get session by refresh token
 		session, err := h.UserStorage.GetSessionByRefreshToken(r.Context(), refreshToken)
-		if errors.Is(err, le.ErrSessionNotFound) {
-			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrSessionNotFound, slog.String("refresh_token", refreshToken))
+		if errors.Is(err, c.ErrSessionNotFound) {
+			handleResponseError(w, r, log, http.StatusUnauthorized, c.ErrSessionNotFound, slog.String(c.RefreshTokenKey, refreshToken))
 			return
 		}
 		if err != nil {
-			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
+			handleInternalServerError(w, r, log, c.ErrFailedToGetData, err)
 			return
 		}
 
 		// Check if refresh token is expired
 		if session.ExpiresAt.Before(time.Now()) {
-			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrRefreshTokenExpired, slog.String("user_id", session.UserID))
+			handleResponseError(w, r, log, http.StatusUnauthorized, c.ErrRefreshTokenExpired, slog.String(c.UserIDKey, session.UserID))
 			return
 		}
 
 		// Check if device exists (if not, register it)
 		device, err := h.checkDevice(r, session.UserID)
 		if err != nil {
-			handleInternalServerError(w, r, log, le.ErrUserDeviceNotFound, err)
+			handleInternalServerError(w, r, log, c.ErrUserDeviceNotFound, err)
 			return
 		}
 
 		// Create new tokens
 		tokens, expiresAt, err := h.createSession(r.Context(), session.UserID, device.ID, h.TokenAuth.RefreshTokenTTL)
 		if err != nil {
-			handleInternalServerError(w, r, log, le.ErrFailedToCreateSession, err)
+			handleInternalServerError(w, r, log, c.ErrFailedToCreateSession, err)
 			return
 		}
 
@@ -264,7 +236,7 @@ func (h *UserHandler) RefreshJWTTokens() http.HandlerFunc {
 			HttpOnly:     true,
 		}
 
-		log.Info("tokens created", slog.Any("tokens", tokens))
+		log.Info("tokens created", slog.Any(c.TokensKey, tokens))
 		jwtoken.SendTokensToWeb(w, tokenData)
 	}
 }
@@ -272,8 +244,8 @@ func (h *UserHandler) RefreshJWTTokens() http.HandlerFunc {
 func (h *UserHandler) checkDevice(r *http.Request, userID string) (models.UserDevice, error) {
 
 	device, err := h.UserStorage.GetUserDevice(r.Context(), userID, r.UserAgent())
-	if errors.Is(err, le.ErrUserDeviceNotFound) {
-		return models.UserDevice{}, le.ErrUserDeviceNotFound
+	if errors.Is(err, c.ErrUserDeviceNotFound) {
+		return models.UserDevice{}, c.ErrUserDeviceNotFound
 	}
 	if err != nil {
 		return models.UserDevice{}, err
@@ -317,11 +289,8 @@ func (h *UserHandler) createSession(
 		err  error
 	)
 
-	additionalClaims := map[string]interface{}{
-		contextUserID: userID,
-	}
+	additionalClaims := map[string]interface{}{c.ContextUserID: userID}
 
-	// TODO: move out from this function to LoginWithPassword function
 	resp.AccessToken, err = h.TokenAuth.NewAccessToken(additionalClaims)
 	if err != nil {
 		return resp, time.Time{}, err
@@ -364,23 +333,22 @@ func (h *UserHandler) GetUser() http.HandlerFunc {
 
 		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
 		if err != nil {
-			handleInternalServerError(w, r, log, le.ErrFailedToGetAccessToken, err)
+			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
 			return
 		}
-		id := claims[contextUserID].(string)
+		id := claims[c.ContextUserID].(string)
 
 		user, err := h.UserStorage.GetUser(r.Context(), id)
-		if errors.Is(err, le.ErrUserNotFound) {
-			handleResponseError(w, r, log, http.StatusNotFound, le.ErrUserNotFound, slog.String("user_id", id))
+		switch {
+		case errors.Is(err, c.ErrUserNotFound):
+			handleResponseError(w, r, log, http.StatusNotFound, c.ErrUserNotFound, slog.String(c.UserIDKey, id))
 			return
-		}
-		if err != nil {
-			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
+		case err != nil:
+			handleInternalServerError(w, r, log, c.ErrFailedToGetData, err)
 			return
+		default:
+			handleResponseSuccess(w, r, log, "user received", user, slog.String(c.UserIDKey, id))
 		}
-
-		log.Info("user received", slog.Any("user", user))
-		responseSuccess(w, r, http.StatusOK, "user received", user)
 	}
 }
 
@@ -393,29 +361,25 @@ func (h *UserHandler) GetUsers() http.HandlerFunc {
 
 		pagination, err := ParseLimitAndOffset(r)
 		if err != nil {
-			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrFailedToParsePagination, err)
+			handleResponseError(w, r, log, http.StatusBadRequest, c.ErrFailedToParsePagination, err)
 			return
 		}
 
 		users, err := h.UserStorage.GetUsers(r.Context(), pagination)
-		if errors.Is(err, le.ErrNoUsersFound) {
-			handleResponseError(w, r, log, http.StatusNotFound, le.ErrNoUsersFound)
+		switch {
+		case errors.Is(err, c.ErrNoUsersFound):
+			handleResponseError(w, r, log, http.StatusNotFound, c.ErrNoUsersFound)
 			return
-		}
-		if err != nil {
-			log.Error("failed to get users", logger.Err(err))
-			responseError(w, r, http.StatusInternalServerError, "failed to get users")
+		case err != nil:
+			handleInternalServerError(w, r, log, c.ErrFailedToGetUsers, err)
 			return
+		default:
+			handleResponseSuccess(w, r, log, "users found", users,
+				slog.Int(c.CountKey, len(users)),
+				slog.Int(c.LimitKey, pagination.Limit),
+				slog.Int(c.OffsetKey, pagination.Offset),
+			)
 		}
-
-		log.Info(
-			"users found",
-			slog.Int("count", len(users)),
-			slog.Int("limit", pagination.Limit),
-			slog.Int("offset", pagination.Offset),
-		)
-
-		responseSuccess(w, r, http.StatusOK, "users found", users)
 	}
 }
 
@@ -429,22 +393,10 @@ func (h *UserHandler) UpdateUser() http.HandlerFunc {
 
 		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
 		if err != nil {
-			handleInternalServerError(w, r, log, le.ErrFailedToGetAccessToken, err)
+			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
 			return
 		}
-		id := claims[contextUserID].(string)
-
-		/*
-			// Decode the request body
-			if err = DecodeJSON(w, r, log, user); err != nil {
-				return
-			}
-
-			// Validate the request
-			if err = ValidateData(w, r, log, user); err != nil {
-				return
-			}
-		*/
+		id := claims[c.ContextUserID].(string)
 
 		if err = DecodeAndValidateJSON(w, r, log, user); err != nil {
 			return
@@ -460,29 +412,25 @@ func (h *UserHandler) UpdateUser() http.HandlerFunc {
 		}
 
 		err = h.UserStorage.UpdateUser(r.Context(), updatedUser)
-		if errors.Is(err, le.ErrUserNotFound) {
-			handleResponseError(w, r, log, http.StatusNotFound, le.ErrUserNotFound, slog.String("user_id", id))
+		switch {
+		case errors.Is(err, c.ErrUserNotFound):
+			handleResponseError(w, r, log, http.StatusNotFound, c.ErrUserNotFound, slog.String(c.UserIDKey, id))
 			return
-		}
-		if errors.Is(err, le.ErrEmailAlreadyTaken) {
-			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmailAlreadyTaken, slog.String("email", user.Email))
+		case errors.Is(err, c.ErrEmailAlreadyTaken):
+			handleResponseError(w, r, log, http.StatusBadRequest, c.ErrEmailAlreadyTaken, slog.String(c.EmailKey, user.Email))
 			return
-		}
-		if errors.Is(err, le.ErrNoChangesDetected) {
-			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrNoChangesDetected, slog.String("user_id", id))
+		case errors.Is(err, c.ErrNoChangesDetected):
+			handleResponseError(w, r, log, http.StatusBadRequest, c.ErrNoChangesDetected, slog.String(c.UserIDKey, id))
 			return
-		}
-		if errors.Is(err, le.ErrNoPasswordChangesDetected) {
-			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrNoPasswordChangesDetected, slog.String("user_id", id))
+		case errors.Is(err, c.ErrNoPasswordChangesDetected):
+			handleResponseError(w, r, log, http.StatusBadRequest, c.ErrNoPasswordChangesDetected, slog.String(c.UserIDKey, id))
 			return
-		}
-		if err != nil {
-			handleInternalServerError(w, r, log, le.ErrFailedToUpdateUser, slog.String("user_id", id))
+		case err != nil:
+			handleInternalServerError(w, r, log, c.ErrFailedToUpdateUser, slog.String(c.UserIDKey, id))
 			return
+		default:
+			handleResponseSuccess(w, r, log, "user updated", models.User{ID: id}, slog.String(c.UserIDKey, id))
 		}
-
-		log.Info("user updated", slog.String("user_id", id))
-		responseSuccess(w, r, http.StatusOK, "user updated", models.User{ID: id})
 	}
 }
 
@@ -495,23 +443,21 @@ func (h *UserHandler) DeleteUser() http.HandlerFunc {
 
 		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
 		if err != nil {
-			handleInternalServerError(w, r, log, le.ErrFailedToGetAccessToken, err)
+			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
 			return
 		}
-		id := claims[contextUserID].(string)
+		id := claims[c.ContextUserID].(string)
 
 		err = h.UserStorage.DeleteUser(r.Context(), id)
-		if errors.Is(err, le.ErrUserNotFound) {
-			handleResponseError(w, r, log, http.StatusNotFound, le.ErrUserNotFound, slog.String("user_id", id))
+		switch {
+		case errors.Is(err, c.ErrUserNotFound):
+			handleResponseError(w, r, log, http.StatusNotFound, c.ErrUserNotFound, slog.String(c.UserIDKey, id))
 			return
-		}
-		if err != nil {
-			log.Error("failed to delete user", logger.Err(err))
-			responseError(w, r, http.StatusInternalServerError, "failed to delete user")
+		case err != nil:
+			handleInternalServerError(w, r, log, c.ErrFailedToDeleteUser, err)
 			return
+		default:
+			handleResponseSuccess(w, r, log, "user deleted", models.User{ID: id}, slog.String(c.UserIDKey, id))
 		}
-
-		log.Info("user deleted", slog.String("user_id", id))
-		responseSuccess(w, r, http.StatusOK, "user deleted", models.User{ID: id})
 	}
 }

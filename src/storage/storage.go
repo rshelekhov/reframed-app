@@ -23,9 +23,9 @@ type (
 	// ListStorage defines the list repository
 	ListStorage interface {
 		CreateList(ctx context.Context, list models.List) error
-		GetListByID(ctx context.Context, id string) (models.List, error)
+		GetListByID(ctx context.Context, listID, userID string) (models.List, error)
 		GetLists(ctx context.Context, userID string, pgn models.Pagination) ([]models.List, error)
 		UpdateList(ctx context.Context, list models.List) error
-		DeleteList(ctx context.Context, id string) error
+		DeleteList(ctx context.Context, listID, userID string) error
 	}
 )

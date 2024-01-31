@@ -5,6 +5,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/httprate"
 	"github.com/go-chi/render"
+	c "github.com/rshelekhov/reframed/src/constants"
 	"github.com/rshelekhov/reframed/src/handlers"
 	"github.com/rshelekhov/reframed/src/server/middleware/jwtoken"
 	mwlogger "github.com/rshelekhov/reframed/src/server/middleware/logger"
@@ -82,7 +83,7 @@ func (s *Server) initRoutes(jwtAuth *jwtoken.JWTAuth) *chi.Mux {
 			r.Get("/", s.list.GetListsByUserID())
 			r.Post("/", s.list.CreateList())
 
-			r.Route("/{listID}", func(r chi.Router) {
+			r.Route("/{"+c.ListIDKey+"}", func(r chi.Router) {
 				r.Get("/", s.list.GetListByID())
 				r.Put("/", s.list.UpdateList())
 				r.Delete("/", s.list.DeleteList())
