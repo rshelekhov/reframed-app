@@ -1,12 +1,12 @@
-package http_server
+package server
 
 import (
 	"context"
 	"errors"
 	"github.com/rshelekhov/reframed/config"
-	"github.com/rshelekhov/reframed/internal/handlers"
-	"github.com/rshelekhov/reframed/internal/http-server/middleware/auth"
-	"github.com/rshelekhov/reframed/internal/logger"
+	"github.com/rshelekhov/reframed/src/handlers"
+	"github.com/rshelekhov/reframed/src/logger"
+	"github.com/rshelekhov/reframed/src/server/middleware/jwtoken"
 	"net/http"
 	"os"
 	"os/signal"
@@ -17,7 +17,7 @@ import (
 type Server struct {
 	cfg       *config.Config
 	log       logger.Interface
-	tokenAuth *auth.JWTAuth
+	tokenAuth *jwtoken.JWTAuth
 	user      *handlers.UserHandler
 	list      *handlers.ListHandler
 }
@@ -25,7 +25,7 @@ type Server struct {
 func NewServer(
 	cfg *config.Config,
 	log logger.Interface,
-	tokenAuth *auth.JWTAuth,
+	tokenAuth *jwtoken.JWTAuth,
 	user *handlers.UserHandler,
 	list *handlers.ListHandler,
 ) *Server {

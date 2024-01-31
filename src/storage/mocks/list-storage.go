@@ -2,7 +2,7 @@ package mocks
 
 import (
 	"context"
-	"github.com/rshelekhov/reframed/internal/models"
+	"github.com/rshelekhov/reframed/src/models"
 	"github.com/stretchr/testify/mock"
 )
 

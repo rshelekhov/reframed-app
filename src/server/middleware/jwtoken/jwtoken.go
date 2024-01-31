@@ -1,4 +1,4 @@
-package auth
+package jwtoken
 
 import (
 	"context"
@@ -13,36 +13,50 @@ import (
 )
 
 type JWTAuth struct {
-	SignKey                string
-	AccessTokenTTL         time.Duration
-	RefreshTokenTTL        time.Duration
-	RefreshTokenCookiePath string
+	SignKey                  string
+	SigningMethod            jwt.SigningMethod
+	AccessTokenTTL           time.Duration
+	RefreshTokenTTL          time.Duration
+	RefreshTokenCookieDomain string
+	RefreshTokenCookiePath   string
 }
 
-func NewJWTAuth(signKey string, accessTokenTTL, refreshTokenTTL time.Duration, refreshTokenCookiePath string) *JWTAuth {
+func NewJWTAuth(
+	signKey string,
+	signingMethod jwt.SigningMethod,
+	accessTokenTTL time.Duration,
+	refreshTokenTTL time.Duration,
+	refreshTokenCookieDomain string,
+	refreshTokenCookiePath string,
+) *JWTAuth {
 	return &JWTAuth{
-		SignKey:                signKey,
-		AccessTokenTTL:         accessTokenTTL,
-		RefreshTokenTTL:        refreshTokenTTL,
-		RefreshTokenCookiePath: refreshTokenCookiePath,
+		SignKey:                  signKey,
+		SigningMethod:            signingMethod,
+		AccessTokenTTL:           accessTokenTTL,
+		RefreshTokenTTL:          refreshTokenTTL,
+		RefreshTokenCookieDomain: refreshTokenCookieDomain,
+		RefreshTokenCookiePath:   refreshTokenCookiePath,
 	}
 }
 
 type TokenData struct {
 	AccessToken      string
 	RefreshToken     string
+	Domain           string
 	Path             string
 	ExpiresAt        time.Time
 	HttpOnly         bool
 	AdditionalFields map[string]string
 }
 
-type contextKey struct {
+type ContextKey struct {
 	name string
 }
 
+type ClaimCTXKey string
+
 var (
-	TokenCtxKey = &contextKey{"Token"}
+	TokenCtxKey = ContextKey{"Token"}
 
 	ErrUnauthorized             = errors.New("unauthorized")
 	ErrNoTokenFound             = errors.New("no token found")
@@ -63,7 +77,7 @@ func (j *JWTAuth) NewAccessToken(additionalClaims map[string]interface{}) (strin
 		}
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	token := jwt.NewWithClaims(j.SigningMethod, claims)
 
 	return token.SignedString([]byte(j.SignKey))
 }
@@ -233,10 +247,11 @@ func GetTokenFromContext(ctx context.Context) (*jwt.Token, map[string]interface{
 	return token, claims, nil
 }
 
-func SetTokenCookie(w http.ResponseWriter, name, value, path string, expiresAt time.Time, httpOnly bool) {
+func SetTokenCookie(w http.ResponseWriter, name, value, domain, path string, expiresAt time.Time, httpOnly bool) {
 	cookie := http.Cookie{
 		Name:     name,
 		Value:    value,
+		Domain:   domain,
 		Path:     path,
 		Expires:  expiresAt,
 		HttpOnly: httpOnly,
@@ -244,8 +259,8 @@ func SetTokenCookie(w http.ResponseWriter, name, value, path string, expiresAt t
 	http.SetCookie(w, &cookie)
 }
 
-func SetRefreshTokenCookie(w http.ResponseWriter, refreshToken, path string, expiresAt time.Time, httpOnly bool) {
-	SetTokenCookie(w, "refreshToken", refreshToken, path, expiresAt, httpOnly)
+func SetRefreshTokenCookie(w http.ResponseWriter, refreshToken, domain, path string, expiresAt time.Time, httpOnly bool) {
+	SetTokenCookie(w, "refreshToken", refreshToken, domain, path, expiresAt, httpOnly)
 }
 
 func SendTokensToWeb(w http.ResponseWriter, data TokenData) {
@@ -263,7 +278,7 @@ func SendTokensToWeb(w http.ResponseWriter, data TokenData) {
 		return
 	}
 
-	SetRefreshTokenCookie(w, data.RefreshToken, data.Path, data.ExpiresAt, data.HttpOnly)
+	SetRefreshTokenCookie(w, data.RefreshToken, data.Domain, data.Path, data.ExpiresAt, data.HttpOnly)
 }
 
 func SendTokensToMobileApp(w http.ResponseWriter, data TokenData) {

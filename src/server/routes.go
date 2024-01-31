@@ -1,39 +1,17 @@
-package http_server
+package server
 
 import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/httprate"
 	"github.com/go-chi/render"
-	"github.com/rshelekhov/reframed/internal/handlers"
-	"github.com/rshelekhov/reframed/internal/http-server/middleware/auth"
-	mwlogger "github.com/rshelekhov/reframed/internal/http-server/middleware/logger"
+	"github.com/rshelekhov/reframed/src/handlers"
+	"github.com/rshelekhov/reframed/src/server/middleware/jwtoken"
+	mwlogger "github.com/rshelekhov/reframed/src/server/middleware/logger"
 	"time"
 )
 
-/*
-type Router struct {
-	Log  logger.Interface
-	tokenAuth  *auth.JWTAuth
-	user *handlers.UserHandler
-	list *handlers.ListHandler
-}
-
-func NewRouter(
-	log logger.Interface,
-	tokenAuth *auth.JWTAuth,
-	user *handlers.UserHandler,
-	list *handlers.ListHandler,
-) *Router {
-	return &Router{
-		Log:  log,
-		user: user,
-		list: list,
-		tokenAuth:  tokenAuth,
-	}
-}*/
-
-func (s *Server) initRoutes(jwtAuth *auth.JWTAuth) *chi.Mux {
+func (s *Server) initRoutes(jwtAuth *jwtoken.JWTAuth) *chi.Mux {
 	r := chi.NewRouter()
 
 	// Add request_id to each request, for tracing purposes
@@ -42,7 +20,7 @@ func (s *Server) initRoutes(jwtAuth *auth.JWTAuth) *chi.Mux {
 	// Logging of all requests
 	r.Use(middleware.Logger)
 
-	// By default, middleware.Logger uses its own internal logger,
+	// By default, middleware.Logger uses its own src logger,
 	// which should be overridden to use ours. Otherwise, problems
 	// may arise - for example, with log collection. We can use
 	// our own middleware to log requests:
@@ -71,8 +49,9 @@ func (s *Server) initRoutes(jwtAuth *auth.JWTAuth) *chi.Mux {
 		// TODO: add handler for RequestResetPassword
 
 		// Auth routes
-		r.Route("/auth", func(r chi.Router) {
+		r.Route("/jwtoken", func(r chi.Router) {
 			r.Post("/refresh-tokens", s.user.RefreshJWTTokens())
+			// TODO: add handler for logout
 			// r.Post("/logout", s.user.Logout())
 		})
 	})
@@ -80,25 +59,26 @@ func (s *Server) initRoutes(jwtAuth *auth.JWTAuth) *chi.Mux {
 	// Protected routes
 	r.Group(func(r chi.Router) {
 		// Seek, verify and validate JWT tokens
-		r.Use(auth.Verifier(jwtAuth))
+		r.Use(jwtoken.Verifier(jwtAuth))
 
 		// Handle valid / invalid tokens
-		r.Use(auth.Authenticator())
+		r.Use(jwtoken.Authenticator())
+
+		// TODO: add roles and permissions
+		// Admin routes
+		r.Get("/users", s.user.GetUsers())
 
 		// User routes
-		r.Route("/users", func(r chi.Router) {
-			r.Get("/", s.user.GetUsers())
-
-			// TODO: use userID from JWT and remove userID from path
-			r.Route("/{userID}", func(r chi.Router) {
-				r.Get("/", s.user.GetUserByID())
+		r.Route("/user", func(r chi.Router) {
+			r.Route("/profile", func(r chi.Router) {
+				r.Get("/", s.user.GetUser())
 				r.Put("/", s.user.UpdateUser())
 				r.Delete("/", s.user.DeleteUser())
 			})
 		})
 
 		// list routes
-		r.Route("/users/{userID}/lists", func(r chi.Router) {
+		r.Route("/user/lists", func(r chi.Router) {
 			r.Get("/", s.list.GetListsByUserID())
 			r.Post("/", s.list.CreateList())
 

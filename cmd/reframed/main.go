@@ -2,12 +2,13 @@
 package main
 
 import (
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/rshelekhov/reframed/config"
-	"github.com/rshelekhov/reframed/internal/handlers"
-	"github.com/rshelekhov/reframed/internal/http-server"
-	"github.com/rshelekhov/reframed/internal/http-server/middleware/auth"
-	"github.com/rshelekhov/reframed/internal/logger"
-	"github.com/rshelekhov/reframed/internal/storage/postgres"
+	"github.com/rshelekhov/reframed/src/handlers"
+	"github.com/rshelekhov/reframed/src/logger"
+	"github.com/rshelekhov/reframed/src/server"
+	"github.com/rshelekhov/reframed/src/server/middleware/jwtoken"
+	"github.com/rshelekhov/reframed/src/storage/postgres"
 	"log/slog"
 )
 
@@ -25,10 +26,12 @@ func main() {
 		slog.String("address", cfg.HTTPServer.Address))
 	log.Debug("logger debug mode enabled")
 
-	tokenAuth := auth.NewJWTAuth(
+	tokenAuth := jwtoken.NewJWTAuth(
 		cfg.JWTAuth.Secret,
+		jwt.SigningMethodHS256,
 		cfg.JWTAuth.AccessTokenTTL,
 		cfg.JWTAuth.RefreshTokenTTL,
+		cfg.JWTAuth.RefreshTokenCookieDomain,
 		cfg.JWTAuth.RefreshTokenCookiePath,
 	)
 
@@ -53,6 +56,6 @@ func main() {
 	// HTTP Server
 	log.Info("starting server", slog.String("address", cfg.HTTPServer.Address))
 
-	srv := http_server.NewServer(cfg, log, tokenAuth, user, list)
+	srv := server.NewServer(cfg, log, tokenAuth, user, list)
 	srv.Start()
 }

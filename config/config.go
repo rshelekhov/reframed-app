@@ -39,10 +39,11 @@ type (
 	}
 
 	JWTConfig struct {
-		Secret                 string        `mapstructure:"JWT_SECRET"`
-		AccessTokenTTL         time.Duration `mapstructure:"JWT_ACCESS_TOKEN_TTL"`
-		RefreshTokenTTL        time.Duration `mapstructure:"JWT_REFRESH_TOKEN_TTL"`
-		RefreshTokenCookiePath string        `mapstructure:"JWT_REFRESH_TOKEN_COOKIE_PATH"`
+		Secret                   string        `mapstructure:"JWT_SECRET"`
+		AccessTokenTTL           time.Duration `mapstructure:"JWT_ACCESS_TOKEN_TTL"`
+		RefreshTokenTTL          time.Duration `mapstructure:"JWT_REFRESH_TOKEN_TTL"`
+		RefreshTokenCookieDomain string        `mapstructure:"JWT_REFRESH_TOKEN_COOKIE_DOMAIN"`
+		RefreshTokenCookiePath   string        `mapstructure:"JWT_REFRESH_TOKEN_COOKIE_PATH"`
 	}
 )
 

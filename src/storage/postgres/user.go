@@ -7,8 +7,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/rshelekhov/reframed/internal/models"
-	"github.com/rshelekhov/reframed/internal/storage"
+	"github.com/rshelekhov/reframed/src/le"
+	"github.com/rshelekhov/reframed/src/models"
 	"strconv"
 	"time"
 )
@@ -37,7 +37,7 @@ func (s *UserStorage) CreateUser(ctx context.Context, user models.User) error {
 
 	switch userStatus {
 	case "active":
-		return storage.ErrUserAlreadyExists
+		return le.ErrUserAlreadyExists
 	case "soft_deleted":
 		if err = replaceSoftDeletedUser(ctx, tx, user); err != nil {
 			return err
@@ -62,8 +62,8 @@ func getUserStatus(ctx context.Context, tx pgx.Tx, email string) (string, error)
 		op = "user.storage.getUserStatus"
 
 		query = `SELECT CASE
-						WHEN EXISTS(SELECT 1 FROM users WHERE email = $1 AND deleted_at IS NULL) THEN 'active'
-						WHEN EXISTS(SELECT 1 FROM users WHERE email = $1 and deleted_at IS NOT NULL) THEN 'soft_deleted'
+						WHEN EXISTS(SELECT 1 FROM users WHERE email = $1 AND deleted_at IS NULL FOR UPDATE) THEN 'active'
+						WHEN EXISTS(SELECT 1 FROM users WHERE email = $1 and deleted_at IS NOT NULL FOR UPDATE) THEN 'soft_deleted'
 						ELSE 'not_found' END AS status`
 	)
 
@@ -78,6 +78,7 @@ func getUserStatus(ctx context.Context, tx pgx.Tx, email string) (string, error)
 	return status, nil
 }
 
+// TODO: use select for update
 // replaceSoftDeletedUser replaces a soft deleted user with the given user
 func replaceSoftDeletedUser(ctx context.Context, tx pgx.Tx, user models.User) error {
 	const (
@@ -143,7 +144,7 @@ func (s *UserStorage) GetUserCredentials(ctx context.Context, user *models.User)
 		&userDB.UpdatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return userDB, storage.ErrUserNotFound
+		return userDB, le.ErrUserNotFound
 	}
 	if err != nil {
 		return userDB, fmt.Errorf("%s: failed to get user credentials: %w", op, err)
@@ -184,7 +185,7 @@ func (s *UserStorage) GetSessionByRefreshToken(ctx context.Context, refreshToken
 	err := s.QueryRow(ctx, querySelect, refreshToken).
 		Scan(&session.UserID, &session.DeviceID, &session.LastVisitAt, &session.ExpiresAt)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return session, storage.ErrSessionNotFound
+		return session, le.ErrSessionNotFound
 	}
 	if err != nil {
 		return session, fmt.Errorf("%s: failed to get session: %w", op, err)
@@ -242,7 +243,7 @@ func (s *UserStorage) GetUserDevice(ctx context.Context, userID, userAgent strin
 		&device.LatestLoginAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return device, storage.ErrUserDeviceNotFound
+		return device, le.ErrUserDeviceNotFound
 	}
 	if err != nil {
 		return device, fmt.Errorf("%s: failed to get user device: %w", op, err)
@@ -251,10 +252,10 @@ func (s *UserStorage) GetUserDevice(ctx context.Context, userID, userAgent strin
 	return device, nil
 }
 
-// GetUserByID returns a user by ID
-func (s *UserStorage) GetUserByID(ctx context.Context, id string) (models.User, error) {
+// GetUser returns a user by ID
+func (s *UserStorage) GetUser(ctx context.Context, id string) (models.User, error) {
 	const (
-		op = "user.storage.GetUserByID"
+		op = "user.storage.GetUser"
 
 		query = `SELECT id, email, updated_at
 							FROM users WHERE id = $1 AND deleted_at IS NULL`
@@ -267,7 +268,7 @@ func (s *UserStorage) GetUserByID(ctx context.Context, id string) (models.User, 
 		&user.Email,
 		&user.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return user, storage.ErrUserNotFound
+		return user, le.ErrUserNotFound
 	}
 	if err != nil {
 		return user, fmt.Errorf("%s: failed to get user: %w", op, err)
@@ -309,7 +310,7 @@ func (s *UserStorage) GetUsers(ctx context.Context, pgn models.Pagination) ([]mo
 	}
 
 	if len(users) == 0 {
-		return nil, storage.ErrNoUsersFound
+		return nil, le.ErrNoUsersFound
 	}
 
 	return users, nil
@@ -326,7 +327,7 @@ func (s *UserStorage) UpdateUser(ctx context.Context, user models.User) error {
 	}()
 
 	// Check if the user exists
-	currentUser, err := s.GetUserByID(ctx, user.ID)
+	currentUser, err := s.GetUser(ctx, user.ID)
 	if err != nil {
 		return err
 	}
@@ -341,7 +342,7 @@ func (s *UserStorage) UpdateUser(ctx context.Context, user models.User) error {
 	passwordChanged := user.Password != ""
 
 	if !emailChanged && !passwordChanged {
-		return storage.ErrNoChangesDetected
+		return le.ErrNoChangesDetected
 	}
 
 	// Check if the user email exists for a different user
@@ -350,7 +351,7 @@ func (s *UserStorage) UpdateUser(ctx context.Context, user models.User) error {
 	}
 
 	if passwordChanged && user.Password == currentUserPassword {
-		return storage.ErrNoPasswordChangesDetected
+		return le.ErrNoPasswordChangesDetected
 	}
 
 	// Prepare the dynamic update query based on the provided fields
@@ -392,7 +393,7 @@ func getUserPassword(ctx context.Context, tx pgx.Tx, id string) (string, error) 
 	var password string
 	err := tx.QueryRow(ctx, query, id).Scan(&password)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return "", storage.ErrUserNotFound
+		return "", le.ErrUserNotFound
 	}
 	if err != nil {
 		return "", fmt.Errorf("%s: failed to get user password: %w", op, err)
@@ -413,7 +414,7 @@ func checkEmailUniqueness(ctx context.Context, tx pgx.Tx, email, id string) erro
 
 	err := tx.QueryRow(ctx, query, email).Scan(&existingUserID)
 	if !errors.Is(err, pgx.ErrNoRows) && existingUserID != id {
-		return storage.ErrEmailAlreadyTaken
+		return le.ErrEmailAlreadyTaken
 	} else if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return fmt.Errorf("%s: failed to check email uniqueness: %w", op, err)
 	}
@@ -437,7 +438,7 @@ func (s *UserStorage) DeleteUser(ctx context.Context, id string) error {
 
 	rowsAffected := result.RowsAffected()
 	if rowsAffected == 0 {
-		return storage.ErrUserNotFound
+		return le.ErrUserNotFound
 	}
 
 	return nil

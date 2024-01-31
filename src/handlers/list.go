@@ -2,11 +2,11 @@ package handlers
 
 import (
 	"errors"
-	"fmt"
-	"github.com/rshelekhov/reframed/internal/http-server/middleware/auth"
-	"github.com/rshelekhov/reframed/internal/logger"
-	"github.com/rshelekhov/reframed/internal/models"
-	"github.com/rshelekhov/reframed/internal/storage"
+	"github.com/rshelekhov/reframed/src/le"
+	"github.com/rshelekhov/reframed/src/logger"
+	"github.com/rshelekhov/reframed/src/models"
+	"github.com/rshelekhov/reframed/src/server/middleware/jwtoken"
+	"github.com/rshelekhov/reframed/src/storage"
 	"github.com/segmentio/ksuid"
 	"log/slog"
 	"net/http"
@@ -15,13 +15,13 @@ import (
 
 type ListHandler struct {
 	Logger      logger.Interface
-	TokenAuth   *auth.JWTAuth
+	TokenAuth   *jwtoken.JWTAuth
 	ListStorage storage.ListStorage
 }
 
 func NewListHandler(
 	log logger.Interface,
-	tokenAuth *auth.JWTAuth,
+	tokenAuth *jwtoken.JWTAuth,
 	listStorage storage.ListStorage,
 ) *ListHandler {
 	return &ListHandler{
@@ -39,8 +39,15 @@ func (h *ListHandler) CreateList() http.HandlerFunc {
 
 		list := &models.List{}
 
+		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		if err != nil {
+			handleInternalServerError(w, r, log, le.ErrFailedToGetAccessToken, err)
+			return
+		}
+		userID := claims[contextUserID].(string)
+
 		// Decode the request body
-		err := DecodeJSON(w, r, log, list)
+		err = DecodeJSON(w, r, log, list)
 		if err != nil {
 			return
 		}
@@ -51,14 +58,13 @@ func (h *ListHandler) CreateList() http.HandlerFunc {
 		newList := models.List{
 			ID:        id,
 			Title:     list.Title,
-			UserID:    list.UserID,
+			UserID:    userID,
 			UpdatedAt: &now,
 		}
 
 		err = h.ListStorage.CreateList(r.Context(), newList)
 		if err != nil {
-			log.Error("failed to create list", logger.Err(err))
-			responseError(w, r, http.StatusInternalServerError, "failed to create list")
+			handleInternalServerError(w, r, log, le.ErrFailedToCreateList, err)
 			return
 		}
 
@@ -70,8 +76,7 @@ func (h *ListHandler) CreateList() http.HandlerFunc {
 func (h *ListHandler) GetListByID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const (
-			op  = "list.handlers.GetListByID"
-			key = "listID"
+			op = "list.handlers.GetListByID"
 		)
 	}
 }
@@ -79,40 +84,38 @@ func (h *ListHandler) GetListByID() http.HandlerFunc {
 func (h *ListHandler) GetListsByUserID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const (
-			op  = "list.handlers.GetLists"
-			key = "user_id"
+			op = "list.handlers.GetListsByUserID"
 		)
 
 		log := logger.LogWithRequest(h.Logger, op, r)
 
 		pagination, err := ParseLimitAndOffset(r)
 		if err != nil {
-			log.Error(ErrFailedToParsePagination.Error(), logger.Err(err))
-			responseError(w, r, http.StatusBadRequest, ErrFailedToParsePagination.Error())
+			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrFailedToParsePagination, err)
 			return
 		}
 
-		// TODO: implement JWT auth
-		userID, statusCode, err := GetID(r, log, key)
+		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
 		if err != nil {
-			responseError(w, r, statusCode, err.Error())
+			handleInternalServerError(w, r, log, le.ErrFailedToGetAccessToken, err)
 			return
 		}
+		userID := claims[contextUserID].(string)
 
 		lists, err := h.ListStorage.GetLists(r.Context(), userID, pagination)
-		if errors.Is(err, storage.ErrNoListsFound) {
-			log.Error(fmt.Sprintf("%v", storage.ErrNoListsFound))
-			responseError(w, r, http.StatusNotFound, fmt.Sprintf("%v", storage.ErrNoListsFound))
+		if errors.Is(err, le.ErrNoListsFound) {
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrNoListsFound)
 			return
 		}
 		if err != nil {
 			log.Error("failed to get lists", logger.Err(err))
 			responseError(w, r, http.StatusInternalServerError, "failed to get lists")
+			handleInternalServerError(w, r, log, le.ErrFailedToGetLists, err)
 			return
 		}
 
 		log.Info(
-			"users found",
+			"lists found",
 			slog.Int("count", len(lists)),
 			slog.Int("limit", pagination.Limit),
 			slog.Int("offset", pagination.Offset),

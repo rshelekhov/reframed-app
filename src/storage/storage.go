@@ -2,24 +2,7 @@ package storage
 
 import (
 	"context"
-	"errors"
-	"github.com/rshelekhov/reframed/internal/models"
-)
-
-var (
-	ErrUserNotFound              = errors.New("user not found")
-	ErrNoUsersFound              = errors.New("no users found")
-	ErrUserAlreadyExists         = errors.New("user with this email already exists")
-	ErrEmailAlreadyTaken         = errors.New("this email already taken")
-	ErrNoChangesDetected         = errors.New("no changes detected")
-	ErrNoPasswordChangesDetected = errors.New("no password changes detected")
-
-	ErrUserDeviceNotFound = errors.New("user device not found")
-
-	ErrSessionNotFound     = errors.New("session not found")
-	ErrRefreshTokenExpired = errors.New("refresh token expired")
-
-	ErrNoListsFound = errors.New("no lists found")
+	"github.com/rshelekhov/reframed/src/models"
 )
 
 type (
@@ -31,7 +14,7 @@ type (
 		AddDevice(ctx context.Context, device models.UserDevice) error
 		GetUserDevice(ctx context.Context, userID, userAgent string) (models.UserDevice, error)
 		GetUserCredentials(ctx context.Context, user *models.User) (models.User, error)
-		GetUserByID(ctx context.Context, id string) (models.User, error)
+		GetUser(ctx context.Context, id string) (models.User, error)
 		GetUsers(ctx context.Context, pgn models.Pagination) ([]models.User, error)
 		UpdateUser(ctx context.Context, user models.User) error
 		DeleteUser(ctx context.Context, id string) error

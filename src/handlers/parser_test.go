@@ -1,8 +1,8 @@
 package handlers_test
 
 import (
-	"github.com/rshelekhov/reframed/internal/handlers"
-	"github.com/rshelekhov/reframed/internal/models"
+	"github.com/rshelekhov/reframed/src/handlers"
+	"github.com/rshelekhov/reframed/src/models"
 	"net/http"
 	"net/url"
 	"testing"

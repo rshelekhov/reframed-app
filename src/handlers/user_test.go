@@ -6,11 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/go-chi/chi/v5"
-	handlers2 "github.com/rshelekhov/reframed/internal/handlers"
-	"github.com/rshelekhov/reframed/internal/logger/slogdiscard"
-	"github.com/rshelekhov/reframed/internal/models"
-	"github.com/rshelekhov/reframed/internal/storage"
-	"github.com/rshelekhov/reframed/internal/storage/mocks"
+	handlers2 "github.com/rshelekhov/reframed/src/handlers"
+	"github.com/rshelekhov/reframed/src/logger/slogdiscard"
+	"github.com/rshelekhov/reframed/src/models"
+	"github.com/rshelekhov/reframed/src/storage"
+	"github.com/rshelekhov/reframed/src/storage/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -189,7 +189,7 @@ func TestUserHandler_GetUserByID(t *testing.T) {
 				Logger:      mockLogger,
 			}
 
-			mockStorage.On("GetUserByID", mock.Anything, mock.AnythingOfType("string")).
+			mockStorage.On("GetUser", mock.Anything, mock.AnythingOfType("string")).
 				Return(tc.user, tc.expectedError).
 				Once()
 
@@ -201,7 +201,7 @@ func TestUserHandler_GetUserByID(t *testing.T) {
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 			rr := httptest.NewRecorder()
-			handler.GetUserByID()(rr, req)
+			handler.GetUser()(rr, req)
 
 			assert.Equal(t, tc.expectedCode, rr.Code)
 

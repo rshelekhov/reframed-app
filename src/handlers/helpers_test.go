@@ -3,8 +3,8 @@ package handlers_test
 import (
 	"bytes"
 	"github.com/go-chi/chi/v5"
-	handlers2 "github.com/rshelekhov/reframed/internal/handlers"
-	"github.com/rshelekhov/reframed/internal/logger/slogdiscard"
+	handlers2 "github.com/rshelekhov/reframed/src/handlers"
+	"github.com/rshelekhov/reframed/src/logger/slogdiscard"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
