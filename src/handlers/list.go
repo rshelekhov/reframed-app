@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"errors"
-	"github.com/rshelekhov/reframed/src/le"
+	c "github.com/rshelekhov/reframed/src/constants"
 	"github.com/rshelekhov/reframed/src/logger"
 	"github.com/rshelekhov/reframed/src/models"
 	"github.com/rshelekhov/reframed/src/server/middleware/jwtoken"
@@ -41,10 +41,10 @@ func (h *ListHandler) CreateList() http.HandlerFunc {
 
 		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
 		if err != nil {
-			handleInternalServerError(w, r, log, le.ErrFailedToGetAccessToken, err)
+			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
 			return
 		}
-		userID := claims[contextUserID].(string)
+		userID := claims[c.ContextUserID].(string)
 
 		// Decode the request body
 		err = DecodeJSON(w, r, log, list)
@@ -52,11 +52,10 @@ func (h *ListHandler) CreateList() http.HandlerFunc {
 			return
 		}
 
-		id := ksuid.New().String()
 		now := time.Now().UTC()
 
 		newList := models.List{
-			ID:        id,
+			ID:        ksuid.New().String(),
 			Title:     list.Title,
 			UserID:    userID,
 			UpdatedAt: &now,
@@ -64,12 +63,15 @@ func (h *ListHandler) CreateList() http.HandlerFunc {
 
 		err = h.ListStorage.CreateList(r.Context(), newList)
 		if err != nil {
-			handleInternalServerError(w, r, log, le.ErrFailedToCreateList, err)
+			handleInternalServerError(w, r, log, c.ErrFailedToCreateList, err)
 			return
 		}
 
-		log.Info("list created", slog.Any("list_id", id))
-		responseSuccess(w, r, http.StatusCreated, "list created", models.List{ID: id})
+		handleResponseSuccess(
+			w, r, log, "list created",
+			models.List{ID: newList.ID},
+			slog.String(c.ListIDKey, newList.ID),
+		)
 	}
 }
 
@@ -78,6 +80,32 @@ func (h *ListHandler) GetListByID() http.HandlerFunc {
 		const (
 			op = "list.handlers.GetListByID"
 		)
+
+		log := logger.LogWithRequest(h.Logger, op, r)
+
+		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		if err != nil {
+			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
+			return
+		}
+		userID := claims[c.ContextUserID].(string)
+
+		listID, err := GetIDFromQuery(w, r, log, c.ListIDKey)
+		if err != nil {
+			return
+		}
+
+		list, err := h.ListStorage.GetListByID(r.Context(), listID, userID)
+		switch {
+		case errors.Is(err, c.ErrListNotFound):
+			handleResponseError(w, r, log, http.StatusNotFound, c.ErrListNotFound)
+			return
+		case err != nil:
+			handleInternalServerError(w, r, log, c.ErrFailedToGetData, err)
+			return
+		default:
+			handleResponseSuccess(w, r, log, "list received", list, slog.String(c.ListIDKey, listID))
+		}
 	}
 }
 
@@ -91,47 +119,109 @@ func (h *ListHandler) GetListsByUserID() http.HandlerFunc {
 
 		pagination, err := ParseLimitAndOffset(r)
 		if err != nil {
-			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrFailedToParsePagination, err)
+			handleResponseError(w, r, log, http.StatusBadRequest, c.ErrFailedToParsePagination, err)
 			return
 		}
 
 		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
 		if err != nil {
-			handleInternalServerError(w, r, log, le.ErrFailedToGetAccessToken, err)
+			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
 			return
 		}
-		userID := claims[contextUserID].(string)
+		userID := claims[c.ContextUserID].(string)
 
 		lists, err := h.ListStorage.GetLists(r.Context(), userID, pagination)
-		if errors.Is(err, le.ErrNoListsFound) {
-			handleResponseError(w, r, log, http.StatusNotFound, le.ErrNoListsFound)
+		switch {
+		case errors.Is(err, c.ErrNoListsFound):
+			handleResponseError(w, r, log, http.StatusNotFound, c.ErrNoListsFound)
 			return
-		}
-		if err != nil {
-			log.Error("failed to get lists", logger.Err(err))
-			responseError(w, r, http.StatusInternalServerError, "failed to get lists")
-			handleInternalServerError(w, r, log, le.ErrFailedToGetLists, err)
+		case err != nil:
+			handleInternalServerError(w, r, log, c.ErrFailedToGetLists, err)
 			return
+		default:
+			handleResponseSuccess(w, r, log, "lists found", lists,
+				slog.Int(c.CountKey, len(lists)),
+				slog.Int(c.LimitKey, pagination.Limit),
+				slog.Int(c.OffsetKey, pagination.Offset),
+			)
 		}
-
-		log.Info(
-			"lists found",
-			slog.Int("count", len(lists)),
-			slog.Int("limit", pagination.Limit),
-			slog.Int("offset", pagination.Offset),
-		)
-		responseSuccess(w, r, http.StatusOK, "lists found", lists)
 	}
 }
 
 func (h *ListHandler) UpdateList() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "list.handlers.UpdateList"
+
+		log := logger.LogWithRequest(h.Logger, op, r)
+		list := &models.UpdateList{}
+
+		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		if err != nil {
+			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
+			return
+		}
+		userID := claims[c.ContextUserID].(string)
+
+		listID, err := GetIDFromQuery(w, r, log, c.ListIDKey)
+		if err != nil {
+			return
+		}
+
+		if err = DecodeAndValidateJSON(w, r, log, list); err != nil {
+			return
+		}
+
+		now := time.Now().UTC()
+
+		updatedList := models.List{
+			ID:        listID,
+			Title:     list.Title,
+			UserID:    userID,
+			UpdatedAt: &now,
+		}
+
+		err = h.ListStorage.UpdateList(r.Context(), updatedList)
+		switch {
+		case errors.Is(err, c.ErrListNotFound):
+			handleResponseError(w, r, log, http.StatusNotFound, c.ErrListNotFound)
+			return
+		case err != nil:
+			handleInternalServerError(w, r, log, c.ErrFailedToUpdateList, err)
+			return
+		default:
+			handleResponseSuccess(w, r, log, "list updated", updatedList, slog.String(c.ListIDKey, listID))
+		}
 	}
 }
 
 func (h *ListHandler) DeleteList() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "list.handlers.DeleteList"
+
+		log := logger.LogWithRequest(h.Logger, op, r)
+
+		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		if err != nil {
+			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
+			return
+		}
+		userID := claims[c.ContextUserID].(string)
+
+		listID, err := GetIDFromQuery(w, r, log, c.ListIDKey)
+		if err != nil {
+			return
+		}
+
+		err = h.ListStorage.DeleteList(r.Context(), listID, userID)
+		switch {
+		case errors.Is(err, c.ErrListNotFound):
+			handleResponseError(w, r, log, http.StatusNotFound, c.ErrListNotFound)
+			return
+		case err != nil:
+			handleInternalServerError(w, r, log, c.ErrFailedToDeleteList, err)
+			return
+		default:
+			handleResponseSuccess(w, r, log, "list deleted", models.List{ID: listID}, slog.String(c.ListIDKey, listID))
+		}
 	}
 }

@@ -3,9 +3,10 @@ package handlers
 import (
 	"errors"
 	"fmt"
+	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator"
-	"github.com/rshelekhov/reframed/src/le"
+	c "github.com/rshelekhov/reframed/src/constants"
 	"github.com/rshelekhov/reframed/src/logger"
 	"io"
 	"log/slog"
@@ -13,26 +14,36 @@ import (
 	"reflect"
 )
 
+// GetIDFromQuery gets the models id from the request
+func GetIDFromQuery(w http.ResponseWriter, r *http.Request, log logger.Interface, key string) (string, error) {
+	id := chi.URLParam(r, key)
+	if id == "" {
+		handleResponseError(w, r, log, http.StatusBadRequest, c.ErrEmptyID)
+		return "", c.ErrEmptyID
+	}
+
+	return id, nil
+}
+
 // ValidateData validates the request
 func ValidateData(w http.ResponseWriter, r *http.Request, log logger.Interface, data any) error {
 	if data == nil || reflect.DeepEqual(data, reflect.Zero(reflect.TypeOf(data)).Interface()) {
-		handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyData)
-		return le.ErrEmptyData
+		handleResponseError(w, r, log, http.StatusBadRequest, c.ErrEmptyData)
+		return c.ErrEmptyData
 	}
 
-	// TODO: initiate validator in the main file
 	v := validator.New()
 	var ve validator.ValidationErrors
 
 	err := v.Struct(data)
 	if errors.As(err, &ve) {
-		log.Error(le.ErrInvalidData.Error(), logger.Err(err))
+		log.Error(c.ErrInvalidData.Error(), logger.Err(err))
 		responseValidationErrors(w, r, ve)
-		return le.ErrInvalidData
+		return c.ErrInvalidData
 	}
 	if err != nil {
-		handleResponseError(w, r, log, http.StatusInternalServerError, le.ErrFailedToValidateData, err)
-		return le.ErrFailedToValidateData
+		handleResponseError(w, r, log, http.StatusInternalServerError, c.ErrFailedToValidateData, err)
+		return c.ErrFailedToValidateData
 	}
 	return nil
 }
@@ -42,14 +53,14 @@ func DecodeJSON(w http.ResponseWriter, r *http.Request, log logger.Interface, da
 	// Decode the request body
 	err := render.DecodeJSON(r.Body, &data)
 	if errors.Is(err, io.EOF) {
-		log.Error(le.ErrEmptyRequestBody.Error())
-		responseError(w, r, http.StatusBadRequest, le.ErrEmptyRequestBody)
-		return le.ErrEmptyRequestBody
+		log.Error(c.ErrEmptyRequestBody.Error())
+		responseError(w, r, http.StatusBadRequest, c.ErrEmptyRequestBody)
+		return c.ErrEmptyRequestBody
 	}
 	if err != nil {
-		log.Error(le.ErrInvalidJSON.Error(), logger.Err(err))
-		responseError(w, r, http.StatusBadRequest, le.ErrInvalidJSON)
-		return le.ErrInvalidJSON
+		log.Error(c.ErrInvalidJSON.Error(), logger.Err(err))
+		responseError(w, r, http.StatusBadRequest, c.ErrInvalidJSON)
+		return c.ErrInvalidJSON
 	}
 
 	log.Info("request body decoded", slog.Any("user", data))
@@ -122,12 +133,25 @@ func responseSuccess(
 	render.JSON(w, r, response)
 }
 
+// handleResponseSuccess renders a success response with status code and data
+func handleResponseSuccess(
+	w http.ResponseWriter,
+	r *http.Request,
+	log logger.Interface,
+	message string,
+	data any,
+	addLogData ...any,
+) {
+	log.Info(message, addLogData...)
+	responseSuccess(w, r, http.StatusOK, message, data)
+}
+
 // responseError renders an error response with the given status code and error
 func responseError(
 	w http.ResponseWriter,
 	r *http.Request,
 	statusCode int,
-	errorMessage le.LocalError,
+	errorMessage c.LocalError,
 ) {
 	response := struct {
 		Code        int    `json:"code"`
@@ -149,10 +173,10 @@ func handleResponseError(
 	r *http.Request,
 	log logger.Interface,
 	status int,
-	error le.LocalError,
-	additionalData ...interface{},
+	error c.LocalError,
+	addLogData ...interface{},
 ) {
-	log.Error(fmt.Sprintf("%v", error), additionalData...)
+	log.Error(fmt.Sprintf("%v", error), addLogData...)
 	responseError(w, r, status, error)
 }
 
@@ -160,9 +184,9 @@ func handleInternalServerError(
 	w http.ResponseWriter,
 	r *http.Request,
 	log logger.Interface,
-	error le.LocalError,
-	additionalData ...interface{},
+	error c.LocalError,
+	addLogData ...interface{},
 ) {
-	log.Error(fmt.Sprintf("%v", error), additionalData...)
+	log.Error(fmt.Sprintf("%v", error), addLogData...)
 	responseError(w, r, http.StatusInternalServerError, error)
 }

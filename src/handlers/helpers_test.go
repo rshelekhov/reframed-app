@@ -20,7 +20,7 @@ func TestGetID(t *testing.T) {
 
 		router := chi.NewRouter()
 		router.Get("/path/{id}", func(w http.ResponseWriter, r *http.Request) {
-			id, statusCode, err := handlers2.GetID(r, mockLogger)
+			id, statusCode, err := handlers2.GetIDFromQuery(r, mockLogger)
 			assert.NoError(t, err)
 			assert.Equal(t, "123", id)
 			assert.Equal(t, http.StatusOK, statusCode)
@@ -32,7 +32,7 @@ func TestGetID(t *testing.T) {
 	t.Run("empty ID", func(t *testing.T) {
 		req := httptest.NewRequest("GET", "/path/", nil)
 
-		_, statusCode, err := handlers2.GetID(req, mockLogger)
+		_, statusCode, err := handlers2.GetIDFromQuery(req, mockLogger)
 
 		assert.Equal(t, handlers2.ErrEmptyID, err)
 		assert.Equal(t, http.StatusBadRequest, statusCode)

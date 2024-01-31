@@ -1,4 +1,4 @@
-package le
+package constants
 
 type LocalError string
 
@@ -39,23 +39,29 @@ const (
 	//===========================================================================
 
 	ErrNoUsersFound              LocalError = "no users found"
+	ErrFailedToGetUsers          LocalError = "failed to get users"
 	ErrUserAlreadyExists         LocalError = "user with this email already exists"
 	ErrEmailAlreadyTaken         LocalError = "this email already taken"
 	ErrNoChangesDetected         LocalError = "no changes detected"
 	ErrNoPasswordChangesDetected LocalError = "no password changes detected"
 	ErrFailedToUpdateUser        LocalError = "failed to update user"
+	ErrFailedToDeleteUser        LocalError = "failed to delete user"
 
 	//===========================================================================
 	//  list errors
 	//===========================================================================
 
 	ErrNoListsFound       LocalError = "no lists found"
+	ErrListNotFound       LocalError = "list not found"
 	ErrFailedToCreateList LocalError = "failed to create list"
 	ErrFailedToGetLists   LocalError = "failed to get lists"
+	ErrFailedToUpdateList LocalError = "failed to update list"
+	ErrFailedToDeleteList LocalError = "failed to delete list"
 
 	//===========================================================================
 	//  other errors
 	//===========================================================================
 
+	ErrEmptyID                 LocalError = "empty ID"
 	ErrFailedToParsePagination LocalError = "failed to parse limit and offset"
 )

@@ -13,7 +13,6 @@ type User struct {
 	DeletedAt *time.Time `db:"deleted_at" json:"deleted_at,omitempty"`
 }
 
-// UpdateUser uses in the request body and usecase layer for updating a user by ID
 type UpdateUser struct {
 	Email    string `json:"email" db:"email" validate:"omitempty,email"`
 	Password string `json:"password" db:"password" validate:"omitempty,min=8"`

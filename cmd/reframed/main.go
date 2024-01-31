@@ -49,10 +49,6 @@ func main() {
 	user := handlers.NewUserHandler(log, tokenAuth, userStorage, listStorage)
 	list := handlers.NewListHandler(log, tokenAuth, listStorage)
 
-	// Routers
-	/*route.NewUserRouter(r, log, tokenAuth, userStorage, listStorage)
-	route.NewListRouter(r, log, tokenAuth, listStorage)*/
-
 	// HTTP Server
 	log.Info("starting server", slog.String("address", cfg.HTTPServer.Address))
 

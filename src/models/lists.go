@@ -10,3 +10,7 @@ type List struct {
 	UpdatedAt *time.Time `db:"updated_at" json:"updated_at,omitempty"`
 	DeletedAt *time.Time `db:"deleted_at" json:"deleted_at,omitempty"`
 }
+
+type UpdateList struct {
+	Title string `db:"title" json:"title"`
+}
