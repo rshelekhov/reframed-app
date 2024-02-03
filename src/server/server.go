@@ -20,6 +20,7 @@ type Server struct {
 	tokenAuth *jwtoken.JWTAuth
 	user      *handlers.UserHandler
 	list      *handlers.ListHandler
+	task      *handlers.TaskHandler
 }
 
 func NewServer(
@@ -28,6 +29,7 @@ func NewServer(
 	tokenAuth *jwtoken.JWTAuth,
 	user *handlers.UserHandler,
 	list *handlers.ListHandler,
+	task *handlers.TaskHandler,
 ) *Server {
 	srv := &Server{
 		cfg:       cfg,
@@ -35,6 +37,7 @@ func NewServer(
 		tokenAuth: tokenAuth,
 		list:      list,
 		user:      user,
+		task:      task,
 	}
 
 	return srv

@@ -59,6 +59,18 @@ const (
 	ErrFailedToDeleteList LocalError = "failed to delete list"
 
 	//===========================================================================
+	//  task errors
+	//===========================================================================
+
+	ErrNoTasksFound         LocalError = "no tasks found"
+	ErrTaskNotFound         LocalError = "task not found"
+	ErrFailedToCreateTask   LocalError = "failed to create task"
+	ErrTaskStatusNotFound   LocalError = "task status not found"
+	ErrFailedToUpdateTask   LocalError = "failed to update task"
+	ErrFailedToCompleteTask LocalError = "failed to complete task"
+	ErrFailedToDeleteTask   LocalError = "failed to delete task"
+
+	//===========================================================================
 	//  other errors
 	//===========================================================================
 

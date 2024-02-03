@@ -46,8 +46,7 @@ func (h *ListHandler) CreateList() http.HandlerFunc {
 		}
 		userID := claims[c.ContextUserID].(string)
 
-		// Decode the request body
-		err = DecodeJSON(w, r, log, list)
+		err = DecodeAndValidateJSON(w, r, log, list)
 		if err != nil {
 			return
 		}
@@ -171,13 +170,10 @@ func (h *ListHandler) UpdateList() http.HandlerFunc {
 			return
 		}
 
-		now := time.Now().UTC()
-
 		updatedList := models.List{
-			ID:        listID,
-			Title:     list.Title,
-			UserID:    userID,
-			UpdatedAt: &now,
+			ID:     listID,
+			Title:  list.Title,
+			UserID: userID,
 		}
 
 		err = h.ListStorage.UpdateList(r.Context(), updatedList)

@@ -258,16 +258,13 @@ func (h *UserHandler) registerDevice(r *http.Request, userID string) (models.Use
 	ip := r.RemoteAddr
 	ip = strings.Split(ip, ":")[0]
 
-	latestLoginAt := time.Now()
-
 	device := models.UserDevice{
-		ID:            ksuid.New().String(),
-		UserID:        userID,
-		UserAgent:     r.UserAgent(),
-		IP:            ip,
-		Detached:      false,
-		LatestLoginAt: &latestLoginAt,
-		DetachedAt:    nil,
+		ID:         ksuid.New().String(),
+		UserID:     userID,
+		UserAgent:  r.UserAgent(),
+		IP:         ip,
+		Detached:   false,
+		DetachedAt: nil,
 	}
 
 	err := h.UserStorage.AddDevice(r.Context(), device)
@@ -336,18 +333,18 @@ func (h *UserHandler) GetUser() http.HandlerFunc {
 			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
 			return
 		}
-		id := claims[c.ContextUserID].(string)
+		userID := claims[c.ContextUserID].(string)
 
-		user, err := h.UserStorage.GetUser(r.Context(), id)
+		user, err := h.UserStorage.GetUser(r.Context(), userID)
 		switch {
 		case errors.Is(err, c.ErrUserNotFound):
-			handleResponseError(w, r, log, http.StatusNotFound, c.ErrUserNotFound, slog.String(c.UserIDKey, id))
+			handleResponseError(w, r, log, http.StatusNotFound, c.ErrUserNotFound, slog.String(c.UserIDKey, userID))
 			return
 		case err != nil:
 			handleInternalServerError(w, r, log, c.ErrFailedToGetData, err)
 			return
 		default:
-			handleResponseSuccess(w, r, log, "user received", user, slog.String(c.UserIDKey, id))
+			handleResponseSuccess(w, r, log, "user received", user, slog.String(c.UserIDKey, userID))
 		}
 	}
 }
@@ -396,40 +393,37 @@ func (h *UserHandler) UpdateUser() http.HandlerFunc {
 			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
 			return
 		}
-		id := claims[c.ContextUserID].(string)
+		userID := claims[c.ContextUserID].(string)
 
 		if err = DecodeAndValidateJSON(w, r, log, user); err != nil {
 			return
 		}
 
-		now := time.Now().UTC()
-
 		updatedUser := models.User{
-			ID:        id,
-			Email:     user.Email,
-			Password:  user.Password,
-			UpdatedAt: &now,
+			ID:       userID,
+			Email:    user.Email,
+			Password: user.Password,
 		}
 
 		err = h.UserStorage.UpdateUser(r.Context(), updatedUser)
 		switch {
 		case errors.Is(err, c.ErrUserNotFound):
-			handleResponseError(w, r, log, http.StatusNotFound, c.ErrUserNotFound, slog.String(c.UserIDKey, id))
+			handleResponseError(w, r, log, http.StatusNotFound, c.ErrUserNotFound, slog.String(c.UserIDKey, userID))
 			return
 		case errors.Is(err, c.ErrEmailAlreadyTaken):
 			handleResponseError(w, r, log, http.StatusBadRequest, c.ErrEmailAlreadyTaken, slog.String(c.EmailKey, user.Email))
 			return
 		case errors.Is(err, c.ErrNoChangesDetected):
-			handleResponseError(w, r, log, http.StatusBadRequest, c.ErrNoChangesDetected, slog.String(c.UserIDKey, id))
+			handleResponseError(w, r, log, http.StatusBadRequest, c.ErrNoChangesDetected, slog.String(c.UserIDKey, userID))
 			return
 		case errors.Is(err, c.ErrNoPasswordChangesDetected):
-			handleResponseError(w, r, log, http.StatusBadRequest, c.ErrNoPasswordChangesDetected, slog.String(c.UserIDKey, id))
+			handleResponseError(w, r, log, http.StatusBadRequest, c.ErrNoPasswordChangesDetected, slog.String(c.UserIDKey, userID))
 			return
 		case err != nil:
-			handleInternalServerError(w, r, log, c.ErrFailedToUpdateUser, slog.String(c.UserIDKey, id))
+			handleInternalServerError(w, r, log, c.ErrFailedToUpdateUser, slog.String(c.UserIDKey, userID))
 			return
 		default:
-			handleResponseSuccess(w, r, log, "user updated", models.User{ID: id}, slog.String(c.UserIDKey, id))
+			handleResponseSuccess(w, r, log, "user updated", models.User{ID: userID}, slog.String(c.UserIDKey, userID))
 		}
 	}
 }
@@ -446,18 +440,18 @@ func (h *UserHandler) DeleteUser() http.HandlerFunc {
 			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
 			return
 		}
-		id := claims[c.ContextUserID].(string)
+		userID := claims[c.ContextUserID].(string)
 
-		err = h.UserStorage.DeleteUser(r.Context(), id)
+		err = h.UserStorage.DeleteUser(r.Context(), userID)
 		switch {
 		case errors.Is(err, c.ErrUserNotFound):
-			handleResponseError(w, r, log, http.StatusNotFound, c.ErrUserNotFound, slog.String(c.UserIDKey, id))
+			handleResponseError(w, r, log, http.StatusNotFound, c.ErrUserNotFound, slog.String(c.UserIDKey, userID))
 			return
 		case err != nil:
 			handleInternalServerError(w, r, log, c.ErrFailedToDeleteUser, err)
 			return
 		default:
-			handleResponseSuccess(w, r, log, "user deleted", models.User{ID: id}, slog.String(c.UserIDKey, id))
+			handleResponseSuccess(w, r, log, "user deleted", models.User{ID: userID}, slog.String(c.UserIDKey, userID))
 		}
 	}
 }

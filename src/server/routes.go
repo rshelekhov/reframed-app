@@ -5,7 +5,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/httprate"
 	"github.com/go-chi/render"
-	c "github.com/rshelekhov/reframed/src/constants"
 	"github.com/rshelekhov/reframed/src/handlers"
 	"github.com/rshelekhov/reframed/src/server/middleware/jwtoken"
 	mwlogger "github.com/rshelekhov/reframed/src/server/middleware/logger"
@@ -83,10 +82,28 @@ func (s *Server) initRoutes(jwtAuth *jwtoken.JWTAuth) *chi.Mux {
 			r.Get("/", s.list.GetListsByUserID())
 			r.Post("/", s.list.CreateList())
 
-			r.Route("/{"+c.ListIDKey+"}", func(r chi.Router) {
+			r.Route("/{list_id}", func(r chi.Router) {
 				r.Get("/", s.list.GetListByID())
 				r.Put("/", s.list.UpdateList())
 				r.Delete("/", s.list.DeleteList())
+
+				r.Route("/tasks", func(r chi.Router) {
+					r.Get("/", s.task.GetTasksByListID())
+					r.Post("/", s.task.CreateTask())
+				})
+			})
+		})
+
+		// task routes
+		r.Route("/user/tasks", func(r chi.Router) {
+			r.Get("/", s.task.GetTasksByUserID())
+			// TODO: add handler for moving tasks to another list
+			r.Route("/{task_id}", func(r chi.Router) {
+				r.Get("/", s.task.GetTaskByID())
+				r.Put("/", s.task.UpdateTask())
+				r.Put("/time", s.task.UpdateTaskTime())
+				r.Put("/complete", s.task.CompleteTask())
+				r.Delete("/", s.task.DeleteTask())
 			})
 		})
 	})
