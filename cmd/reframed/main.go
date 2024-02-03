@@ -44,14 +44,16 @@ func main() {
 
 	userStorage := postgres.NewUserStorage(pg)
 	listStorage := postgres.NewListStorage(pg)
+	taskStorage := postgres.NewTaskStorage(pg)
 
 	// Handlers
 	user := handlers.NewUserHandler(log, tokenAuth, userStorage, listStorage)
 	list := handlers.NewListHandler(log, tokenAuth, listStorage)
+	task := handlers.NewTaskHandler(log, tokenAuth, taskStorage)
 
 	// HTTP Server
 	log.Info("starting server", slog.String("address", cfg.HTTPServer.Address))
 
-	srv := server.NewServer(cfg, log, tokenAuth, user, list)
+	srv := server.NewServer(cfg, log, tokenAuth, user, list, task)
 	srv.Start()
 }
