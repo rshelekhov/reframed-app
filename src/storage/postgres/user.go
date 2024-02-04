@@ -66,14 +66,12 @@ func getUserStatus(ctx context.Context, tx pgx.Tx, email string) (string, error)
 			WHEN EXISTS(
 				SELECT 1
 				FROM users
-				WHERE email = $1
-				AND deleted_at IS NULL FOR UPDATE
+				WHERE email = $1 AND deleted_at IS NULL FOR UPDATE
 			) THEN 'active'
 			WHEN EXISTS(
 				SELECT 1
 				FROM users
-				WHERE email = $1
-				AND deleted_at IS NOT NULL FOR UPDATE
+				WHERE email = $1 AND deleted_at IS NOT NULL FOR UPDATE
 			) THEN 'soft_deleted'
 			ELSE 'not_found' END AS status`
 	)
@@ -179,9 +177,7 @@ func (s *UserStorage) GetUserCredentials(ctx context.Context, user *models.User)
 				password,
 				updated_at
 			FROM users
-			WHERE email = $1
-			AND password = $2
-			AND deleted_at IS NULL`
+			WHERE email = $1 AND password = $2 AND deleted_at IS NULL`
 	)
 
 	var userDB models.User
@@ -331,9 +327,7 @@ func (s *UserStorage) GetUserDevice(ctx context.Context, userID, userAgent strin
 				detached,
 				latest_login_at
 			FROM user_devices
-			WHERE user_id = $1
-			AND user_agent = $2
-			AND detached = false`
+			WHERE user_id = $1 AND user_agent = $2 AND detached = false`
 	)
 
 	var device models.UserDevice
@@ -371,8 +365,7 @@ func (s *UserStorage) GetUser(ctx context.Context, userID string) (models.User, 
 				email,
 				updated_at
 			FROM users
-			WHERE id = $1
-			AND deleted_at IS NULL`
+			WHERE id = $1 AND deleted_at IS NULL`
 	)
 
 	var user models.User
@@ -529,8 +522,7 @@ func getUserPassword(ctx context.Context, tx pgx.Tx, id string) (string, error) 
 		query = `
 			SELECT	password
 			FROM users
-			WHERE id = $1
-			AND deleted_at IS NULL`
+			WHERE id = $1 AND deleted_at IS NULL`
 	)
 
 	var password string
@@ -577,8 +569,7 @@ func (s *UserStorage) DeleteUser(ctx context.Context, userID string) error {
 		query = `
 			UPDATE users
 			SET deleted_at = $1
-			WHERE id = $2
-			AND deleted_at IS NULL`
+			WHERE id = $2 AND deleted_at IS NULL`
 		// TODO: add deleting session
 	)
 

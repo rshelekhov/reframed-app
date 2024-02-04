@@ -187,6 +187,6 @@ func handleInternalServerError(
 	error c.LocalError,
 	addLogData ...interface{},
 ) {
-	log.Error(fmt.Sprintf("%v", error), addLogData...)
+	log.Error("Internal Server Error: ", addLogData...)
 	responseError(w, r, http.StatusInternalServerError, error)
 }

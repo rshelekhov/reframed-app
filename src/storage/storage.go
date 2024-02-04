@@ -40,4 +40,13 @@ type (
 		CompleteTask(ctx context.Context, taskID, userID string) error
 		DeleteTask(ctx context.Context, taskID, userID string) error
 	}
+
+	// TagStorage defines the tag repository
+	TagStorage interface {
+		CreateTagIfNotExists(ctx context.Context, tag, userID string) error
+		LinkTagsToTask(ctx context.Context, taskID string, tags []string) error
+		UnlinkTagsFromTask(ctx context.Context, taskID string, tagsToRemove []string) error
+		GetTagsByUserID(ctx context.Context, userID string) ([]models.Tag, error)
+		GetTagsByTaskID(ctx context.Context, taskID string) ([]string, error)
+	}
 )

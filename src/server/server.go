@@ -21,6 +21,7 @@ type Server struct {
 	user      *handlers.UserHandler
 	list      *handlers.ListHandler
 	task      *handlers.TaskHandler
+	tag       *handlers.TagHandler
 }
 
 func NewServer(
@@ -30,6 +31,7 @@ func NewServer(
 	user *handlers.UserHandler,
 	list *handlers.ListHandler,
 	task *handlers.TaskHandler,
+	tag *handlers.TagHandler,
 ) *Server {
 	srv := &Server{
 		cfg:       cfg,
@@ -38,6 +40,7 @@ func NewServer(
 		list:      list,
 		user:      user,
 		task:      task,
+		tag:       tag,
 	}
 
 	return srv

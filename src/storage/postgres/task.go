@@ -45,6 +45,7 @@ func (s *TaskStorage) CreateTask(ctx context.Context, task models.Task) error {
 	)
 
 	var status string
+
 	err := s.QueryRow(ctx, querySelectStatus, c.StatusNotStarted).Scan(&status)
 	if err != nil {
 		return fmt.Errorf("%s: failed to get status: %w", op, err)
@@ -78,19 +79,30 @@ func (s *TaskStorage) GetTaskByID(ctx context.Context, taskID, userID string) (m
 
 		query = `
 			SELECT
-				title,
-				description,
-				start_date,
-				deadline,
-				start_time,
-				end_time,
-				status_id,
-				list_id,
-				updated_at
-			FROM tasks
-			WHERE id = $1
-			AND user_id = $2
-			AND deleted_at IS NULL`
+				t.title,
+				t.description,
+				t.start_date,
+				t.deadline,
+				t.start_time,
+				t.end_time,
+				t.status_id,
+				t.list_id,
+				t.updated_at,
+				array_agg(tg.title) AS tags
+			FROM tasks t
+			LEFT JOIN tasks_tags tt ON t.id = tt.task_id
+			LEFT JOIN tags tg ON tt.tag_id = tg.id
+			WHERE t.id = $1 AND t.user_id = $2 AND t.deleted_at IS NULL
+			GROUP BY 
+			    t.title,
+			    t.description,
+			    t.start_date,
+			    t.deadline,
+			    t.start_time,
+			    t.end_time,
+			    t.status_id,
+			    t.list_id,
+			    t.updated_at`
 	)
 
 	var task models.Task
@@ -110,6 +122,7 @@ func (s *TaskStorage) GetTaskByID(ctx context.Context, taskID, userID string) (m
 		&task.StatusID,
 		&task.ListID,
 		&task.UpdatedAt,
+		&task.Tags,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return task, c.ErrTaskNotFound
@@ -128,22 +141,52 @@ func (s *TaskStorage) GetTasksByUserID(ctx context.Context, userID string, pgn m
 	const (
 		op = "task.storage.GetTasksByUserID"
 
+		//query = `
+		//	SELECT
+		//		id,
+		//		title,
+		//		description,
+		//		start_date,
+		//		deadline,
+		//		start_time,
+		//		end_time,
+		//		status_id,
+		//		list_id,
+		//		updated_at
+		//	FROM tasks
+		//	WHERE user_id = $1
+		//	AND deleted_at IS NULL
+		//	ORDER BY id DESC LIMIT $2 OFFSET $3`
+
 		query = `
 			SELECT
-				id,
-				title,
-				description,
-				start_date,
-				deadline,
-				start_time,
-				end_time,
-				status_id,
-				list_id,
-				updated_at
-			FROM tasks
-			WHERE user_id = $1
-			AND deleted_at IS NULL
-			ORDER BY id DESC LIMIT $2 OFFSET $3`
+				t.id,
+				t.title,
+				t.description,
+				t.start_date,
+				t.deadline,
+				t.start_time,
+				t.end_time,
+				t.status_id,
+				t.list_id,
+				t.updated_at,
+				array_agg(tg.title) AS tags
+			FROM tasks t
+			LEFT JOIN tasks_tags tt ON t.id = tt.task_id
+			LEFT JOIN tags tg ON tt.tag_id = tg.id
+			WHERE t.user_id = $1 AND t.deleted_at IS NULL
+			GROUP BY 
+				t.id,
+				t.title,
+				t.description,
+				t.start_date,
+				t.deadline,
+				t.start_time,
+				t.end_time,
+				t.status_id,
+				t.list_id,
+				t.updated_at				
+			ORDER BY t.id DESC LIMIT $2 OFFSET $3`
 	)
 
 	rows, err := s.Query(
@@ -174,11 +217,11 @@ func (s *TaskStorage) GetTasksByUserID(ctx context.Context, userID string, pgn m
 			&task.StatusID,
 			&task.ListID,
 			&task.UpdatedAt,
+			&task.Tags,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("%s: failed to scan task: %w", op, err)
 		}
-		task.UserID = userID
 		tasks = append(tasks, task)
 	}
 
@@ -187,7 +230,7 @@ func (s *TaskStorage) GetTasksByUserID(ctx context.Context, userID string, pgn m
 	}
 
 	if len(tasks) == 0 {
-		return tasks, c.ErrNoTasksFound
+		return nil, c.ErrNoTasksFound
 	}
 
 	return tasks, nil
@@ -197,22 +240,48 @@ func (s *TaskStorage) GetTasksByListID(ctx context.Context, listID, userID strin
 	const (
 		op = "task.storage.GetTasksByListID"
 
+		//query = `
+		//	SELECT
+		//		id,
+		//		title,
+		//		description,
+		//		start_date,
+		//		deadline,
+		//		start_time,
+		//		end_time,
+		//		status_id,
+		//		updated_at
+		//	FROM tasks
+		//	WHERE list_id = $1 AND user_id = $2 AND deleted_at IS NULL
+		//	ORDER BY id DESC LIMIT $3 OFFSET $4`
+
 		query = `
 			SELECT
-				id,
-				title,
-				description,
-				start_date,
-				deadline,
-				start_time,
-				end_time,
-				status_id,
-				updated_at
-			FROM tasks
-			WHERE list_id = $1
-			AND user_id = $2
-			AND deleted_at IS NULL
-			ORDER BY id DESC LIMIT $3 OFFSET $4`
+				t.id,
+				t.title,
+				t.description,
+				t.start_date,
+				t.deadline,
+				t.start_time,
+				t.end_time,
+				t.status_id,
+				t.updated_at,
+				array_agg(tg.title) AS tags
+			FROM tasks t
+			LEFT JOIN tasks_tags tt ON t.id = tt.task_id
+			LEFT JOIN tags tg ON tt.tag_id = tg.id
+			WHERE t.list_id = $1 AND t.user_id = $2 AND t.deleted_at IS NULL
+			GROUP BY 
+				t.id,
+				t.title,
+				t.description,
+				t.start_date,
+				t.deadline,
+				t.start_time,
+				t.end_time,
+				t.status_id,
+				t.updated_at
+			ORDER BY t.id DESC LIMIT $3 OFFSET $4`
 	)
 
 	rows, err := s.Query(
@@ -374,10 +443,7 @@ func (s *TaskStorage) CompleteTask(ctx context.Context, taskID, userID string) e
 			SET
 				status_id = $1,
 				updated_at = $2
-			WHERE id = $3
-			AND user_id = $4
-			AND deleted_at IS NULL
-			RETURNING id`
+			WHERE id = $3 AND user_id = $4 AND deleted_at IS NULL`
 	)
 
 	var status string
@@ -417,9 +483,7 @@ func (s *TaskStorage) DeleteTask(ctx context.Context, taskID, userID string) err
 			SET
 			    status_id = $1,
 				deleted_at = $2
-			WHERE id = $3
-			AND user_id = $4
-			AND deleted_at IS NULL`
+			WHERE id = $3 AND user_id = $4 AND deleted_at IS NULL`
 	)
 
 	var status string
