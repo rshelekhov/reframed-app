@@ -77,7 +77,7 @@ func (s *Server) initRoutes(jwtAuth *jwtoken.JWTAuth) *chi.Mux {
 			})
 		})
 
-		// list routes
+		// List routes
 		r.Route("/user/lists", func(r chi.Router) {
 			r.Get("/", s.list.GetListsByUserID())
 			r.Post("/", s.list.CreateList())
@@ -94,7 +94,7 @@ func (s *Server) initRoutes(jwtAuth *jwtoken.JWTAuth) *chi.Mux {
 			})
 		})
 
-		// task routes
+		// Task routes
 		r.Route("/user/tasks", func(r chi.Router) {
 			r.Get("/", s.task.GetTasksByUserID())
 			// TODO: add handler for moving tasks to another list
@@ -105,6 +105,11 @@ func (s *Server) initRoutes(jwtAuth *jwtoken.JWTAuth) *chi.Mux {
 				r.Put("/complete", s.task.CompleteTask())
 				r.Delete("/", s.task.DeleteTask())
 			})
+		})
+
+		// Tag routes
+		r.Route("/user/tags", func(r chi.Router) {
+			r.Get("/", s.tag.GetTagsByUserID())
 		})
 	})
 

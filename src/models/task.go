@@ -13,6 +13,7 @@ type Task struct {
 	EndTime     *time.Time `db:"end_time" json:"end_time,omitempty"`
 	StatusID    int        `db:"status_id" json:"status_id,omitempty"`
 	ListID      string     `db:"list_id" json:"list_id,omitempty"`
+	Tags        []string   `json:"tags,omitempty"`
 	UserID      string     `db:"user_id" json:"user_id,omitempty"`
 	UpdatedAt   *time.Time `db:"updated_at" json:"updated_at,omitempty"`
 	DeletedAt   *time.Time `db:"deleted_at" json:"deleted_at,omitempty"`
@@ -25,5 +26,6 @@ type UpdateTask struct {
 	Deadline    *time.Time `db:"deadline" json:"deadline,omitempty"`
 	StartTime   *time.Time `db:"start_time" json:"start_time,omitempty"`
 	EndTime     *time.Time `db:"end_time" json:"end_time,omitempty"`
+	Tags        []string   `json:"tags,omitempty"`
 	UpdatedAt   *time.Time `db:"updated_at" json:"updated_at,omitempty"`
 }

@@ -71,6 +71,17 @@ const (
 	ErrFailedToDeleteTask   LocalError = "failed to delete task"
 
 	//===========================================================================
+	//  task errors
+	//===========================================================================
+
+	ErrNoTagsFound            LocalError = "no tags found"
+	ErrTagNotFound            LocalError = "tag not found"
+	ErrFailedToCreateTag      LocalError = "failed to create tag"
+	ErrFailedToUpdateTag      LocalError = "failed to update tag"
+	ErrFailedToDeleteTag      LocalError = "failed to delete tag"
+	ErrFailedToLinkTagsToTask LocalError = "failed to link tags to task"
+
+	//===========================================================================
 	//  other errors
 	//===========================================================================
 

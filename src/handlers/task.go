@@ -16,17 +16,20 @@ type TaskHandler struct {
 	Logger      logger.Interface
 	TokenAuth   *jwtoken.JWTAuth
 	TaskStorage storage.TaskStorage
+	TagStorage  storage.TagStorage
 }
 
 func NewTaskHandler(
 	log logger.Interface,
 	tokenAuth *jwtoken.JWTAuth,
 	taskStorage storage.TaskStorage,
+	tagStorage storage.TagStorage,
 ) *TaskHandler {
 	return &TaskHandler{
 		Logger:      log,
 		TokenAuth:   tokenAuth,
 		TaskStorage: taskStorage,
+		TagStorage:  tagStorage,
 	}
 }
 
@@ -64,11 +67,23 @@ func (h *TaskHandler) CreateTask() http.HandlerFunc {
 			StartTime:   task.StartTime,
 			EndTime:     task.EndTime,
 			ListID:      listID,
+			Tags:        task.Tags,
 			UserID:      userID,
 		}
 
-		err = h.TaskStorage.CreateTask(r.Context(), newTask)
-		if err != nil {
+		for _, tag := range task.Tags {
+			if err = h.TagStorage.CreateTagIfNotExists(r.Context(), tag, userID); err != nil {
+				handleInternalServerError(w, r, log, c.ErrFailedToCreateTag, err)
+				return
+			}
+		}
+
+		if err = h.TagStorage.LinkTagsToTask(r.Context(), newTask.ID, task.Tags); err != nil {
+			handleInternalServerError(w, r, log, c.ErrFailedToLinkTagsToTask, err)
+			return
+		}
+
+		if err = h.TaskStorage.CreateTask(r.Context(), newTask); err != nil {
 			handleInternalServerError(w, r, log, c.ErrFailedToCreateTask, err)
 			return
 		}
@@ -219,7 +234,37 @@ func (h *TaskHandler) UpdateTask() http.HandlerFunc {
 			Deadline:    task.Deadline,
 			StartTime:   task.StartTime,
 			EndTime:     task.EndTime,
+			Tags:        task.Tags,
 			UserID:      userID,
+		}
+
+		currentTags, err := h.TagStorage.GetTagsByTaskID(r.Context(), taskID)
+		if errors.Is(err, c.ErrNoTagsFound) {
+			handleResponseError(w, r, log, http.StatusNotFound, c.ErrNoTagsFound)
+			return
+		}
+		if err != nil {
+			handleInternalServerError(w, r, log, c.ErrFailedToGetData, err)
+			return
+		}
+
+		tagsToAdd, tagsToRemove := findTagsToAddAndRemove(currentTags, updatedTask.Tags)
+
+		for _, tag := range tagsToAdd {
+			if err = h.TagStorage.CreateTagIfNotExists(r.Context(), tag, userID); err != nil {
+				handleInternalServerError(w, r, log, c.ErrFailedToCreateTag, err)
+				return
+			}
+		}
+
+		if err = h.TagStorage.LinkTagsToTask(r.Context(), updatedTask.ID, tagsToAdd); err != nil {
+			handleInternalServerError(w, r, log, c.ErrFailedToLinkTagsToTask, err)
+			return
+		}
+
+		if err = h.TagStorage.UnlinkTagsFromTask(r.Context(), updatedTask.ID, tagsToRemove); err != nil {
+			handleInternalServerError(w, r, log, c.ErrFailedToDeleteTag, err)
+			return
 		}
 
 		err = h.TaskStorage.UpdateTask(r.Context(), updatedTask)
@@ -234,6 +279,28 @@ func (h *TaskHandler) UpdateTask() http.HandlerFunc {
 			handleResponseSuccess(w, r, log, "task updated", updatedTask, slog.String(c.TaskIDKey, taskID))
 		}
 	}
+}
+
+func findTagsToAddAndRemove(currentTags, updatedTags []string) (tagsToAdd, tagsToRemove []string) {
+	tagMap := make(map[string]bool)
+
+	for _, tag := range currentTags {
+		tagMap[tag] = true
+	}
+
+	for _, tag := range updatedTags {
+		if _, ok := tagMap[tag]; ok {
+			delete(tagMap, tag)
+		} else {
+			tagsToAdd = append(tagsToAdd, tag)
+		}
+	}
+
+	for tag := range tagMap {
+		tagsToRemove = append(tagsToRemove, tag)
+	}
+
+	return tagsToAdd, tagsToRemove
 }
 
 func (h *TaskHandler) UpdateTaskTime() http.HandlerFunc {

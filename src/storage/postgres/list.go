@@ -61,9 +61,7 @@ func (s *ListStorage) GetListByID(ctx context.Context, listID, userID string) (m
 				user_id,
 				updated_at
 			FROM lists
-			WHERE id = $1
-			AND user_id = $2
-			AND deleted_at IS NULL`
+			WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL`
 	)
 
 	var list models.List
@@ -101,8 +99,7 @@ func (s *ListStorage) GetLists(ctx context.Context, userID string, pgn models.Pa
 				title,
 				updated_at
 			FROM lists
-			WHERE user_id = $1
-			AND deleted_at IS NULL
+			WHERE user_id = $1 AND deleted_at IS NULL
 			ORDER BY id DESC LIMIT $2 OFFSET $3`
 	)
 
@@ -155,8 +152,7 @@ func (s *ListStorage) UpdateList(ctx context.Context, list models.List) error {
 			SET
 				title = $1,
 				updated_at = $2
-			WHERE id = $3
-			AND user_id = $4`
+			WHERE id = $3 AND user_id = $4`
 	)
 
 	_, err := s.Exec(
@@ -183,9 +179,7 @@ func (s *ListStorage) DeleteList(ctx context.Context, listID, userID string) err
 		query = `
 			UPDATE lists
 			SET deleted_at = $1
-			WHERE id = $2
-			AND user_id = $3
-			AND deleted_at IS NULL`
+			WHERE id = $2 AND user_id = $3 AND deleted_at IS NULL`
 	)
 
 	_, err := s.Exec(
