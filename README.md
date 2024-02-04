@@ -24,8 +24,4 @@
 | Delete user | DELETE      | /users/{id}   |
 
 
-## Database design
-
-| Column Name    | Datatype | Not Null | Primary Key |
-|----------------|----------|----------|-------------|
-| id             | ksuid    | ✅       | ✅          |
+## Reframed App UI design
