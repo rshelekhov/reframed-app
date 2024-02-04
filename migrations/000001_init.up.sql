@@ -89,13 +89,13 @@ CREATE INDEX IF NOT EXISTS idx_tag_user_id ON tags(user_id);
 
 CREATE TABLE IF NOT EXISTS reminders
 (
-    id             character varying PRIMARY KEY,
-    content        character varying NOT NULL,
-    read           boolean NOT NULL,
-    task_id      character varying NOT NULL,
-    user_id        character varying NOT NULL,
-    updated_at     timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
-    deleted_at     timestamp WITH TIME ZONE DEFAULT NULL
+    id         character varying PRIMARY KEY,
+    content    character varying NOT NULL,
+    read       boolean NOT NULL,
+    task_id    character varying NOT NULL,
+    user_id    character varying NOT NULL,
+    updated_at timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
+    deleted_at timestamp WITH TIME ZONE DEFAULT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_remind_task_id ON reminders(task_id);
