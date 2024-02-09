@@ -1,4 +1,4 @@
-package handlers
+package api
 
 import (
 	c "github.com/rshelekhov/reframed/src/constants"

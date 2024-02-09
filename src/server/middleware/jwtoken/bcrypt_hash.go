@@ -1,20 +1,42 @@
 package jwtoken
 
 import (
-	"github.com/rshelekhov/reframed/src/models"
+	"crypto/hmac"
+	"crypto/sha256"
+	"errors"
 	"golang.org/x/crypto/bcrypt"
 )
 
-func PasswordHash(password string, params models.PasswordHashBcrypt, salt []byte) (string, error) {
-	cost := params.Cost
+func PasswordHashBcrypt(password string, cost int, salt []byte) (string, error) {
 	if cost <= 0 {
 		cost = bcrypt.DefaultCost
 	}
 
-	hash, err := passwordHashBcrypt(password, cost, salt)
+	passwordHmac := hmac.New(sha256.New, salt)
+	_, err := passwordHmac.Write([]byte(password))
 	if err != nil {
 		return "", err
 	}
 
-	return hash, nil
+	passwordBcrypt, err := bcrypt.GenerateFromPassword(passwordHmac.Sum(nil), cost)
+	if err != nil {
+		return "", err
+	}
+
+	return string(passwordBcrypt), nil
+}
+
+func PasswordMatch(hash, password string, salt []byte) (bool, error) {
+	passwordHmac := hmac.New(sha256.New, salt)
+	_, err := passwordHmac.Write([]byte(password))
+	if err != nil {
+		return false, err
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(hash), passwordHmac.Sum(nil))
+	if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+		return false, nil
+	}
+
+	return true, nil
 }

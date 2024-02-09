@@ -1,4 +1,4 @@
-package handlers
+package api
 
 import (
 	"errors"
@@ -30,7 +30,7 @@ func NewTagHandler(
 
 func (h *TagHandler) GetTagsByUserID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "tag.handlers.GetTagsByUserID"
+		const op = "tag.api.GetTagsByUserID"
 
 		log := logger.LogWithRequest(h.logger, op, r)
 

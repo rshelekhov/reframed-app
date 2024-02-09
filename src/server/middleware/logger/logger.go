@@ -43,11 +43,11 @@ func New(log logger.Interface) func(next http.Handler) http.Handler {
 				)
 			}()
 
-			// Pass control to the next handlers in the middleware chain
+			// Pass control to the next api in the middleware chain
 			next.ServeHTTP(ww, r)
 		}
 
-		// Return the handlers created above by casting it
+		// Return the api created above by casting it
 		// to the type http.HandlerFunc
 		return http.HandlerFunc(fn)
 	}

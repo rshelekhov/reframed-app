@@ -1,10 +1,10 @@
 CREATE TABLE IF NOT EXISTS users
 (
-    id         character varying PRIMARY KEY,
-    email      character varying NOT NULL,
-    password   character varying NOT NULL,
-    updated_at timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
-    deleted_at timestamp WITH TIME ZONE DEFAULT NULL
+    id            character varying PRIMARY KEY,
+    email         character varying NOT NULL,
+    password_hash character varying NOT NULL,
+    updated_at    timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
+    deleted_at    timestamp WITH TIME ZONE DEFAULT NULL
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_active_users ON users (email) WHERE deleted_at IS NULL;

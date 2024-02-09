@@ -25,12 +25,12 @@ func (d DiscardHandler) Handle(_ context.Context, _ slog.Record) error {
 }
 
 func (d DiscardHandler) WithAttrs(_ []slog.Attr) slog.Handler {
-	// Returns the same handlers, since there is no group to be saved
+	// Returns the same api, since there is no group to be saved
 	return d
 }
 
 func (d DiscardHandler) WithGroup(_ string) slog.Handler {
-	// Returns the same handlers, since there is no group to be saved
+	// Returns the same api, since there is no group to be saved
 	return d
 }
 

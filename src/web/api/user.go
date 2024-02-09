@@ -1,4 +1,4 @@
-package handlers
+package api
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	c "github.com/rshelekhov/reframed/src/constants"
 	"github.com/rshelekhov/reframed/src/logger"
 	"github.com/rshelekhov/reframed/src/models"
+	"github.com/rshelekhov/reframed/src/server/middleware/jwtoken"
 	"github.com/rshelekhov/reframed/src/server/middleware/jwtoken/service"
 	"github.com/rshelekhov/reframed/src/storage"
 	"github.com/segmentio/ksuid"
@@ -39,28 +40,33 @@ func NewUserHandler(
 // CreateUser creates a new user
 func (h *UserHandler) CreateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.handlers.CreateUser"
+		const op = "user.api.CreateUser"
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		user := &models.User{}
-		if err := DecodeAndValidateJSON(w, r, log, user); err != nil {
+		userInput := &models.UserRequestData{}
+		if err := DecodeAndValidateJSON(w, r, log, userInput); err != nil {
 			return
 		}
 
-		now := time.Now().UTC()
+		// TODO: in grpc auth move all logic to controller (see aooth as example)
+
+		hash, err := jwtoken.PasswordHashBcrypt(
+			userInput.Password,
+			h.tokenAuth.PasswordHash.Cost,
+			[]byte(h.tokenAuth.PasswordHash.Salt),
+		)
 
 		newUser := models.User{
-			ID:        ksuid.New().String(),
-			Email:     user.Email,
-			Password:  user.Password,
-			UpdatedAt: &now,
+			ID:           ksuid.New().String(),
+			Email:        userInput.Email,
+			PasswordHash: hash,
 		}
 
 		// Create the user
-		err := h.userStorage.CreateUser(r.Context(), newUser)
+		err = h.userStorage.CreateUser(r.Context(), newUser)
 		if errors.Is(err, c.ErrUserAlreadyExists) {
-			handleResponseError(w, r, log, http.StatusBadRequest, c.ErrUserAlreadyExists, slog.String(c.EmailKey, user.Email))
+			handleResponseError(w, r, log, http.StatusBadRequest, c.ErrUserAlreadyExists, slog.String(c.EmailKey, userInput.Email))
 			return
 		}
 		if err != nil {
@@ -117,19 +123,38 @@ func (h *UserHandler) CreateUser() http.HandlerFunc {
 	}
 }
 
+// TODO: move this to controller in grpc auth
+func (h *UserHandler) verifyPassword(ctx context.Context, user models.User, password string) error {
+	user, err := h.userStorage.GetUserByID(ctx, user.ID)
+	if err != nil {
+		return err
+	}
+	if len(user.PasswordHash) == 0 {
+		return c.ErrUserHasNoPassword
+	}
+	matched, err := jwtoken.PasswordMatch(user.PasswordHash, password, []byte(h.tokenAuth.PasswordHash.Salt))
+	if err != nil {
+		return err
+	}
+	if !matched {
+		return c.ErrInvalidCredentials
+	}
+	return nil
+}
+
 func (h *UserHandler) LoginWithPassword() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.handlers.LoginWithPassword"
+		const op = "user.api.LoginWithPassword"
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		userInput := &models.User{}
+		userInput := &models.UserRequestData{}
 
 		if err := DecodeAndValidateJSON(w, r, log, userInput); err != nil {
 			return
 		}
 
-		userDB, err := h.userStorage.GetUserCredentials(r.Context(), userInput)
+		user, err := h.userStorage.GetUserByEmail(r.Context(), userInput.Email)
 		if errors.Is(err, c.ErrUserNotFound) {
 			handleResponseError(w, r, log, http.StatusUnauthorized, c.ErrInvalidCredentials, slog.String(c.EmailKey, userInput.Email))
 			return
@@ -139,12 +164,16 @@ func (h *UserHandler) LoginWithPassword() http.HandlerFunc {
 			return
 		}
 
-		// TODO: add validate the password using bcrypt
+		err = h.verifyPassword(r.Context(), user, userInput.Password)
+		if err != nil {
+			handleResponseError(w, r, log, http.StatusUnauthorized, c.ErrInvalidCredentials, slog.String(c.EmailKey, userInput.Email))
+			return
+		}
 
 		// Check if device exists (if not, register it)
-		device, err := h.checkDevice(r, userDB.ID)
+		device, err := h.checkDevice(r, user.ID)
 		if errors.Is(err, c.ErrUserDeviceNotFound) {
-			device, err = h.registerDevice(r, userDB.ID)
+			device, err = h.registerDevice(r, user.ID)
 			if err != nil {
 				handleInternalServerError(w, r, log, c.ErrFailedToRegisterDevice, err)
 				return
@@ -156,13 +185,13 @@ func (h *UserHandler) LoginWithPassword() http.HandlerFunc {
 		}
 
 		// Create session
-		tokens, expiresAt, err := h.createSession(r.Context(), userDB.ID, device.ID, h.tokenAuth.RefreshTokenTTL)
+		tokens, expiresAt, err := h.createSession(r.Context(), user.ID, device.ID, h.tokenAuth.RefreshTokenTTL)
 		if err != nil {
 			handleInternalServerError(w, r, log, c.ErrFailedToCreateSession, err)
 			return
 		}
 
-		additionalFields := map[string]string{c.UserIDKey: userDB.ID}
+		additionalFields := map[string]string{c.UserIDKey: user.ID}
 		tokenData := service.TokenData{
 			AccessToken:      tokens.AccessToken,
 			RefreshToken:     tokens.RefreshToken,
@@ -175,7 +204,7 @@ func (h *UserHandler) LoginWithPassword() http.HandlerFunc {
 
 		log.Info(
 			"user logged in, tokens created",
-			slog.String(c.UserIDKey, userDB.ID),
+			slog.String(c.UserIDKey, user.ID),
 			slog.Any(c.TokensKey, tokens),
 		)
 		service.SendTokensToWeb(w, tokenData, http.StatusOK)
@@ -185,7 +214,7 @@ func (h *UserHandler) LoginWithPassword() http.HandlerFunc {
 // TODO: refactor it when we move jwtoken to grpc (use as a reference Aooth)
 func (h *UserHandler) RefreshJWTTokens() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.handlers.RefreshJWTTokens"
+		const op = "user.api.RefreshJWTTokens"
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
@@ -316,7 +345,7 @@ func (h *UserHandler) createSession(
 // TODO: add logout
 func (h *UserHandler) Logout() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.handlers.Logout"
+		const op = "user.api.Logout"
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
@@ -361,10 +390,10 @@ func (h *UserHandler) Logout() http.HandlerFunc {
 	}
 }
 
-// GetUser get a user by ID
-func (h *UserHandler) GetUser() http.HandlerFunc {
+// GetUserProfile get a user by ID
+func (h *UserHandler) GetUserProfile() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.handlers.GetUser"
+		const op = "user.api.GetUserProfile"
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
@@ -375,7 +404,7 @@ func (h *UserHandler) GetUser() http.HandlerFunc {
 		}
 		userID := claims[c.ContextUserID].(string)
 
-		user, err := h.userStorage.GetUser(r.Context(), userID)
+		user, err := h.userStorage.GetUserProfile(r.Context(), userID)
 		switch {
 		case errors.Is(err, c.ErrUserNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, c.ErrUserNotFound, slog.String(c.UserIDKey, userID))
@@ -389,38 +418,14 @@ func (h *UserHandler) GetUser() http.HandlerFunc {
 	}
 }
 
-// GetUsers get a list of users
-func (h *UserHandler) GetUsers() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.handlers.GetUsers"
-
-		log := logger.LogWithRequest(h.logger, op, r)
-
-		pagination := ParseLimitAndAfterID(r)
-
-		users, err := h.userStorage.GetUsers(r.Context(), pagination)
-		switch {
-		case errors.Is(err, c.ErrNoUsersFound):
-			handleResponseError(w, r, log, http.StatusNotFound, c.ErrNoUsersFound)
-			return
-		case err != nil:
-			handleInternalServerError(w, r, log, c.ErrFailedToGetUsers, err)
-			return
-		default:
-			handleResponseSuccess(w, r, log, "users found", users,
-				slog.Int(c.CountKey, len(users)),
-			)
-		}
-	}
-}
-
 // UpdateUser updates a user by ID
 func (h *UserHandler) UpdateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.handlers.UpdateUser"
+		const op = "user.api.UpdateUser"
 
 		log := logger.LogWithRequest(h.logger, op, r)
-		user := &models.UpdateUser{}
+
+		userInput := &models.UserRequestData{}
 
 		_, claims, err := service.GetTokenFromContext(r.Context())
 		if err != nil {
@@ -429,14 +434,38 @@ func (h *UserHandler) UpdateUser() http.HandlerFunc {
 		}
 		userID := claims[c.ContextUserID].(string)
 
-		if err = DecodeAndValidateJSON(w, r, log, user); err != nil {
+		if err = DecodeAndValidateJSON(w, r, log, userInput); err != nil {
 			return
 		}
 
+		// TODO: move to controller in grpc auth
+
+		user, err := h.userStorage.GetUserByEmail(r.Context(), userInput.Email)
+		if errors.Is(err, c.ErrUserNotFound) {
+			handleResponseError(w, r, log, http.StatusUnauthorized, c.ErrInvalidCredentials, slog.String(c.EmailKey, userInput.Email))
+			return
+		}
+		if err != nil {
+			handleInternalServerError(w, r, log, c.ErrFailedToGetData, err)
+			return
+		}
+
+		err = h.verifyPassword(r.Context(), user, userInput.Password)
+		if err != nil {
+			handleResponseError(w, r, log, http.StatusUnauthorized, c.ErrInvalidCredentials, slog.String(c.EmailKey, userInput.Email))
+			return
+		}
+
+		hash, err := jwtoken.PasswordHashBcrypt(
+			userInput.Password,
+			h.tokenAuth.PasswordHash.Cost,
+			[]byte(h.tokenAuth.PasswordHash.Salt),
+		)
+
 		updatedUser := models.User{
-			ID:       userID,
-			Email:    user.Email,
-			Password: user.Password,
+			ID:           userID,
+			Email:        userInput.Email,
+			PasswordHash: hash,
 		}
 
 		err = h.userStorage.UpdateUser(r.Context(), updatedUser)
@@ -445,7 +474,7 @@ func (h *UserHandler) UpdateUser() http.HandlerFunc {
 			handleResponseError(w, r, log, http.StatusNotFound, c.ErrUserNotFound, slog.String(c.UserIDKey, userID))
 			return
 		case errors.Is(err, c.ErrEmailAlreadyTaken):
-			handleResponseError(w, r, log, http.StatusBadRequest, c.ErrEmailAlreadyTaken, slog.String(c.EmailKey, user.Email))
+			handleResponseError(w, r, log, http.StatusBadRequest, c.ErrEmailAlreadyTaken, slog.String(c.EmailKey, userInput.Email))
 			return
 		case errors.Is(err, c.ErrNoChangesDetected):
 			handleResponseError(w, r, log, http.StatusBadRequest, c.ErrNoChangesDetected, slog.String(c.UserIDKey, userID))
@@ -457,7 +486,7 @@ func (h *UserHandler) UpdateUser() http.HandlerFunc {
 			handleInternalServerError(w, r, log, c.ErrFailedToUpdateUser, slog.String(c.UserIDKey, userID))
 			return
 		default:
-			handleResponseSuccess(w, r, log, "user updated", models.User{ID: userID}, slog.String(c.UserIDKey, userID))
+			handleResponseSuccess(w, r, log, "userInput updated", models.User{ID: userID}, slog.String(c.UserIDKey, userID))
 		}
 	}
 }
@@ -465,7 +494,7 @@ func (h *UserHandler) UpdateUser() http.HandlerFunc {
 // DeleteUser deletes a user by ID
 func (h *UserHandler) DeleteUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.handlers.DeleteUser"
+		const op = "user.api.DeleteUser"
 
 		log := logger.LogWithRequest(h.logger, op, r)
 

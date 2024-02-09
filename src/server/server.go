@@ -3,10 +3,10 @@ package server
 import (
 	"context"
 	"errors"
-	"github.com/rshelekhov/reframed/config"
-	"github.com/rshelekhov/reframed/src/handlers"
 	"github.com/rshelekhov/reframed/src/logger"
-	"github.com/rshelekhov/reframed/src/server/middleware/jwtoken"
+	"github.com/rshelekhov/reframed/src/models"
+	"github.com/rshelekhov/reframed/src/server/middleware/jwtoken/service"
+	"github.com/rshelekhov/reframed/src/web/api"
 	"net/http"
 	"os"
 	"os/signal"
@@ -15,25 +15,25 @@ import (
 )
 
 type Server struct {
-	cfg       *config.Config
+	cfg       *models.ServerSettings
 	log       logger.Interface
-	tokenAuth *jwtoken.JWTAuth
-	user      *handlers.UserHandler
-	list      *handlers.ListHandler
-	task      *handlers.TaskHandler
-	heading   *handlers.HeadingHandler
-	tag       *handlers.TagHandler
+	tokenAuth *service.JWTokenService
+	user      *api.UserHandler
+	list      *api.ListHandler
+	task      *api.TaskHandler
+	heading   *api.HeadingHandler
+	tag       *api.TagHandler
 }
 
 func NewServer(
-	cfg *config.Config,
+	cfg *models.ServerSettings,
 	log logger.Interface,
-	tokenAuth *jwtoken.JWTAuth,
-	user *handlers.UserHandler,
-	list *handlers.ListHandler,
-	task *handlers.TaskHandler,
-	heading *handlers.HeadingHandler,
-	tag *handlers.TagHandler,
+	tokenAuth *service.JWTokenService,
+	user *api.UserHandler,
+	list *api.ListHandler,
+	task *api.TaskHandler,
+	heading *api.HeadingHandler,
+	tag *api.TagHandler,
 ) *Server {
 	srv := &Server{
 		cfg:       cfg,
@@ -50,7 +50,6 @@ func NewServer(
 }
 
 func (s *Server) Start() {
-	// TODO: move timeout to config
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 

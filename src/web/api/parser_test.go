@@ -1,9 +1,9 @@
-package handlers_test
+package api_test
 
 import (
 	"github.com/rshelekhov/reframed/src/handlers"
 	"github.com/rshelekhov/reframed/src/models"
-	handlers2 "github.com/rshelekhov/reframed/src/server/handlers"
+	handlers2 "github.com/rshelekhov/reframed/src/web/api"
 	"net/http"
 	"net/url"
 	"testing"

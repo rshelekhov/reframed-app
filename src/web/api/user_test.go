@@ -1,4 +1,4 @@
-package handlers_test
+package api_test
 
 import (
 	"bytes"
@@ -6,12 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/go-chi/chi/v5"
-	handlers2 "github.com/rshelekhov/reframed/src/handlers"
+	handlers2 "github.com/rshelekhov/reframed/src/api"
 	"github.com/rshelekhov/reframed/src/logger/slogdiscard"
 	"github.com/rshelekhov/reframed/src/models"
-	"github.com/rshelekhov/reframed/src/server/handlers"
 	"github.com/rshelekhov/reframed/src/storage"
 	"github.com/rshelekhov/reframed/src/storage/mocks"
+	"github.com/rshelekhov/reframed/src/web/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -100,7 +100,7 @@ func TestUserHandler_CreateUser(t *testing.T) {
 			mockListStorage := &mocks.ListStorage{}
 			mockLogger := slogdiscard.NewDiscardLogger()
 
-			handler := &handlers.UserHandler{
+			handler := &api.UserHandler{
 				userStorage: mockUserStorage,
 				listStorage: mockListStorage,
 				logger:      mockLogger,
@@ -185,12 +185,12 @@ func TestUserHandler_GetUserByID(t *testing.T) {
 			mockStorage := &mocks.UserStorage{}
 			mockLogger := slogdiscard.NewDiscardLogger()
 
-			handler := &handlers.UserHandler{
+			handler := &api.UserHandler{
 				userStorage: mockStorage,
 				logger:      mockLogger,
 			}
 
-			mockStorage.On("GetUser", mock.Anything, mock.AnythingOfType("string")).
+			mockStorage.On("GetUserProfile", mock.Anything, mock.AnythingOfType("string")).
 				Return(tc.user, tc.expectedError).
 				Once()
 
@@ -265,7 +265,7 @@ func TestUserHandler_GetUsers(t *testing.T) {
 			mockStorage := &mocks.UserStorage{}
 			mockLogger := slogdiscard.NewDiscardLogger()
 
-			handler := &handlers.UserHandler{
+			handler := &api.UserHandler{
 				userStorage: mockStorage,
 				logger:      mockLogger,
 			}
@@ -363,7 +363,7 @@ func TestUserHandler_UpdateUser(t *testing.T) {
 			mockStorage := &mocks.UserStorage{}
 			mockLogger := slogdiscard.NewDiscardLogger()
 
-			handler := &handlers.UserHandler{
+			handler := &api.UserHandler{
 				userStorage: mockStorage,
 				logger:      mockLogger,
 			}
@@ -436,7 +436,7 @@ func TestUserHandler_DeleteUser(t *testing.T) {
 			mockStorage := &mocks.UserStorage{}
 			mockLogger := slogdiscard.NewDiscardLogger()
 
-			handler := &handlers.UserHandler{
+			handler := &api.UserHandler{
 				userStorage: mockStorage,
 				logger:      mockLogger,
 			}

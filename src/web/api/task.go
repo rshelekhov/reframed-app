@@ -1,4 +1,4 @@
-package handlers
+package api
 
 import (
 	"errors"
@@ -39,7 +39,7 @@ func NewTaskHandler(
 
 func (h *TaskHandler) CreateTask() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "task.handlers.CreateTask"
+		const op = "task.api.CreateTask"
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
@@ -112,7 +112,7 @@ func (h *TaskHandler) CreateTask() http.HandlerFunc {
 
 func (h *TaskHandler) GetTaskByID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "task.handlers.GetTaskByID"
+		const op = "task.api.GetTaskByID"
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
@@ -145,7 +145,7 @@ func (h *TaskHandler) GetTaskByID() http.HandlerFunc {
 
 func (h *TaskHandler) GetTasksByUserID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "task.handlers.GetTasksByUserID"
+		const op = "task.api.GetTasksByUserID"
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
@@ -176,7 +176,7 @@ func (h *TaskHandler) GetTasksByUserID() http.HandlerFunc {
 
 func (h *TaskHandler) GetTasksByListID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "task.handlers.GetTasksByListID"
+		const op = "task.api.GetTasksByListID"
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
@@ -211,7 +211,7 @@ func (h *TaskHandler) GetTasksByListID() http.HandlerFunc {
 
 func (h *TaskHandler) GetTasksGroupedByHeadings() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "task.handlers.GetTasksGroupedByHeadings"
+		const op = "task.api.GetTasksGroupedByHeadings"
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
@@ -244,7 +244,7 @@ func (h *TaskHandler) GetTasksGroupedByHeadings() http.HandlerFunc {
 
 func (h *TaskHandler) GetTasksForToday() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "task.handlers.GetTasksForToday"
+		const op = "task.api.GetTasksForToday"
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
@@ -271,7 +271,7 @@ func (h *TaskHandler) GetTasksForToday() http.HandlerFunc {
 
 func (h *TaskHandler) GetUpcomingTasks() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "task.handlers.GetUpcomingTasks"
+		const op = "task.api.GetUpcomingTasks"
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
@@ -304,7 +304,7 @@ func (h *TaskHandler) GetUpcomingTasks() http.HandlerFunc {
 
 func (h *TaskHandler) GetOverdueTasks() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "task.handlers.GetOverdueTasks"
+		const op = "task.api.GetOverdueTasks"
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
@@ -333,7 +333,7 @@ func (h *TaskHandler) GetOverdueTasks() http.HandlerFunc {
 
 func (h *TaskHandler) GetTasksForSomeday() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "task.handlers.GetTasksForSomeday"
+		const op = "task.api.GetTasksForSomeday"
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
@@ -362,7 +362,7 @@ func (h *TaskHandler) GetTasksForSomeday() http.HandlerFunc {
 
 func (h *TaskHandler) GetCompletedTasks() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "task.handlers.GetCompletedTasks"
+		const op = "task.api.GetCompletedTasks"
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
@@ -395,7 +395,7 @@ func (h *TaskHandler) GetCompletedTasks() http.HandlerFunc {
 
 func (h *TaskHandler) GetArchivedTasks() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "task.handlers.GetArchivedTasks"
+		const op = "task.api.GetArchivedTasks"
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
@@ -428,7 +428,7 @@ func (h *TaskHandler) GetArchivedTasks() http.HandlerFunc {
 
 func (h *TaskHandler) UpdateTask() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "task.handlers.UpdateTask"
+		const op = "task.api.UpdateTask"
 
 		log := logger.LogWithRequest(h.logger, op, r)
 		task := &models.UpdateTask{}
@@ -531,7 +531,7 @@ func findTagsToAddAndRemove(currentTags, updatedTags []string) (tagsToAdd, tagsT
 
 func (h *TaskHandler) UpdateTaskTime() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "task.handlers.UpdateTaskTimes"
+		const op = "task.api.UpdateTaskTimes"
 
 		log := logger.LogWithRequest(h.logger, op, r)
 		task := &models.UpdateTask{}
@@ -576,7 +576,7 @@ func (h *TaskHandler) UpdateTaskTime() http.HandlerFunc {
 
 func (h *TaskHandler) MoveTaskToAnotherList() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "task.handlers.MoveTaskToAnotherList"
+		const op = "task.api.MoveTaskToAnotherList"
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
@@ -615,7 +615,7 @@ func (h *TaskHandler) MoveTaskToAnotherList() http.HandlerFunc {
 
 func (h *TaskHandler) CompleteTask() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "task.handlers.CompleteTask"
+		const op = "task.api.CompleteTask"
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
@@ -648,7 +648,7 @@ func (h *TaskHandler) CompleteTask() http.HandlerFunc {
 
 func (h *TaskHandler) ArchiveTask() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "task.handlers.ArchiveTask"
+		const op = "task.api.ArchiveTask"
 
 		log := logger.LogWithRequest(h.logger, op, r)
 

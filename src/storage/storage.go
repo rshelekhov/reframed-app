@@ -14,9 +14,9 @@ type (
 		GetSessionByRefreshToken(ctx context.Context, refreshToken string) (models.Session, error)
 		AddDevice(ctx context.Context, device models.UserDevice) error
 		GetUserDevice(ctx context.Context, userID, userAgent string) (models.UserDevice, error)
-		GetUserCredentials(ctx context.Context, user *models.User) (models.User, error)
-		GetUser(ctx context.Context, userID string) (models.User, error)
-		GetUsers(ctx context.Context, pgn models.Pagination) ([]models.User, error)
+		GetUserByEmail(ctx context.Context, email string) (models.User, error)
+		GetUserByID(ctx context.Context, id string) (models.User, error)
+		GetUserProfile(ctx context.Context, userID string) (models.User, error)
 		UpdateUser(ctx context.Context, user models.User) error
 		DeleteUser(ctx context.Context, id string) error
 	}

@@ -13,6 +13,7 @@ const (
 
 	ErrUserNotFound            LocalError = "user not found"
 	ErrInvalidCredentials      LocalError = "invalid credentials"
+	ErrUserHasNoPassword       LocalError = "user has no password"
 	ErrUserDeviceNotFound      LocalError = "user device not found"
 	ErrSessionNotFound         LocalError = "session not found"
 	ErrFailedToRegisterDevice  LocalError = "failed to register device"
@@ -25,7 +26,7 @@ const (
 	ErrFailedToCreateUser      LocalError = "failed to create user"
 
 	//===========================================================================
-	//  handlers errors
+	//  api errors
 	//===========================================================================
 
 	ErrEmptyRequestBody         LocalError = "request body is empty"
