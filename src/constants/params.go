@@ -12,18 +12,20 @@ const (
 	//  entities keys
 	//===========================================================================
 
-	UserKey   = "user"
-	UserIDKey = "user_id"
-	EmailKey  = "email"
-	ListIDKey = "list_id"
-	TaskIDKey = "task_id"
-	TagIDKey  = "tag_id"
+	UserIDKey    = "user_id"
+	EmailKey     = "email"
+	ListIDKey    = "list_id"
+	TaskIDKey    = "task_id"
+	HeadingIDKey = "heading_id"
 
 	//===========================================================================
 	//  pagination keys
 	//===========================================================================
 
-	CountKey  = "count"
-	LimitKey  = "limit"
-	OffsetKey = "offset"
+	CountKey      = "count"
+	AfterIDKey    = "after_id"
+	AfterDateKey  = "after_date"
+	AfterMonthKey = "after_month"
+	LimitKey      = "limit"
+	OffsetKey     = "offset"
 )

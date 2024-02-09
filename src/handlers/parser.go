@@ -5,29 +5,40 @@ import (
 	"github.com/rshelekhov/reframed/src/models"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 const (
-	DefaultLimit  = 100
-	DefaultOffset = 0
+	DefaultLimit = 30
 )
 
-// ParseLimitAndOffset parses limit and offset from the request and returns a pagination object
-func ParseLimitAndOffset(r *http.Request) (models.Pagination, error) {
+func ParseLimitAndAfterID(r *http.Request) models.Pagination {
 	limit, err := strconv.Atoi(r.URL.Query().Get(c.LimitKey))
 	if err != nil || limit < 0 {
 		limit = DefaultLimit
 	}
 
-	offset, err := strconv.Atoi(r.URL.Query().Get(c.OffsetKey))
-	if err != nil || offset < 0 {
-		offset = DefaultOffset
+	afterID := r.URL.Query().Get(c.AfterIDKey)
+
+	return models.Pagination{
+		Limit:   limit,
+		AfterID: afterID,
+	}
+}
+
+func ParseLimitAndAfterDate(r *http.Request) (models.Pagination, error) {
+	limit, err := strconv.Atoi(r.URL.Query().Get(c.LimitKey))
+	if err != nil || limit < 0 {
+		limit = DefaultLimit
 	}
 
-	pagination := models.Pagination{
-		Limit:  limit,
-		Offset: offset,
+	afterDate, err := time.Parse(time.DateOnly, r.URL.Query().Get(c.AfterDateKey))
+	if err != nil {
+		return models.Pagination{}, err
 	}
 
-	return pagination, nil
+	return models.Pagination{
+		Limit:     limit,
+		AfterDate: afterDate,
+	}, nil
 }

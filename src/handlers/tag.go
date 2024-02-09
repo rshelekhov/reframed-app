@@ -11,9 +11,9 @@ import (
 )
 
 type TagHandler struct {
-	Logger     logger.Interface
-	TokenAuth  *jwtoken.JWTAuth
-	TagStorage storage.TagStorage
+	logger     logger.Interface
+	tokenAuth  *jwtoken.JWTAuth
+	tagStorage storage.TagStorage
 }
 
 func NewTagHandler(
@@ -22,9 +22,9 @@ func NewTagHandler(
 	tagStorage storage.TagStorage,
 ) *TagHandler {
 	return &TagHandler{
-		Logger:     log,
-		TokenAuth:  tokenAuth,
-		TagStorage: tagStorage,
+		logger:     log,
+		tokenAuth:  tokenAuth,
+		tagStorage: tagStorage,
 	}
 }
 
@@ -32,7 +32,7 @@ func (h *TagHandler) GetTagsByUserID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "tag.handlers.GetTagsByUserID"
 
-		log := logger.LogWithRequest(h.Logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
 		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
 		if err != nil {
@@ -41,7 +41,7 @@ func (h *TagHandler) GetTagsByUserID() http.HandlerFunc {
 		}
 		userID := claims[c.ContextUserID].(string)
 
-		tags, err := h.TagStorage.GetTagsByUserID(r.Context(), userID)
+		tags, err := h.tagStorage.GetTagsByUserID(r.Context(), userID)
 		switch {
 		case errors.Is(err, c.ErrNoTagsFound):
 			handleResponseError(w, r, log, http.StatusNotFound, c.ErrNoTagsFound)

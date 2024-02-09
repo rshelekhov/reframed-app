@@ -100,9 +100,9 @@ func TestUserHandler_CreateUser(t *testing.T) {
 			mockLogger := slogdiscard.NewDiscardLogger()
 
 			handler := &handlers2.UserHandler{
-				UserStorage: mockUserStorage,
-				ListStorage: mockListStorage,
-				Logger:      mockLogger,
+				userStorage: mockUserStorage,
+				listStorage: mockListStorage,
+				logger:      mockLogger,
 			}
 
 			mockUserStorage.
@@ -185,8 +185,8 @@ func TestUserHandler_GetUserByID(t *testing.T) {
 			mockLogger := slogdiscard.NewDiscardLogger()
 
 			handler := &handlers2.UserHandler{
-				UserStorage: mockStorage,
-				Logger:      mockLogger,
+				userStorage: mockStorage,
+				logger:      mockLogger,
 			}
 
 			mockStorage.On("GetUser", mock.Anything, mock.AnythingOfType("string")).
@@ -265,8 +265,8 @@ func TestUserHandler_GetUsers(t *testing.T) {
 			mockLogger := slogdiscard.NewDiscardLogger()
 
 			handler := &handlers2.UserHandler{
-				UserStorage: mockStorage,
-				Logger:      mockLogger,
+				userStorage: mockStorage,
+				logger:      mockLogger,
 			}
 
 			mockStorage.On("GetUsers", mock.Anything, mock.AnythingOfType("models.Pagination")).
@@ -363,8 +363,8 @@ func TestUserHandler_UpdateUser(t *testing.T) {
 			mockLogger := slogdiscard.NewDiscardLogger()
 
 			handler := &handlers2.UserHandler{
-				UserStorage: mockStorage,
-				Logger:      mockLogger,
+				userStorage: mockStorage,
+				logger:      mockLogger,
 			}
 
 			mockStorage.
@@ -436,8 +436,8 @@ func TestUserHandler_DeleteUser(t *testing.T) {
 			mockLogger := slogdiscard.NewDiscardLogger()
 
 			handler := &handlers2.UserHandler{
-				UserStorage: mockStorage,
-				Logger:      mockLogger,
+				userStorage: mockStorage,
+				logger:      mockLogger,
 			}
 
 			mockStorage.

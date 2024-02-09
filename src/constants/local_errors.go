@@ -27,12 +27,13 @@ const (
 	//  handlers errors
 	//===========================================================================
 
-	ErrEmptyRequestBody     LocalError = "request body is empty"
-	ErrInvalidJSON          LocalError = "failed to decode request body"
-	ErrEmptyData            LocalError = "data is empty"
-	ErrInvalidData          LocalError = "invalid data"
-	ErrFailedToGetData      LocalError = "failed to get data"
-	ErrFailedToValidateData LocalError = "failed to validate data"
+	ErrEmptyRequestBody         LocalError = "request body is empty"
+	ErrInvalidJSON              LocalError = "failed to decode request body"
+	ErrEmptyData                LocalError = "data is empty"
+	ErrInvalidData              LocalError = "invalid data"
+	ErrFailedToGetData          LocalError = "failed to get data"
+	ErrFailedToValidateData     LocalError = "failed to validate data"
+	ErrFailedToParseQueryParams LocalError = "failed to parse query params"
 
 	//===========================================================================
 	//  user errors
@@ -57,6 +58,20 @@ const (
 	ErrFailedToGetLists   LocalError = "failed to get lists"
 	ErrFailedToUpdateList LocalError = "failed to update list"
 	ErrFailedToDeleteList LocalError = "failed to delete list"
+	ErrEmptyQueryListID   LocalError = "list ID is empty in query"
+
+	//===========================================================================
+	//  heading errors
+	//===========================================================================
+
+	ErrNoHeadingsFound             LocalError = "no headings found"
+	ErrHeadingNotFound             LocalError = "heading not found"
+	ErrFailedToCreateHeading       LocalError = "failed to create heading"
+	ErrFailedToGetHeadingsByListID LocalError = "failed to get headings by list ID"
+	ErrFailedToUpdateHeading       LocalError = "failed to update heading"
+	ErrFailedToMoveHeading         LocalError = "failed to move heading"
+	ErrFailedToDeleteHeading       LocalError = "failed to delete heading"
+	ErrEmptyQueryHeadingID         LocalError = "heading ID is empty in query"
 
 	//===========================================================================
 	//  task errors
@@ -65,19 +80,18 @@ const (
 	ErrNoTasksFound         LocalError = "no tasks found"
 	ErrTaskNotFound         LocalError = "task not found"
 	ErrFailedToCreateTask   LocalError = "failed to create task"
-	ErrTaskStatusNotFound   LocalError = "task status not found"
 	ErrFailedToUpdateTask   LocalError = "failed to update task"
 	ErrFailedToCompleteTask LocalError = "failed to complete task"
+	ErrFailedToMoveTask     LocalError = "failed to move task"
 	ErrFailedToDeleteTask   LocalError = "failed to delete task"
+	ErrEmptyQueryTaskID     LocalError = "task ID is empty in query"
 
 	//===========================================================================
-	//  task errors
+	//  tag errors
 	//===========================================================================
 
 	ErrNoTagsFound            LocalError = "no tags found"
-	ErrTagNotFound            LocalError = "tag not found"
 	ErrFailedToCreateTag      LocalError = "failed to create tag"
-	ErrFailedToUpdateTag      LocalError = "failed to update tag"
 	ErrFailedToDeleteTag      LocalError = "failed to delete tag"
 	ErrFailedToLinkTagsToTask LocalError = "failed to link tags to task"
 
@@ -85,6 +99,5 @@ const (
 	//  other errors
 	//===========================================================================
 
-	ErrEmptyID                 LocalError = "empty ID"
-	ErrFailedToParsePagination LocalError = "failed to parse limit and offset"
+	ErrEmptyID LocalError = "empty ID"
 )

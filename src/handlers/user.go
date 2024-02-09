@@ -16,10 +16,10 @@ import (
 )
 
 type UserHandler struct {
-	Logger      logger.Interface
-	TokenAuth   *jwtoken.JWTAuth
-	UserStorage storage.UserStorage
-	ListStorage storage.ListStorage
+	logger      logger.Interface
+	tokenAuth   *jwtoken.JWTAuth
+	userStorage storage.UserStorage
+	listStorage storage.ListStorage
 }
 
 func NewUserHandler(
@@ -29,10 +29,10 @@ func NewUserHandler(
 	listStorage storage.ListStorage,
 ) *UserHandler {
 	return &UserHandler{
-		Logger:      log,
-		TokenAuth:   tokenAuth,
-		UserStorage: userStorage,
-		ListStorage: listStorage,
+		logger:      log,
+		tokenAuth:   tokenAuth,
+		userStorage: userStorage,
+		listStorage: listStorage,
 	}
 }
 
@@ -41,10 +41,9 @@ func (h *UserHandler) CreateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.handlers.CreateUser"
 
-		log := logger.LogWithRequest(h.Logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
 		user := &models.User{}
-
 		if err := DecodeAndValidateJSON(w, r, log, user); err != nil {
 			return
 		}
@@ -59,7 +58,7 @@ func (h *UserHandler) CreateUser() http.HandlerFunc {
 		}
 
 		// Create the user
-		err := h.UserStorage.CreateUser(r.Context(), newUser)
+		err := h.userStorage.CreateUser(r.Context(), newUser)
 		if errors.Is(err, c.ErrUserAlreadyExists) {
 			handleResponseError(w, r, log, http.StatusBadRequest, c.ErrUserAlreadyExists, slog.String(c.EmailKey, user.Email))
 			return
@@ -81,7 +80,7 @@ func (h *UserHandler) CreateUser() http.HandlerFunc {
 				UpdatedAt: &now,
 			}
 
-			err = h.ListStorage.CreateList(r.Context(), newList)
+			err = h.listStorage.CreateList(r.Context(), newList)
 			if err != nil {
 				handleInternalServerError(w, r, log, constants.ErrFailedToCreateList, err)
 				return
@@ -96,7 +95,7 @@ func (h *UserHandler) CreateUser() http.HandlerFunc {
 		}
 
 		// Create session
-		tokens, expiresAt, err := h.createSession(r.Context(), newUser.ID, device.ID, h.TokenAuth.RefreshTokenTTL)
+		tokens, expiresAt, err := h.createSession(r.Context(), newUser.ID, device.ID, h.tokenAuth.RefreshTokenTTL)
 		if err != nil {
 			handleInternalServerError(w, r, log, c.ErrFailedToCreateSession, err)
 			return
@@ -106,15 +105,15 @@ func (h *UserHandler) CreateUser() http.HandlerFunc {
 		tokenData := jwtoken.TokenData{
 			AccessToken:      tokens.AccessToken,
 			RefreshToken:     tokens.RefreshToken,
-			Domain:           h.TokenAuth.RefreshTokenCookieDomain,
-			Path:             h.TokenAuth.RefreshTokenCookiePath,
+			Domain:           h.tokenAuth.RefreshTokenCookieDomain,
+			Path:             h.tokenAuth.RefreshTokenCookiePath,
 			ExpiresAt:        expiresAt,
 			HttpOnly:         true,
 			AdditionalFields: additionalFields,
 		}
 
 		log.Info("user and tokens created", slog.String(c.UserIDKey, newUser.ID), slog.Any(c.TokensKey, tokens))
-		jwtoken.SendTokensToWeb(w, tokenData)
+		jwtoken.SendTokensToWeb(w, tokenData, http.StatusCreated)
 	}
 }
 
@@ -122,7 +121,7 @@ func (h *UserHandler) LoginWithPassword() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.handlers.LoginWithPassword"
 
-		log := logger.LogWithRequest(h.Logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
 		userInput := &models.User{}
 
@@ -130,7 +129,7 @@ func (h *UserHandler) LoginWithPassword() http.HandlerFunc {
 			return
 		}
 
-		userDB, err := h.UserStorage.GetUserCredentials(r.Context(), userInput)
+		userDB, err := h.userStorage.GetUserCredentials(r.Context(), userInput)
 		if errors.Is(err, c.ErrUserNotFound) {
 			handleResponseError(w, r, log, http.StatusUnauthorized, c.ErrInvalidCredentials, slog.String(c.EmailKey, userInput.Email))
 			return
@@ -157,7 +156,7 @@ func (h *UserHandler) LoginWithPassword() http.HandlerFunc {
 		}
 
 		// Create session
-		tokens, expiresAt, err := h.createSession(r.Context(), userDB.ID, device.ID, h.TokenAuth.RefreshTokenTTL)
+		tokens, expiresAt, err := h.createSession(r.Context(), userDB.ID, device.ID, h.tokenAuth.RefreshTokenTTL)
 		if err != nil {
 			handleInternalServerError(w, r, log, c.ErrFailedToCreateSession, err)
 			return
@@ -167,8 +166,8 @@ func (h *UserHandler) LoginWithPassword() http.HandlerFunc {
 		tokenData := jwtoken.TokenData{
 			AccessToken:      tokens.AccessToken,
 			RefreshToken:     tokens.RefreshToken,
-			Domain:           h.TokenAuth.RefreshTokenCookieDomain,
-			Path:             h.TokenAuth.RefreshTokenCookiePath,
+			Domain:           h.tokenAuth.RefreshTokenCookieDomain,
+			Path:             h.tokenAuth.RefreshTokenCookiePath,
 			ExpiresAt:        expiresAt,
 			HttpOnly:         true,
 			AdditionalFields: additionalFields,
@@ -179,7 +178,7 @@ func (h *UserHandler) LoginWithPassword() http.HandlerFunc {
 			slog.String(c.UserIDKey, userDB.ID),
 			slog.Any(c.TokensKey, tokens),
 		)
-		jwtoken.SendTokensToWeb(w, tokenData)
+		jwtoken.SendTokensToWeb(w, tokenData, http.StatusOK)
 	}
 }
 
@@ -188,7 +187,7 @@ func (h *UserHandler) RefreshJWTTokens() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.handlers.RefreshJWTTokens"
 
-		log := logger.LogWithRequest(h.Logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
 		refreshToken, err := jwtoken.FindRefreshToken(r)
 		if err != nil {
@@ -197,7 +196,7 @@ func (h *UserHandler) RefreshJWTTokens() http.HandlerFunc {
 		}
 
 		// Get session by refresh token
-		session, err := h.UserStorage.GetSessionByRefreshToken(r.Context(), refreshToken)
+		session, err := h.userStorage.GetSessionByRefreshToken(r.Context(), refreshToken)
 		if errors.Is(err, c.ErrSessionNotFound) {
 			handleResponseError(w, r, log, http.StatusUnauthorized, c.ErrSessionNotFound, slog.String(c.RefreshTokenKey, refreshToken))
 			return
@@ -221,7 +220,7 @@ func (h *UserHandler) RefreshJWTTokens() http.HandlerFunc {
 		}
 
 		// Create new tokens
-		tokens, expiresAt, err := h.createSession(r.Context(), session.UserID, device.ID, h.TokenAuth.RefreshTokenTTL)
+		tokens, expiresAt, err := h.createSession(r.Context(), session.UserID, device.ID, h.tokenAuth.RefreshTokenTTL)
 		if err != nil {
 			handleInternalServerError(w, r, log, c.ErrFailedToCreateSession, err)
 			return
@@ -230,20 +229,20 @@ func (h *UserHandler) RefreshJWTTokens() http.HandlerFunc {
 		tokenData := jwtoken.TokenData{
 			AccessToken:  tokens.AccessToken,
 			RefreshToken: tokens.RefreshToken,
-			Domain:       h.TokenAuth.RefreshTokenCookieDomain,
-			Path:         h.TokenAuth.RefreshTokenCookiePath,
+			Domain:       h.tokenAuth.RefreshTokenCookieDomain,
+			Path:         h.tokenAuth.RefreshTokenCookiePath,
 			ExpiresAt:    expiresAt,
 			HttpOnly:     true,
 		}
 
 		log.Info("tokens created", slog.Any(c.TokensKey, tokens))
-		jwtoken.SendTokensToWeb(w, tokenData)
+		jwtoken.SendTokensToWeb(w, tokenData, http.StatusOK)
 	}
 }
 
 func (h *UserHandler) checkDevice(r *http.Request, userID string) (models.UserDevice, error) {
 
-	device, err := h.UserStorage.GetUserDevice(r.Context(), userID, r.UserAgent())
+	device, err := h.userStorage.GetUserDevice(r.Context(), userID, r.UserAgent())
 	if errors.Is(err, c.ErrUserDeviceNotFound) {
 		return models.UserDevice{}, c.ErrUserDeviceNotFound
 	}
@@ -267,7 +266,7 @@ func (h *UserHandler) registerDevice(r *http.Request, userID string) (models.Use
 		DetachedAt: nil,
 	}
 
-	err := h.UserStorage.AddDevice(r.Context(), device)
+	err := h.userStorage.AddDevice(r.Context(), device)
 	if err != nil {
 		return models.UserDevice{}, err
 	}
@@ -288,12 +287,12 @@ func (h *UserHandler) createSession(
 
 	additionalClaims := map[string]interface{}{c.ContextUserID: userID}
 
-	resp.AccessToken, err = h.TokenAuth.NewAccessToken(additionalClaims)
+	resp.AccessToken, err = h.tokenAuth.NewAccessToken(additionalClaims)
 	if err != nil {
 		return resp, time.Time{}, err
 	}
 
-	resp.RefreshToken, err = h.TokenAuth.NewRefreshToken()
+	resp.RefreshToken, err = h.tokenAuth.NewRefreshToken()
 	if err != nil {
 		return resp, time.Time{}, err
 	}
@@ -305,7 +304,7 @@ func (h *UserHandler) createSession(
 		ExpiresAt:    &expiresAt,
 	}
 
-	err = h.UserStorage.SaveSession(ctx, userID, deviceID, session)
+	err = h.userStorage.SaveSession(ctx, userID, deviceID, session)
 	if err != nil {
 		return resp, time.Time{}, err
 	}
@@ -326,7 +325,7 @@ func (h *UserHandler) GetUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.handlers.GetUser"
 
-		log := logger.LogWithRequest(h.Logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
 		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
 		if err != nil {
@@ -335,7 +334,7 @@ func (h *UserHandler) GetUser() http.HandlerFunc {
 		}
 		userID := claims[c.ContextUserID].(string)
 
-		user, err := h.UserStorage.GetUser(r.Context(), userID)
+		user, err := h.userStorage.GetUser(r.Context(), userID)
 		switch {
 		case errors.Is(err, c.ErrUserNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, c.ErrUserNotFound, slog.String(c.UserIDKey, userID))
@@ -354,15 +353,11 @@ func (h *UserHandler) GetUsers() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.handlers.GetUsers"
 
-		log := logger.LogWithRequest(h.Logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
-		pagination, err := ParseLimitAndOffset(r)
-		if err != nil {
-			handleResponseError(w, r, log, http.StatusBadRequest, c.ErrFailedToParsePagination, err)
-			return
-		}
+		pagination := ParseLimitAndAfterID(r)
 
-		users, err := h.UserStorage.GetUsers(r.Context(), pagination)
+		users, err := h.userStorage.GetUsers(r.Context(), pagination)
 		switch {
 		case errors.Is(err, c.ErrNoUsersFound):
 			handleResponseError(w, r, log, http.StatusNotFound, c.ErrNoUsersFound)
@@ -385,7 +380,7 @@ func (h *UserHandler) UpdateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.handlers.UpdateUser"
 
-		log := logger.LogWithRequest(h.Logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 		user := &models.UpdateUser{}
 
 		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
@@ -405,7 +400,7 @@ func (h *UserHandler) UpdateUser() http.HandlerFunc {
 			Password: user.Password,
 		}
 
-		err = h.UserStorage.UpdateUser(r.Context(), updatedUser)
+		err = h.userStorage.UpdateUser(r.Context(), updatedUser)
 		switch {
 		case errors.Is(err, c.ErrUserNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, c.ErrUserNotFound, slog.String(c.UserIDKey, userID))
@@ -433,7 +428,7 @@ func (h *UserHandler) DeleteUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.handlers.DeleteUser"
 
-		log := logger.LogWithRequest(h.Logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
 		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
 		if err != nil {
@@ -442,7 +437,7 @@ func (h *UserHandler) DeleteUser() http.HandlerFunc {
 		}
 		userID := claims[c.ContextUserID].(string)
 
-		err = h.UserStorage.DeleteUser(r.Context(), userID)
+		err = h.userStorage.DeleteUser(r.Context(), userID)
 		switch {
 		case errors.Is(err, c.ErrUserNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, c.ErrUserNotFound, slog.String(c.UserIDKey, userID))

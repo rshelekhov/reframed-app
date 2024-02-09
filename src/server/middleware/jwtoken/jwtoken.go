@@ -263,9 +263,9 @@ func SetRefreshTokenCookie(w http.ResponseWriter, refreshToken, domain, path str
 	SetTokenCookie(w, "refreshToken", refreshToken, domain, path, expiresAt, httpOnly)
 }
 
-func SendTokensToWeb(w http.ResponseWriter, data TokenData) {
+func SendTokensToWeb(w http.ResponseWriter, data TokenData, httpStatus int) {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(httpStatus)
 
 	responseBody := map[string]string{"accessToken": data.AccessToken}
 
@@ -281,9 +281,9 @@ func SendTokensToWeb(w http.ResponseWriter, data TokenData) {
 	SetRefreshTokenCookie(w, data.RefreshToken, data.Domain, data.Path, data.ExpiresAt, data.HttpOnly)
 }
 
-func SendTokensToMobileApp(w http.ResponseWriter, data TokenData) {
+func SendTokensToMobileApp(w http.ResponseWriter, data TokenData, httpStatus int) {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(httpStatus)
 
 	responseBody := map[string]string{"accessToken": data.AccessToken, "refreshToken": data.RefreshToken}
 

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"github.com/go-chi/chi/v5"
 	c "github.com/rshelekhov/reframed/src/constants"
 	"github.com/rshelekhov/reframed/src/logger"
 	"github.com/rshelekhov/reframed/src/models"
@@ -13,23 +14,26 @@ import (
 )
 
 type TaskHandler struct {
-	Logger      logger.Interface
-	TokenAuth   *jwtoken.JWTAuth
-	TaskStorage storage.TaskStorage
-	TagStorage  storage.TagStorage
+	logger         logger.Interface
+	tokenAuth      *jwtoken.JWTAuth
+	taskStorage    storage.TaskStorage
+	headingStorage storage.HeadingStorage
+	tagStorage     storage.TagStorage
 }
 
 func NewTaskHandler(
 	log logger.Interface,
 	tokenAuth *jwtoken.JWTAuth,
 	taskStorage storage.TaskStorage,
+	headingStorage storage.HeadingStorage,
 	tagStorage storage.TagStorage,
 ) *TaskHandler {
 	return &TaskHandler{
-		Logger:      log,
-		TokenAuth:   tokenAuth,
-		TaskStorage: taskStorage,
-		TagStorage:  tagStorage,
+		logger:         log,
+		tokenAuth:      tokenAuth,
+		taskStorage:    taskStorage,
+		headingStorage: headingStorage,
+		tagStorage:     tagStorage,
 	}
 }
 
@@ -37,9 +41,7 @@ func (h *TaskHandler) CreateTask() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "task.handlers.CreateTask"
 
-		log := logger.LogWithRequest(h.Logger, op, r)
-
-		task := &models.Task{}
+		log := logger.LogWithRequest(h.logger, op, r)
 
 		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
 		if err != nil {
@@ -48,13 +50,28 @@ func (h *TaskHandler) CreateTask() http.HandlerFunc {
 		}
 		userID := claims[c.ContextUserID].(string)
 
-		listID, err := GetIDFromQuery(w, r, log, c.ListIDKey)
-		if err != nil {
+		listID := chi.URLParam(r, c.ListIDKey)
+		if listID == "" {
+			handleResponseError(w, r, log, http.StatusBadRequest, c.ErrEmptyQueryListID)
 			return
 		}
 
-		err = DecodeAndValidateJSON(w, r, log, task)
-		if err != nil {
+		headingID := chi.URLParam(r, c.HeadingIDKey)
+		if headingID == "" {
+			headingID, err = h.headingStorage.GetDefaultHeadingID(r.Context(), listID, userID)
+			if errors.Is(err, c.ErrHeadingNotFound) {
+				handleResponseError(w, r, log, http.StatusNotFound, c.ErrHeadingNotFound)
+				return
+			}
+			if err != nil {
+				handleInternalServerError(w, r, log, c.ErrFailedToGetData, err)
+				return
+			}
+		}
+
+		task := &models.Task{}
+
+		if err = DecodeAndValidateJSON(w, r, log, task); err != nil {
 			return
 		}
 
@@ -67,28 +84,29 @@ func (h *TaskHandler) CreateTask() http.HandlerFunc {
 			StartTime:   task.StartTime,
 			EndTime:     task.EndTime,
 			ListID:      listID,
-			Tags:        task.Tags,
+			HeadingID:   headingID,
 			UserID:      userID,
+			Tags:        task.Tags,
+		}
+
+		if err = h.taskStorage.CreateTask(r.Context(), newTask); err != nil {
+			handleInternalServerError(w, r, log, c.ErrFailedToCreateTask, err)
+			return
 		}
 
 		for _, tag := range task.Tags {
-			if err = h.TagStorage.CreateTagIfNotExists(r.Context(), tag, userID); err != nil {
+			if err = h.tagStorage.CreateTagIfNotExists(r.Context(), tag, userID); err != nil {
 				handleInternalServerError(w, r, log, c.ErrFailedToCreateTag, err)
 				return
 			}
 		}
 
-		if err = h.TagStorage.LinkTagsToTask(r.Context(), newTask.ID, task.Tags); err != nil {
+		if err = h.tagStorage.LinkTagsToTask(r.Context(), newTask.ID, task.Tags); err != nil {
 			handleInternalServerError(w, r, log, c.ErrFailedToLinkTagsToTask, err)
 			return
 		}
 
-		if err = h.TaskStorage.CreateTask(r.Context(), newTask); err != nil {
-			handleInternalServerError(w, r, log, c.ErrFailedToCreateTask, err)
-			return
-		}
-
-		handleResponseSuccess(w, r, log, "task created", newTask, slog.String(c.TaskIDKey, newTask.ID))
+		handleResponseCreated(w, r, log, "task created", newTask, slog.String(c.TaskIDKey, newTask.ID))
 	}
 }
 
@@ -96,7 +114,7 @@ func (h *TaskHandler) GetTaskByID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "task.handlers.GetTaskByID"
 
-		log := logger.LogWithRequest(h.Logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
 		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
 		if err != nil {
@@ -105,12 +123,13 @@ func (h *TaskHandler) GetTaskByID() http.HandlerFunc {
 		}
 		userID := claims[c.ContextUserID].(string)
 
-		taskID, err := GetIDFromQuery(w, r, log, c.TaskIDKey)
-		if err != nil {
+		taskID := chi.URLParam(r, c.TaskIDKey)
+		if taskID == "" {
+			handleResponseError(w, r, log, http.StatusBadRequest, c.ErrEmptyQueryTaskID)
 			return
 		}
 
-		task, err := h.TaskStorage.GetTaskByID(r.Context(), taskID, userID)
+		task, err := h.taskStorage.GetTaskByID(r.Context(), taskID, userID)
 		switch {
 		case errors.Is(err, c.ErrTaskNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, c.ErrTaskNotFound)
@@ -128,13 +147,7 @@ func (h *TaskHandler) GetTasksByUserID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "task.handlers.GetTasksByUserID"
 
-		log := logger.LogWithRequest(h.Logger, op, r)
-
-		pagination, err := ParseLimitAndOffset(r)
-		if err != nil {
-			handleResponseError(w, r, log, http.StatusBadRequest, c.ErrFailedToParsePagination, err)
-			return
-		}
+		log := logger.LogWithRequest(h.logger, op, r)
 
 		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
 		if err != nil {
@@ -143,7 +156,9 @@ func (h *TaskHandler) GetTasksByUserID() http.HandlerFunc {
 		}
 		userID := claims[c.ContextUserID].(string)
 
-		tasks, err := h.TaskStorage.GetTasksByUserID(r.Context(), userID, pagination)
+		pagination := ParseLimitAndAfterID(r)
+
+		tasks, err := h.taskStorage.GetTasksByUserID(r.Context(), userID, pagination)
 		switch {
 		case errors.Is(err, c.ErrNoTasksFound):
 			handleResponseError(w, r, log, http.StatusNotFound, c.ErrNoTasksFound)
@@ -154,8 +169,6 @@ func (h *TaskHandler) GetTasksByUserID() http.HandlerFunc {
 		default:
 			handleResponseSuccess(w, r, log, "tasks found", tasks,
 				slog.Int(c.CountKey, len(tasks)),
-				slog.Int(c.LimitKey, pagination.Limit),
-				slog.Int(c.OffsetKey, pagination.Offset),
 			)
 		}
 	}
@@ -165,13 +178,7 @@ func (h *TaskHandler) GetTasksByListID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "task.handlers.GetTasksByListID"
 
-		log := logger.LogWithRequest(h.Logger, op, r)
-
-		pagination, err := ParseLimitAndOffset(r)
-		if err != nil {
-			handleResponseError(w, r, log, http.StatusBadRequest, c.ErrFailedToParsePagination, err)
-			return
-		}
+		log := logger.LogWithRequest(h.logger, op, r)
 
 		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
 		if err != nil {
@@ -180,12 +187,13 @@ func (h *TaskHandler) GetTasksByListID() http.HandlerFunc {
 		}
 		userID := claims[c.ContextUserID].(string)
 
-		listID, err := GetIDFromQuery(w, r, log, c.ListIDKey)
-		if err != nil {
+		listID := chi.URLParam(r, c.ListIDKey)
+		if listID == "" {
+			handleResponseError(w, r, log, http.StatusBadRequest, c.ErrEmptyQueryListID)
 			return
 		}
 
-		tasks, err := h.TaskStorage.GetTasksByListID(r.Context(), listID, userID, pagination)
+		tasks, err := h.taskStorage.GetTasksByListID(r.Context(), listID, userID)
 		switch {
 		case errors.Is(err, c.ErrNoTasksFound):
 			handleResponseError(w, r, log, http.StatusNotFound, c.ErrNoTasksFound)
@@ -196,9 +204,224 @@ func (h *TaskHandler) GetTasksByListID() http.HandlerFunc {
 		default:
 			handleResponseSuccess(w, r, log, "tasks found", tasks,
 				slog.Int(c.CountKey, len(tasks)),
-				slog.Int(c.LimitKey, pagination.Limit),
-				slog.Int(c.OffsetKey, pagination.Offset),
 			)
+		}
+	}
+}
+
+func (h *TaskHandler) GetTasksGroupedByHeadings() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		const op = "task.handlers.GetTasksGroupedByHeadings"
+
+		log := logger.LogWithRequest(h.logger, op, r)
+
+		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		if err != nil {
+			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
+			return
+		}
+		userID := claims[c.ContextUserID].(string)
+
+		listID := chi.URLParam(r, c.ListIDKey)
+		if listID == "" {
+			handleResponseError(w, r, log, http.StatusBadRequest, c.ErrEmptyQueryListID)
+			return
+		}
+
+		tasks, err := h.taskStorage.GetTasksGroupedByHeadings(r.Context(), listID, userID)
+		switch {
+		case errors.Is(err, c.ErrNoTasksFound):
+			handleResponseError(w, r, log, http.StatusNotFound, c.ErrNoTasksFound)
+			return
+		case err != nil:
+			handleInternalServerError(w, r, log, c.ErrFailedToGetData, err)
+			return
+		default:
+			handleResponseSuccess(w, r, log, "tasks grouped by headings found", tasks, slog.Int(c.CountKey, len(tasks)))
+		}
+	}
+}
+
+func (h *TaskHandler) GetTasksForToday() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		const op = "task.handlers.GetTasksForToday"
+
+		log := logger.LogWithRequest(h.logger, op, r)
+
+		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		if err != nil {
+			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
+			return
+		}
+		userID := claims[c.ContextUserID].(string)
+
+		tasks, err := h.taskStorage.GetTasksForToday(r.Context(), userID)
+		switch {
+		case errors.Is(err, c.ErrNoTasksFound):
+			handleResponseError(w, r, log, http.StatusNotFound, c.ErrNoTasksFound)
+			return
+		case err != nil:
+			handleInternalServerError(w, r, log, c.ErrFailedToGetData, err)
+			return
+		default:
+			handleResponseSuccess(w, r, log, "tasks for today found", tasks, slog.Int(c.CountKey, len(tasks)))
+		}
+	}
+}
+
+func (h *TaskHandler) GetUpcomingTasks() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		const op = "task.handlers.GetUpcomingTasks"
+
+		log := logger.LogWithRequest(h.logger, op, r)
+
+		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		if err != nil {
+			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
+			return
+		}
+		userID := claims[c.ContextUserID].(string)
+
+		pagination, err := ParseLimitAndAfterDate(r)
+		if err != nil {
+			handleInternalServerError(w, r, log, c.ErrFailedToParseQueryParams, err)
+			return
+		}
+
+		tasks, err := h.taskStorage.GetUpcomingTasks(r.Context(), userID, pagination)
+		switch {
+		case errors.Is(err, c.ErrNoTasksFound):
+			handleResponseError(w, r, log, http.StatusNotFound, c.ErrNoTasksFound)
+			return
+		case err != nil:
+			handleInternalServerError(w, r, log, c.ErrFailedToGetData, err)
+			return
+		default:
+			handleResponseSuccess(w, r, log, "upcoming tasks found", tasks, slog.Int(c.CountKey, len(tasks)))
+		}
+	}
+}
+
+func (h *TaskHandler) GetOverdueTasks() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		const op = "task.handlers.GetOverdueTasks"
+
+		log := logger.LogWithRequest(h.logger, op, r)
+
+		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		if err != nil {
+			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
+			return
+		}
+		userID := claims[c.ContextUserID].(string)
+
+		pagination := ParseLimitAndAfterID(r)
+
+		tasks, err := h.taskStorage.GetOverdueTasks(r.Context(), userID, pagination)
+		switch {
+		case errors.Is(err, c.ErrNoTasksFound):
+			handleResponseError(w, r, log, http.StatusNotFound, c.ErrNoTasksFound)
+			return
+		case err != nil:
+			handleInternalServerError(w, r, log, c.ErrFailedToGetData, err)
+			return
+		default:
+			handleResponseSuccess(w, r, log, "overdue tasks found", tasks, slog.Int(c.CountKey, len(tasks)))
+		}
+	}
+}
+
+func (h *TaskHandler) GetTasksForSomeday() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		const op = "task.handlers.GetTasksForSomeday"
+
+		log := logger.LogWithRequest(h.logger, op, r)
+
+		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		if err != nil {
+			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
+			return
+		}
+		userID := claims[c.ContextUserID].(string)
+
+		pagination := ParseLimitAndAfterID(r)
+
+		tasks, err := h.taskStorage.GetTasksForSomeday(r.Context(), userID, pagination)
+		switch {
+		case errors.Is(err, c.ErrNoTasksFound):
+			handleResponseError(w, r, log, http.StatusNotFound, c.ErrNoTasksFound)
+			return
+		case err != nil:
+			handleInternalServerError(w, r, log, c.ErrFailedToGetData, err)
+			return
+		default:
+			handleResponseSuccess(w, r, log, "tasks for someday found", tasks, slog.Int(c.CountKey, len(tasks)))
+		}
+	}
+}
+
+func (h *TaskHandler) GetCompletedTasks() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		const op = "task.handlers.GetCompletedTasks"
+
+		log := logger.LogWithRequest(h.logger, op, r)
+
+		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		if err != nil {
+			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
+			return
+		}
+		userID := claims[c.ContextUserID].(string)
+
+		pagination, err := ParseLimitAndAfterDate(r)
+		if err != nil {
+			handleInternalServerError(w, r, log, c.ErrFailedToParseQueryParams, err)
+			return
+		}
+
+		tasks, err := h.taskStorage.GetCompletedTasks(r.Context(), userID, pagination)
+		switch {
+		case errors.Is(err, c.ErrNoTasksFound):
+			handleResponseError(w, r, log, http.StatusNotFound, c.ErrNoTasksFound)
+			return
+		case err != nil:
+			handleInternalServerError(w, r, log, c.ErrFailedToGetData, err)
+			return
+		default:
+			handleResponseSuccess(w, r, log, "completed tasks found", tasks, slog.Int(c.CountKey, len(tasks)))
+		}
+	}
+}
+
+func (h *TaskHandler) GetArchivedTasks() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		const op = "task.handlers.GetArchivedTasks"
+
+		log := logger.LogWithRequest(h.logger, op, r)
+
+		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		if err != nil {
+			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
+			return
+		}
+		userID := claims[c.ContextUserID].(string)
+
+		pagination, err := ParseLimitAndAfterDate(r)
+		if err != nil {
+			handleInternalServerError(w, r, log, c.ErrFailedToParseQueryParams, err)
+			return
+		}
+
+		tasks, err := h.taskStorage.GetArchivedTasks(r.Context(), userID, pagination)
+		switch {
+		case errors.Is(err, c.ErrNoTasksFound):
+			handleResponseError(w, r, log, http.StatusNotFound, c.ErrNoTasksFound)
+			return
+		case err != nil:
+			handleInternalServerError(w, r, log, c.ErrFailedToGetData, err)
+			return
+		default:
+			handleResponseSuccess(w, r, log, "archived tasks found", tasks, slog.Int(c.CountKey, len(tasks)))
 		}
 	}
 }
@@ -207,7 +430,7 @@ func (h *TaskHandler) UpdateTask() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "task.handlers.UpdateTask"
 
-		log := logger.LogWithRequest(h.Logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 		task := &models.UpdateTask{}
 
 		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
@@ -217,8 +440,9 @@ func (h *TaskHandler) UpdateTask() http.HandlerFunc {
 		}
 		userID := claims[c.ContextUserID].(string)
 
-		taskID, err := GetIDFromQuery(w, r, log, c.TaskIDKey)
-		if err != nil {
+		taskID := chi.URLParam(r, c.TaskIDKey)
+		if taskID == "" {
+			handleResponseError(w, r, log, http.StatusBadRequest, c.ErrEmptyQueryTaskID)
 			return
 		}
 
@@ -234,11 +458,13 @@ func (h *TaskHandler) UpdateTask() http.HandlerFunc {
 			Deadline:    task.Deadline,
 			StartTime:   task.StartTime,
 			EndTime:     task.EndTime,
-			Tags:        task.Tags,
+			ListID:      task.ListID,
+			HeadingID:   task.HeadingID,
 			UserID:      userID,
+			Tags:        task.Tags,
 		}
 
-		currentTags, err := h.TagStorage.GetTagsByTaskID(r.Context(), taskID)
+		currentTags, err := h.tagStorage.GetTagsByTaskID(r.Context(), taskID)
 		if errors.Is(err, c.ErrNoTagsFound) {
 			handleResponseError(w, r, log, http.StatusNotFound, c.ErrNoTagsFound)
 			return
@@ -251,23 +477,23 @@ func (h *TaskHandler) UpdateTask() http.HandlerFunc {
 		tagsToAdd, tagsToRemove := findTagsToAddAndRemove(currentTags, updatedTask.Tags)
 
 		for _, tag := range tagsToAdd {
-			if err = h.TagStorage.CreateTagIfNotExists(r.Context(), tag, userID); err != nil {
+			if err = h.tagStorage.CreateTagIfNotExists(r.Context(), tag, userID); err != nil {
 				handleInternalServerError(w, r, log, c.ErrFailedToCreateTag, err)
 				return
 			}
 		}
 
-		if err = h.TagStorage.LinkTagsToTask(r.Context(), updatedTask.ID, tagsToAdd); err != nil {
+		if err = h.tagStorage.LinkTagsToTask(r.Context(), updatedTask.ID, tagsToAdd); err != nil {
 			handleInternalServerError(w, r, log, c.ErrFailedToLinkTagsToTask, err)
 			return
 		}
 
-		if err = h.TagStorage.UnlinkTagsFromTask(r.Context(), updatedTask.ID, tagsToRemove); err != nil {
+		if err = h.tagStorage.UnlinkTagsFromTask(r.Context(), updatedTask.ID, tagsToRemove); err != nil {
 			handleInternalServerError(w, r, log, c.ErrFailedToDeleteTag, err)
 			return
 		}
 
-		err = h.TaskStorage.UpdateTask(r.Context(), updatedTask)
+		err = h.taskStorage.UpdateTask(r.Context(), updatedTask)
 		switch {
 		case errors.Is(err, c.ErrTaskNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, c.ErrTaskNotFound)
@@ -307,7 +533,7 @@ func (h *TaskHandler) UpdateTaskTime() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "task.handlers.UpdateTaskTimes"
 
-		log := logger.LogWithRequest(h.Logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 		task := &models.UpdateTask{}
 
 		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
@@ -317,8 +543,9 @@ func (h *TaskHandler) UpdateTaskTime() http.HandlerFunc {
 		}
 		userID := claims[c.ContextUserID].(string)
 
-		taskID, err := GetIDFromQuery(w, r, log, c.TaskIDKey)
-		if err != nil {
+		taskID := chi.URLParam(r, c.TaskIDKey)
+		if taskID == "" {
+			handleResponseError(w, r, log, http.StatusBadRequest, c.ErrEmptyQueryTaskID)
 			return
 		}
 
@@ -333,7 +560,7 @@ func (h *TaskHandler) UpdateTaskTime() http.HandlerFunc {
 			UserID:    userID,
 		}
 
-		err = h.TaskStorage.UpdateTask(r.Context(), updatedTask)
+		err = h.taskStorage.UpdateTask(r.Context(), updatedTask)
 		switch {
 		case errors.Is(err, c.ErrTaskNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, c.ErrTaskNotFound)
@@ -347,11 +574,11 @@ func (h *TaskHandler) UpdateTaskTime() http.HandlerFunc {
 	}
 }
 
-func (h *TaskHandler) CompleteTask() http.HandlerFunc {
+func (h *TaskHandler) MoveTaskToAnotherList() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "task.handlers.CompleteTask"
+		const op = "task.handlers.MoveTaskToAnotherList"
 
-		log := logger.LogWithRequest(h.Logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
 		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
 		if err != nil {
@@ -360,12 +587,52 @@ func (h *TaskHandler) CompleteTask() http.HandlerFunc {
 		}
 		userID := claims[c.ContextUserID].(string)
 
-		taskID, err := GetIDFromQuery(w, r, log, c.TaskIDKey)
-		if err != nil {
+		taskID := chi.URLParam(r, c.TaskIDKey)
+		if taskID == "" {
+			handleResponseError(w, r, log, http.StatusBadRequest, c.ErrEmptyQueryTaskID)
 			return
 		}
 
-		err = h.TaskStorage.CompleteTask(r.Context(), taskID, userID)
+		listID := r.URL.Query().Get(c.ListIDKey)
+		if listID == "" {
+			handleResponseError(w, r, log, http.StatusBadRequest, c.ErrEmptyQueryListID)
+			return
+		}
+
+		err = h.taskStorage.MoveTaskToAnotherList(r.Context(), listID, taskID, userID)
+		switch {
+		case errors.Is(err, c.ErrTaskNotFound):
+			handleResponseError(w, r, log, http.StatusNotFound, c.ErrTaskNotFound)
+			return
+		case err != nil:
+			handleInternalServerError(w, r, log, c.ErrFailedToMoveTask, err)
+			return
+		default:
+			handleResponseSuccess(w, r, log, "task completed", nil, slog.String(c.TaskIDKey, taskID))
+		}
+	}
+}
+
+func (h *TaskHandler) CompleteTask() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		const op = "task.handlers.CompleteTask"
+
+		log := logger.LogWithRequest(h.logger, op, r)
+
+		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		if err != nil {
+			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
+			return
+		}
+		userID := claims[c.ContextUserID].(string)
+
+		taskID := chi.URLParam(r, c.TaskIDKey)
+		if taskID == "" {
+			handleResponseError(w, r, log, http.StatusBadRequest, c.ErrEmptyQueryTaskID)
+			return
+		}
+
+		err = h.taskStorage.CompleteTask(r.Context(), taskID, userID)
 		switch {
 		case errors.Is(err, c.ErrTaskNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, c.ErrTaskNotFound)
@@ -379,11 +646,11 @@ func (h *TaskHandler) CompleteTask() http.HandlerFunc {
 	}
 }
 
-func (h *TaskHandler) DeleteTask() http.HandlerFunc {
+func (h *TaskHandler) ArchiveTask() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "task.handlers.DeleteTask"
+		const op = "task.handlers.ArchiveTask"
 
-		log := logger.LogWithRequest(h.Logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
 		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
 		if err != nil {
@@ -392,12 +659,13 @@ func (h *TaskHandler) DeleteTask() http.HandlerFunc {
 		}
 		userID := claims[c.ContextUserID].(string)
 
-		taskID, err := GetIDFromQuery(w, r, log, c.TaskIDKey)
-		if err != nil {
+		taskID := chi.URLParam(r, c.TaskIDKey)
+		if taskID == "" {
+			handleResponseError(w, r, log, http.StatusBadRequest, c.ErrEmptyQueryTaskID)
 			return
 		}
 
-		err = h.TaskStorage.DeleteTask(r.Context(), taskID, userID)
+		err = h.taskStorage.ArchiveTask(r.Context(), taskID, userID)
 		switch {
 		case errors.Is(err, c.ErrTaskNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, c.ErrTaskNotFound)
