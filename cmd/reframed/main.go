@@ -2,11 +2,13 @@
 package main
 
 import (
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/rshelekhov/reframed/config"
-	"github.com/rshelekhov/reframed/internal/api/route"
-	"github.com/rshelekhov/reframed/internal/http-server"
-	"github.com/rshelekhov/reframed/internal/logger"
-	"github.com/rshelekhov/reframed/internal/storage/postgres"
+	"github.com/rshelekhov/reframed/src/handlers"
+	"github.com/rshelekhov/reframed/src/logger"
+	"github.com/rshelekhov/reframed/src/server"
+	"github.com/rshelekhov/reframed/src/server/middleware/jwtoken"
+	"github.com/rshelekhov/reframed/src/storage/postgres"
 	"log/slog"
 )
 
@@ -24,6 +26,15 @@ func main() {
 		slog.String("address", cfg.HTTPServer.Address))
 	log.Debug("logger debug mode enabled")
 
+	tokenAuth := jwtoken.NewJWTAuth(
+		cfg.JWTAuth.Secret,
+		jwt.SigningMethodHS256,
+		cfg.JWTAuth.AccessTokenTTL,
+		cfg.JWTAuth.RefreshTokenTTL,
+		cfg.JWTAuth.RefreshTokenCookieDomain,
+		cfg.JWTAuth.RefreshTokenCookiePath,
+	)
+
 	// Storage
 	pg, err := postgres.NewStorage(cfg)
 	if err != nil {
@@ -31,15 +42,22 @@ func main() {
 	}
 	log.Debug("storage initiated")
 
-	// Router
-	r := route.NewRouter(log)
+	userStorage := postgres.NewUserStorage(pg)
+	listStorage := postgres.NewListStorage(pg)
+	taskStorage := postgres.NewTaskStorage(pg)
+	headingStorage := postgres.NewHeadingStorage(pg)
+	tagStorage := postgres.NewTagStorage(pg)
 
-	// Routers
-	route.NewUserRouter(r, log, postgres.NewUserStorage(pg))
+	// Handlers
+	user := handlers.NewUserHandler(log, tokenAuth, userStorage, listStorage)
+	list := handlers.NewListHandler(log, tokenAuth, listStorage, headingStorage)
+	task := handlers.NewTaskHandler(log, tokenAuth, taskStorage, headingStorage, tagStorage)
+	heading := handlers.NewHeadingHandler(log, tokenAuth, headingStorage)
+	tag := handlers.NewTagHandler(log, tokenAuth, tagStorage)
 
 	// HTTP Server
 	log.Info("starting server", slog.String("address", cfg.HTTPServer.Address))
 
-	srv := http_server.NewServer(cfg, log, r)
+	srv := server.NewServer(cfg, log, tokenAuth, user, list, task, heading, tag)
 	srv.Start()
 }
