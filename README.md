@@ -3,7 +3,6 @@
 > ...
 
 ## What's included
-- The idiomatic structure based on the resource-oriented design.
 - The REST API with JSON responses.
 - The usage of [golang-migrate](https://github.com/golang-migrate/migrate) for the database migrations
 - The usage of [log/slog](https://pkg.go.dev/log/slog) as the centralized Syslog logger.
