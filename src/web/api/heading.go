@@ -6,7 +6,7 @@ import (
 	c "github.com/rshelekhov/reframed/src/constants"
 	"github.com/rshelekhov/reframed/src/logger"
 	"github.com/rshelekhov/reframed/src/models"
-	"github.com/rshelekhov/reframed/src/server/middleware/jwtoken"
+	"github.com/rshelekhov/reframed/src/server/middleware/jwtoken/service"
 	"github.com/rshelekhov/reframed/src/storage"
 	"github.com/segmentio/ksuid"
 	"log/slog"
@@ -15,13 +15,13 @@ import (
 
 type HeadingHandler struct {
 	logger         logger.Interface
-	tokenAuth      *jwtoken.JWTAuth
+	tokenAuth      *service.JWTokenService
 	headingStorage storage.HeadingStorage
 }
 
 func NewHeadingHandler(
 	log logger.Interface,
-	tokenAuth *jwtoken.JWTAuth,
+	tokenAuth *service.JWTokenService,
 	headingStorage storage.HeadingStorage,
 ) *HeadingHandler {
 	return &HeadingHandler{
@@ -37,7 +37,7 @@ func (h *HeadingHandler) CreateHeading() http.HandlerFunc {
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		_, claims, err := service.GetTokenFromContext(r.Context())
 		if err != nil {
 			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
 			return
@@ -82,7 +82,7 @@ func (h *HeadingHandler) GetHeadingByID() http.HandlerFunc {
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		_, claims, err := service.GetTokenFromContext(r.Context())
 		if err != nil {
 			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
 			return
@@ -115,7 +115,7 @@ func (h *HeadingHandler) GetHeadingsByListID() http.HandlerFunc {
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		_, claims, err := service.GetTokenFromContext(r.Context())
 		if err != nil {
 			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
 			return
@@ -149,7 +149,7 @@ func (h *HeadingHandler) UpdateHeading() http.HandlerFunc {
 		log := logger.LogWithRequest(h.logger, op, r)
 		heading := &models.Heading{}
 
-		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		_, claims, err := service.GetTokenFromContext(r.Context())
 		if err != nil {
 			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
 			return
@@ -192,7 +192,7 @@ func (h *HeadingHandler) MoveHeadingToAnotherList() http.HandlerFunc {
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		_, claims, err := service.GetTokenFromContext(r.Context())
 		if err != nil {
 			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
 			return
@@ -231,7 +231,7 @@ func (h *HeadingHandler) DeleteHeading() http.HandlerFunc {
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		_, claims, err := service.GetTokenFromContext(r.Context())
 		if err != nil {
 			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
 			return

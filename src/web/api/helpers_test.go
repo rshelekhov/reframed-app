@@ -5,6 +5,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	handlers2 "github.com/rshelekhov/reframed/src/handlers"
 	"github.com/rshelekhov/reframed/src/logger/slogdiscard"
+	"github.com/rshelekhov/reframed/src/server/handlers"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -79,7 +80,7 @@ func TestDecodeJSON(t *testing.T) {
 			req := httptest.NewRequest(http.MethodPost, "/", reqBody)
 			rr := httptest.NewRecorder()
 
-			err := handlers2.DecodeJSON(rr, req, mockLogger, &TestData{})
+			err := handlers.DecodeJSON(rr, req, mockLogger, &TestData{})
 
 			if err != nil {
 				assert.Equal(t, tc.expectedError, err)
@@ -128,7 +129,7 @@ func TestValidateData(t *testing.T) {
 			req := httptest.NewRequest(http.MethodPost, "/", nil)
 			rr := httptest.NewRecorder()
 
-			err := handlers2.ValidateData(rr, req, mockLogger, tc.data)
+			err := handlers.ValidateData(rr, req, mockLogger, tc.data)
 
 			if tc.expectedError != nil {
 				assert.Error(t, err)

@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-type JWTAuth struct {
+type JWTService struct {
 	SignKey                  string
 	SigningMethod            jwt.SigningMethod
 	AccessTokenTTL           time.Duration
@@ -21,15 +21,15 @@ type JWTAuth struct {
 	RefreshTokenCookiePath   string
 }
 
-func NewJWTAuth(
+func NewJWTService(
 	signKey string,
 	signingMethod jwt.SigningMethod,
 	accessTokenTTL time.Duration,
 	refreshTokenTTL time.Duration,
 	refreshTokenCookieDomain string,
 	refreshTokenCookiePath string,
-) *JWTAuth {
-	return &JWTAuth{
+) *JWTService {
+	return &JWTService{
 		SignKey:                  signKey,
 		SigningMethod:            signingMethod,
 		AccessTokenTTL:           accessTokenTTL,
@@ -66,7 +66,7 @@ var (
 	ErrFailedToParseTokenClaims = errors.New("failed to parse token claims from context")
 )
 
-func (j *JWTAuth) NewAccessToken(additionalClaims map[string]interface{}) (string, error) {
+func (j *JWTService) NewAccessToken(additionalClaims map[string]interface{}) (string, error) {
 	claims := jwt.MapClaims{
 		"exp": time.Now().Add(j.AccessTokenTTL).Unix(),
 	}
@@ -82,16 +82,16 @@ func (j *JWTAuth) NewAccessToken(additionalClaims map[string]interface{}) (strin
 	return token.SignedString([]byte(j.SignKey))
 }
 
-func (j *JWTAuth) NewRefreshToken() (string, error) {
+func (j *JWTService) NewRefreshToken() (string, error) {
 	token := ksuid.New().String()
 	return token, nil
 }
 
-func Verifier(j *JWTAuth) func(http.Handler) http.Handler {
+func Verifier(j *JWTService) func(http.Handler) http.Handler {
 	return j.Verify(GetTokenFromHeader, GetTokenFromCookie, GetTokenFromQuery)
 }
 
-func (j *JWTAuth) Verify(findTokenFns ...func(r *http.Request) string) func(http.Handler) http.Handler {
+func (j *JWTService) Verify(findTokenFns ...func(r *http.Request) string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
@@ -107,7 +107,7 @@ func (j *JWTAuth) Verify(findTokenFns ...func(r *http.Request) string) func(http
 	}
 }
 
-func (j *JWTAuth) FindToken(r *http.Request, findTokenFns ...func(r *http.Request) string) (*jwt.Token, error) {
+func (j *JWTService) FindToken(r *http.Request, findTokenFns ...func(r *http.Request) string) (*jwt.Token, error) {
 	var accessTokenString string
 
 	for _, fn := range findTokenFns {
@@ -139,7 +139,7 @@ func FindRefreshToken(r *http.Request) (string, error) {
 	return refreshToken, nil
 }
 
-func (j *JWTAuth) VerifyToken(accessTokenString string) (*jwt.Token, error) {
+func (j *JWTService) VerifyToken(accessTokenString string) (*jwt.Token, error) {
 	token, err := j.DecodeToken(accessTokenString)
 	if err != nil {
 		return nil, Errors(err)
@@ -150,15 +150,15 @@ func (j *JWTAuth) VerifyToken(accessTokenString string) (*jwt.Token, error) {
 	return token, nil
 }
 
-// func (j *JWTAuth) EncodeToken
+// func (j *JWTService) EncodeToken
 
-func (j *JWTAuth) DecodeToken(accessTokenString string) (*jwt.Token, error) {
+func (j *JWTService) DecodeToken(accessTokenString string) (*jwt.Token, error) {
 	return j.ParseToken(accessTokenString)
 }
 
-func (j *JWTAuth) ParseToken(accessTokenString string) (*jwt.Token, error) {
+func (j *JWTService) ParseToken(accessTokenString string) (*jwt.Token, error) {
 	token, err := jwt.Parse(accessTokenString, func(token *jwt.Token) (interface{}, error) {
-		// TODO: add signing method to JWTAuth
+		// TODO: add signing method to JWTService
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("%v: %v", ErrUnexpectedSigningMethod, token.Header["alg"])
 		}
@@ -213,7 +213,7 @@ func GetRefreshTokenFromHeader(r *http.Request) (string, error) {
 }
 
 func GetTokenFromCookie(r *http.Request) string {
-	cookie, err := r.Cookie("jwt")
+	cookie, err := r.Cookie("jwtoken")
 	if err != nil {
 		return ""
 	}
@@ -229,8 +229,8 @@ func GetRefreshTokenFromCookie(r *http.Request) (string, error) {
 }
 
 func GetTokenFromQuery(r *http.Request) string {
-	// Get token from query param named "jwt".
-	return r.URL.Query().Get("jwt")
+	// Get token from query param named "jwtoken".
+	return r.URL.Query().Get("jwtoken")
 }
 
 func GetTokenFromContext(ctx context.Context) (*jwt.Token, map[string]interface{}, error) {

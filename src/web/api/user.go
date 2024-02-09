@@ -6,7 +6,7 @@ import (
 	c "github.com/rshelekhov/reframed/src/constants"
 	"github.com/rshelekhov/reframed/src/logger"
 	"github.com/rshelekhov/reframed/src/models"
-	"github.com/rshelekhov/reframed/src/server/middleware/jwtoken"
+	"github.com/rshelekhov/reframed/src/server/middleware/jwtoken/service"
 	"github.com/rshelekhov/reframed/src/storage"
 	"github.com/segmentio/ksuid"
 	"log/slog"
@@ -17,14 +17,14 @@ import (
 
 type UserHandler struct {
 	logger      logger.Interface
-	tokenAuth   *jwtoken.JWTAuth
+	tokenAuth   *service.JWTokenService
 	userStorage storage.UserStorage
 	listStorage storage.ListStorage
 }
 
 func NewUserHandler(
 	log logger.Interface,
-	tokenAuth *jwtoken.JWTAuth,
+	tokenAuth *service.JWTokenService,
 	userStorage storage.UserStorage,
 	listStorage storage.ListStorage,
 ) *UserHandler {
@@ -102,7 +102,7 @@ func (h *UserHandler) CreateUser() http.HandlerFunc {
 		}
 
 		additionalFields := map[string]string{c.UserIDKey: newUser.ID}
-		tokenData := jwtoken.TokenData{
+		tokenData := service.TokenData{
 			AccessToken:      tokens.AccessToken,
 			RefreshToken:     tokens.RefreshToken,
 			Domain:           h.tokenAuth.RefreshTokenCookieDomain,
@@ -113,7 +113,7 @@ func (h *UserHandler) CreateUser() http.HandlerFunc {
 		}
 
 		log.Info("user and tokens created", slog.String(c.UserIDKey, newUser.ID), slog.Any(c.TokensKey, tokens))
-		jwtoken.SendTokensToWeb(w, tokenData, http.StatusCreated)
+		service.SendTokensToWeb(w, tokenData, http.StatusCreated)
 	}
 }
 
@@ -163,7 +163,7 @@ func (h *UserHandler) LoginWithPassword() http.HandlerFunc {
 		}
 
 		additionalFields := map[string]string{c.UserIDKey: userDB.ID}
-		tokenData := jwtoken.TokenData{
+		tokenData := service.TokenData{
 			AccessToken:      tokens.AccessToken,
 			RefreshToken:     tokens.RefreshToken,
 			Domain:           h.tokenAuth.RefreshTokenCookieDomain,
@@ -178,7 +178,7 @@ func (h *UserHandler) LoginWithPassword() http.HandlerFunc {
 			slog.String(c.UserIDKey, userDB.ID),
 			slog.Any(c.TokensKey, tokens),
 		)
-		jwtoken.SendTokensToWeb(w, tokenData, http.StatusOK)
+		service.SendTokensToWeb(w, tokenData, http.StatusOK)
 	}
 }
 
@@ -189,7 +189,7 @@ func (h *UserHandler) RefreshJWTTokens() http.HandlerFunc {
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		refreshToken, err := jwtoken.FindRefreshToken(r)
+		refreshToken, err := service.FindRefreshToken(r)
 		if err != nil {
 			handleResponseError(w, r, log, http.StatusUnauthorized, c.ErrFailedToGetRefreshToken, err)
 			return
@@ -226,7 +226,7 @@ func (h *UserHandler) RefreshJWTTokens() http.HandlerFunc {
 			return
 		}
 
-		tokenData := jwtoken.TokenData{
+		tokenData := service.TokenData{
 			AccessToken:  tokens.AccessToken,
 			RefreshToken: tokens.RefreshToken,
 			Domain:       h.tokenAuth.RefreshTokenCookieDomain,
@@ -236,7 +236,7 @@ func (h *UserHandler) RefreshJWTTokens() http.HandlerFunc {
 		}
 
 		log.Info("tokens created", slog.Any(c.TokensKey, tokens))
-		jwtoken.SendTokensToWeb(w, tokenData, http.StatusOK)
+		service.SendTokensToWeb(w, tokenData, http.StatusOK)
 	}
 }
 
@@ -320,7 +320,7 @@ func (h *UserHandler) Logout() http.HandlerFunc {
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		_, claims, err := service.GetTokenFromContext(r.Context())
 		if err != nil {
 			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
 			return
@@ -368,7 +368,7 @@ func (h *UserHandler) GetUser() http.HandlerFunc {
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		_, claims, err := service.GetTokenFromContext(r.Context())
 		if err != nil {
 			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
 			return
@@ -422,7 +422,7 @@ func (h *UserHandler) UpdateUser() http.HandlerFunc {
 		log := logger.LogWithRequest(h.logger, op, r)
 		user := &models.UpdateUser{}
 
-		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		_, claims, err := service.GetTokenFromContext(r.Context())
 		if err != nil {
 			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
 			return
@@ -469,7 +469,7 @@ func (h *UserHandler) DeleteUser() http.HandlerFunc {
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		_, claims, err := service.GetTokenFromContext(r.Context())
 		if err != nil {
 			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
 			return

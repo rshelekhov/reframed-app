@@ -6,7 +6,7 @@ import (
 	c "github.com/rshelekhov/reframed/src/constants"
 	"github.com/rshelekhov/reframed/src/logger"
 	"github.com/rshelekhov/reframed/src/models"
-	"github.com/rshelekhov/reframed/src/server/middleware/jwtoken"
+	"github.com/rshelekhov/reframed/src/server/middleware/jwtoken/service"
 	"github.com/rshelekhov/reframed/src/storage"
 	"github.com/segmentio/ksuid"
 	"log/slog"
@@ -15,7 +15,7 @@ import (
 
 type TaskHandler struct {
 	logger         logger.Interface
-	tokenAuth      *jwtoken.JWTAuth
+	tokenAuth      *service.JWTokenService
 	taskStorage    storage.TaskStorage
 	headingStorage storage.HeadingStorage
 	tagStorage     storage.TagStorage
@@ -23,7 +23,7 @@ type TaskHandler struct {
 
 func NewTaskHandler(
 	log logger.Interface,
-	tokenAuth *jwtoken.JWTAuth,
+	tokenAuth *service.JWTokenService,
 	taskStorage storage.TaskStorage,
 	headingStorage storage.HeadingStorage,
 	tagStorage storage.TagStorage,
@@ -43,7 +43,7 @@ func (h *TaskHandler) CreateTask() http.HandlerFunc {
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		_, claims, err := service.GetTokenFromContext(r.Context())
 		if err != nil {
 			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
 			return
@@ -116,7 +116,7 @@ func (h *TaskHandler) GetTaskByID() http.HandlerFunc {
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		_, claims, err := service.GetTokenFromContext(r.Context())
 		if err != nil {
 			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
 			return
@@ -149,7 +149,7 @@ func (h *TaskHandler) GetTasksByUserID() http.HandlerFunc {
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		_, claims, err := service.GetTokenFromContext(r.Context())
 		if err != nil {
 			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
 			return
@@ -180,7 +180,7 @@ func (h *TaskHandler) GetTasksByListID() http.HandlerFunc {
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		_, claims, err := service.GetTokenFromContext(r.Context())
 		if err != nil {
 			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
 			return
@@ -215,7 +215,7 @@ func (h *TaskHandler) GetTasksGroupedByHeadings() http.HandlerFunc {
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		_, claims, err := service.GetTokenFromContext(r.Context())
 		if err != nil {
 			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
 			return
@@ -248,7 +248,7 @@ func (h *TaskHandler) GetTasksForToday() http.HandlerFunc {
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		_, claims, err := service.GetTokenFromContext(r.Context())
 		if err != nil {
 			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
 			return
@@ -275,7 +275,7 @@ func (h *TaskHandler) GetUpcomingTasks() http.HandlerFunc {
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		_, claims, err := service.GetTokenFromContext(r.Context())
 		if err != nil {
 			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
 			return
@@ -308,7 +308,7 @@ func (h *TaskHandler) GetOverdueTasks() http.HandlerFunc {
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		_, claims, err := service.GetTokenFromContext(r.Context())
 		if err != nil {
 			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
 			return
@@ -337,7 +337,7 @@ func (h *TaskHandler) GetTasksForSomeday() http.HandlerFunc {
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		_, claims, err := service.GetTokenFromContext(r.Context())
 		if err != nil {
 			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
 			return
@@ -366,7 +366,7 @@ func (h *TaskHandler) GetCompletedTasks() http.HandlerFunc {
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		_, claims, err := service.GetTokenFromContext(r.Context())
 		if err != nil {
 			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
 			return
@@ -399,7 +399,7 @@ func (h *TaskHandler) GetArchivedTasks() http.HandlerFunc {
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		_, claims, err := service.GetTokenFromContext(r.Context())
 		if err != nil {
 			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
 			return
@@ -433,7 +433,7 @@ func (h *TaskHandler) UpdateTask() http.HandlerFunc {
 		log := logger.LogWithRequest(h.logger, op, r)
 		task := &models.UpdateTask{}
 
-		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		_, claims, err := service.GetTokenFromContext(r.Context())
 		if err != nil {
 			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
 			return
@@ -536,7 +536,7 @@ func (h *TaskHandler) UpdateTaskTime() http.HandlerFunc {
 		log := logger.LogWithRequest(h.logger, op, r)
 		task := &models.UpdateTask{}
 
-		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		_, claims, err := service.GetTokenFromContext(r.Context())
 		if err != nil {
 			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
 			return
@@ -580,7 +580,7 @@ func (h *TaskHandler) MoveTaskToAnotherList() http.HandlerFunc {
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		_, claims, err := service.GetTokenFromContext(r.Context())
 		if err != nil {
 			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
 			return
@@ -619,7 +619,7 @@ func (h *TaskHandler) CompleteTask() http.HandlerFunc {
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		_, claims, err := service.GetTokenFromContext(r.Context())
 		if err != nil {
 			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
 			return
@@ -652,7 +652,7 @@ func (h *TaskHandler) ArchiveTask() http.HandlerFunc {
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		_, claims, err := service.GetTokenFromContext(r.Context())
 		if err != nil {
 			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
 			return

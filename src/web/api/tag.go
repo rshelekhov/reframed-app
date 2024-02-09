@@ -4,7 +4,7 @@ import (
 	"errors"
 	c "github.com/rshelekhov/reframed/src/constants"
 	"github.com/rshelekhov/reframed/src/logger"
-	"github.com/rshelekhov/reframed/src/server/middleware/jwtoken"
+	"github.com/rshelekhov/reframed/src/server/middleware/jwtoken/service"
 	"github.com/rshelekhov/reframed/src/storage"
 	"log/slog"
 	"net/http"
@@ -12,13 +12,13 @@ import (
 
 type TagHandler struct {
 	logger     logger.Interface
-	tokenAuth  *jwtoken.JWTAuth
+	tokenAuth  *service.JWTokenService
 	tagStorage storage.TagStorage
 }
 
 func NewTagHandler(
 	log logger.Interface,
-	tokenAuth *jwtoken.JWTAuth,
+	tokenAuth *service.JWTokenService,
 	tagStorage storage.TagStorage,
 ) *TagHandler {
 	return &TagHandler{
@@ -34,7 +34,7 @@ func (h *TagHandler) GetTagsByUserID() http.HandlerFunc {
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		_, claims, err := service.GetTokenFromContext(r.Context())
 		if err != nil {
 			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
 			return

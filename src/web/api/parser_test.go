@@ -3,6 +3,7 @@ package handlers_test
 import (
 	"github.com/rshelekhov/reframed/src/handlers"
 	"github.com/rshelekhov/reframed/src/models"
+	handlers2 "github.com/rshelekhov/reframed/src/server/handlers"
 	"net/http"
 	"net/url"
 	"testing"
@@ -22,17 +23,17 @@ func TestParseLimitAndOffset(t *testing.T) {
 		{
 			name:       "limit and offset not provided",
 			url:        "https://example.com",
-			pagination: models.Pagination{Limit: handlers.DefaultLimit, Offset: handlers.DefaultOffset},
+			pagination: models.Pagination{Limit: handlers2.DefaultLimit, Offset: handlers.DefaultOffset},
 		},
 		{
 			name:       "invalid limit or offset",
 			url:        "https://example.com?limit=abc&offset=xyz",
-			pagination: models.Pagination{Limit: handlers.DefaultLimit, Offset: handlers.DefaultOffset},
+			pagination: models.Pagination{Limit: handlers2.DefaultLimit, Offset: handlers.DefaultOffset},
 		},
 		{
 			name:       "negative limit and offset",
 			url:        "https://example.com?limit=-1&offset=-1",
-			pagination: models.Pagination{Limit: handlers.DefaultLimit, Offset: handlers.DefaultOffset},
+			pagination: models.Pagination{Limit: handlers2.DefaultLimit, Offset: handlers.DefaultOffset},
 		},
 	}
 

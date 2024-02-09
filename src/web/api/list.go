@@ -6,7 +6,7 @@ import (
 	c "github.com/rshelekhov/reframed/src/constants"
 	"github.com/rshelekhov/reframed/src/logger"
 	"github.com/rshelekhov/reframed/src/models"
-	"github.com/rshelekhov/reframed/src/server/middleware/jwtoken"
+	"github.com/rshelekhov/reframed/src/server/middleware/jwtoken/service"
 	"github.com/rshelekhov/reframed/src/storage"
 	"github.com/segmentio/ksuid"
 	"log/slog"
@@ -15,14 +15,14 @@ import (
 
 type ListHandler struct {
 	logger         logger.Interface
-	tokenAuth      *jwtoken.JWTAuth
+	tokenAuth      *service.JWTokenService
 	listStorage    storage.ListStorage
 	headingStorage storage.HeadingStorage
 }
 
 func NewListHandler(
 	log logger.Interface,
-	tokenAuth *jwtoken.JWTAuth,
+	tokenAuth *service.JWTokenService,
 	listStorage storage.ListStorage,
 	headingStorage storage.HeadingStorage,
 ) *ListHandler {
@@ -40,7 +40,7 @@ func (h *ListHandler) CreateList() http.HandlerFunc {
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		_, claims, err := service.GetTokenFromContext(r.Context())
 		if err != nil {
 			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
 			return
@@ -94,7 +94,7 @@ func (h *ListHandler) GetListByID() http.HandlerFunc {
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		_, claims, err := service.GetTokenFromContext(r.Context())
 		if err != nil {
 			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
 			return
@@ -129,7 +129,7 @@ func (h *ListHandler) GetListsByUserID() http.HandlerFunc {
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		_, claims, err := service.GetTokenFromContext(r.Context())
 		if err != nil {
 			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
 			return
@@ -159,7 +159,7 @@ func (h *ListHandler) UpdateList() http.HandlerFunc {
 		log := logger.LogWithRequest(h.logger, op, r)
 		list := &models.UpdateList{}
 
-		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		_, claims, err := service.GetTokenFromContext(r.Context())
 		if err != nil {
 			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
 			return
@@ -202,7 +202,7 @@ func (h *ListHandler) DeleteList() http.HandlerFunc {
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		_, claims, err := service.GetTokenFromContext(r.Context())
 		if err != nil {
 			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
 			return
