@@ -20,7 +20,7 @@ func (s *Server) initRoutes(jwtAuth *jwtoken.JWTAuth) *chi.Mux {
 	// Logging of all requests
 	r.Use(middleware.Logger)
 
-	// By default, middleware.Logger uses its own src logger,
+	// By default, middleware.logger uses its own src logger,
 	// which should be overridden to use ours. Otherwise, problems
 	// may arise - for example, with log collection. We can use
 	// our own middleware to log requests:
@@ -45,14 +45,14 @@ func (s *Server) initRoutes(jwtAuth *jwtoken.JWTAuth) *chi.Mux {
 	// Public routes
 	r.Group(func(r chi.Router) {
 		r.Post("/login", s.user.LoginWithPassword())
+		// TODO: add hashing password
 		r.Post("/register", s.user.CreateUser())
 		// TODO: add handler for RequestResetPassword
 
 		// Auth routes
 		r.Route("/jwtoken", func(r chi.Router) {
 			r.Post("/refresh-tokens", s.user.RefreshJWTTokens())
-			// TODO: add handler for logout
-			// r.Post("/logout", s.user.Logout())
+			r.Post("/logout", s.user.Logout())
 		})
 	})
 
@@ -87,9 +87,23 @@ func (s *Server) initRoutes(jwtAuth *jwtoken.JWTAuth) *chi.Mux {
 				r.Put("/", s.list.UpdateList())
 				r.Delete("/", s.list.DeleteList())
 
-				r.Route("/tasks", func(r chi.Router) {
-					r.Get("/", s.task.GetTasksByListID())
-					r.Post("/", s.task.CreateTask())
+				r.Get("/tasks", s.task.GetTasksByListID())
+
+				r.Route("/headings", func(r chi.Router) {
+					r.Post("/", s.heading.CreateHeading())
+					r.Get("/", s.heading.GetHeadingsByListID())
+
+					r.Get("/tasks", s.task.GetTasksGroupedByHeadings())
+					r.Post("/tasks", s.task.CreateTask())
+
+					r.Route("/{heading_id}", func(r chi.Router) {
+						r.Get("/", s.heading.GetHeadingByID())
+						r.Put("/", s.heading.UpdateHeading())
+						r.Put("/move/", s.heading.MoveHeadingToAnotherList())
+						r.Delete("/", s.heading.DeleteHeading())
+
+						r.Post("/", s.task.CreateTask())
+					})
 				})
 			})
 		})
@@ -97,13 +111,20 @@ func (s *Server) initRoutes(jwtAuth *jwtoken.JWTAuth) *chi.Mux {
 		// Task routes
 		r.Route("/user/tasks", func(r chi.Router) {
 			r.Get("/", s.task.GetTasksByUserID())
-			// TODO: add handler for moving tasks to another list
+			r.Get("/today", s.task.GetTasksForToday())      // grouped by list title
+			r.Get("/upcoming", s.task.GetUpcomingTasks())   // grouped by start_date
+			r.Get("/overdue", s.task.GetOverdueTasks())     // grouped by list title
+			r.Get("/someday", s.task.GetTasksForSomeday())  // tasks without start_date, grouped by list title
+			r.Get("/completed", s.task.GetCompletedTasks()) // grouped by month
+			r.Get("/archived", s.task.GetArchivedTasks())   // grouped by month
+
 			r.Route("/{task_id}", func(r chi.Router) {
 				r.Get("/", s.task.GetTaskByID())
 				r.Put("/", s.task.UpdateTask())
 				r.Put("/time", s.task.UpdateTaskTime())
+				r.Put("/move", s.task.MoveTaskToAnotherList())
 				r.Put("/complete", s.task.CompleteTask())
-				r.Delete("/", s.task.DeleteTask())
+				r.Delete("/", s.task.ArchiveTask())
 			})
 		})
 

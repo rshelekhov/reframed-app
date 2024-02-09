@@ -9,6 +9,7 @@ import (
 	handlers2 "github.com/rshelekhov/reframed/src/handlers"
 	"github.com/rshelekhov/reframed/src/logger/slogdiscard"
 	"github.com/rshelekhov/reframed/src/models"
+	"github.com/rshelekhov/reframed/src/server/handlers"
 	"github.com/rshelekhov/reframed/src/storage"
 	"github.com/rshelekhov/reframed/src/storage/mocks"
 	"github.com/stretchr/testify/assert"
@@ -99,10 +100,10 @@ func TestUserHandler_CreateUser(t *testing.T) {
 			mockListStorage := &mocks.ListStorage{}
 			mockLogger := slogdiscard.NewDiscardLogger()
 
-			handler := &handlers2.UserHandler{
-				UserStorage: mockUserStorage,
-				ListStorage: mockListStorage,
-				Logger:      mockLogger,
+			handler := &handlers.UserHandler{
+				userStorage: mockUserStorage,
+				listStorage: mockListStorage,
+				logger:      mockLogger,
 			}
 
 			mockUserStorage.
@@ -184,9 +185,9 @@ func TestUserHandler_GetUserByID(t *testing.T) {
 			mockStorage := &mocks.UserStorage{}
 			mockLogger := slogdiscard.NewDiscardLogger()
 
-			handler := &handlers2.UserHandler{
-				UserStorage: mockStorage,
-				Logger:      mockLogger,
+			handler := &handlers.UserHandler{
+				userStorage: mockStorage,
+				logger:      mockLogger,
 			}
 
 			mockStorage.On("GetUser", mock.Anything, mock.AnythingOfType("string")).
@@ -264,9 +265,9 @@ func TestUserHandler_GetUsers(t *testing.T) {
 			mockStorage := &mocks.UserStorage{}
 			mockLogger := slogdiscard.NewDiscardLogger()
 
-			handler := &handlers2.UserHandler{
-				UserStorage: mockStorage,
-				Logger:      mockLogger,
+			handler := &handlers.UserHandler{
+				userStorage: mockStorage,
+				logger:      mockLogger,
 			}
 
 			mockStorage.On("GetUsers", mock.Anything, mock.AnythingOfType("models.Pagination")).
@@ -362,9 +363,9 @@ func TestUserHandler_UpdateUser(t *testing.T) {
 			mockStorage := &mocks.UserStorage{}
 			mockLogger := slogdiscard.NewDiscardLogger()
 
-			handler := &handlers2.UserHandler{
-				UserStorage: mockStorage,
-				Logger:      mockLogger,
+			handler := &handlers.UserHandler{
+				userStorage: mockStorage,
+				logger:      mockLogger,
 			}
 
 			mockStorage.
@@ -435,9 +436,9 @@ func TestUserHandler_DeleteUser(t *testing.T) {
 			mockStorage := &mocks.UserStorage{}
 			mockLogger := slogdiscard.NewDiscardLogger()
 
-			handler := &handlers2.UserHandler{
-				UserStorage: mockStorage,
-				Logger:      mockLogger,
+			handler := &handlers.UserHandler{
+				userStorage: mockStorage,
+				logger:      mockLogger,
 			}
 
 			mockStorage.

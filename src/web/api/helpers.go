@@ -3,7 +3,6 @@ package handlers
 import (
 	"errors"
 	"fmt"
-	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator"
 	c "github.com/rshelekhov/reframed/src/constants"
@@ -13,17 +12,6 @@ import (
 	"net/http"
 	"reflect"
 )
-
-// GetIDFromQuery gets the models id from the request
-func GetIDFromQuery(w http.ResponseWriter, r *http.Request, log logger.Interface, key string) (string, error) {
-	id := chi.URLParam(r, key)
-	if id == "" {
-		handleResponseError(w, r, log, http.StatusBadRequest, c.ErrEmptyID)
-		return "", c.ErrEmptyID
-	}
-
-	return id, nil
-}
 
 // ValidateData validates the request
 func ValidateData(w http.ResponseWriter, r *http.Request, log logger.Interface, data any) error {
@@ -144,6 +132,19 @@ func handleResponseSuccess(
 ) {
 	log.Info(message, addLogData...)
 	responseSuccess(w, r, http.StatusOK, message, data)
+}
+
+// handleResponseCreated renders a created response with status code and data
+func handleResponseCreated(
+	w http.ResponseWriter,
+	r *http.Request,
+	log logger.Interface,
+	message string,
+	data any,
+	addLogData ...any,
+) {
+	log.Info(message, addLogData...)
+	responseSuccess(w, r, http.StatusCreated, message, data)
 }
 
 // responseError renders an error response with the given status code and error

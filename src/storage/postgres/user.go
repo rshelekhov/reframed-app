@@ -57,7 +57,6 @@ func (s *UserStorage) CreateUser(ctx context.Context, user models.User) error {
 
 // getUserStatus returns the status of the user with the given email
 func getUserStatus(ctx context.Context, tx pgx.Tx, email string) (string, error) {
-
 	const (
 		op = "user.storage.getUserStatus"
 
@@ -66,12 +65,14 @@ func getUserStatus(ctx context.Context, tx pgx.Tx, email string) (string, error)
 			WHEN EXISTS(
 				SELECT 1
 				FROM users
-				WHERE email = $1 AND deleted_at IS NULL FOR UPDATE
+				WHERE email = $1
+				  AND deleted_at IS NULL FOR UPDATE
 			) THEN 'active'
 			WHEN EXISTS(
 				SELECT 1
 				FROM users
-				WHERE email = $1 AND deleted_at IS NOT NULL FOR UPDATE
+				WHERE email = $1
+				  AND deleted_at IS NOT NULL FOR UPDATE
 			) THEN 'soft_deleted'
 			ELSE 'not_found' END AS status`
 	)
@@ -98,21 +99,11 @@ func replaceSoftDeletedUser(ctx context.Context, tx pgx.Tx, user models.User) er
 			WHERE email = $1`
 
 		queryInsertUser = `
-			INSERT INTO users
-    		(
-    		 	id,
-    			email,
-    			password,
-    			updated_at
-    		)
+			INSERT INTO users (id, email, password, updated_at)
 			VALUES ($1, $2, $3, $4)`
 	)
 
-	_, err := tx.Exec(
-		ctx,
-		querySetDeletedAtNull,
-		user.Email,
-	)
+	_, err := tx.Exec(ctx, querySetDeletedAtNull, user.Email)
 	if err != nil {
 		RollbackOnError(&err, tx, ctx, op)
 		return fmt.Errorf("%s: failed to set deleted_at to NULL: %w", op, err)
@@ -140,13 +131,7 @@ func insertUser(ctx context.Context, tx pgx.Tx, user models.User) error {
 		op = "user.storage.insertNewUser"
 
 		query = `
-			INSERT INTO users
-    		(
-    		 	id,
-    			email,
-    			password,
-    			updated_at
-    		)
+			INSERT INTO users (id, email, password, updated_at)
 			VALUES ($1, $2, $3, $4)`
 	)
 
@@ -171,32 +156,25 @@ func (s *UserStorage) GetUserCredentials(ctx context.Context, user *models.User)
 		op = "user.storage.GetUserCredentials"
 
 		query = `
-			SELECT
-				id,
-				email,
-				password,
-				updated_at
+			SELECT id, email, password, updated_at
 			FROM users
-			WHERE email = $1 AND password = $2 AND deleted_at IS NULL`
+			WHERE email = $1
+			  AND password = $2
+			  AND deleted_at IS NULL`
 	)
 
 	var userDB models.User
-	err := s.QueryRow(
-		ctx,
-		query,
-		user.Email,
-		user.Password,
-	).Scan(
+	err := s.QueryRow(ctx, query, user.Email, user.Password).Scan(
 		&userDB.ID,
 		&userDB.Email,
 		&userDB.Password,
 		&userDB.UpdatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return userDB, c.ErrUserNotFound
+		return models.User{}, c.ErrUserNotFound
 	}
 	if err != nil {
-		return userDB, fmt.Errorf("%s: failed to get user credentials: %w", op, err)
+		return models.User{}, fmt.Errorf("%s: failed to get user credentials: %w", op, err)
 	}
 
 	return userDB, nil
@@ -208,14 +186,7 @@ func (s *UserStorage) SaveSession(ctx context.Context, userID, deviceID string, 
 		op = "user.storage.SaveSession"
 
 		query = `
-			INSERT INTO refresh_sessions
-    		(
-            	user_id,
-    			device_id,
-    			refresh_token,
-    			last_visit_at,
-    			expires_at
-    		)
+			INSERT INTO refresh_sessions (user_id, device_id, refresh_token, last_visit_at, expires_at)
 			VALUES ($1, $2, $3, $4, $5)`
 	)
 
@@ -234,16 +205,30 @@ func (s *UserStorage) SaveSession(ctx context.Context, userID, deviceID string, 
 	return nil
 }
 
+func (s *UserStorage) RemoveSession(ctx context.Context, userID, deviceID string) error {
+	const (
+		op = "user.storage.RemoveSession"
+
+		query = `
+			DELETE FROM refresh_sessions
+			WHERE user_id = $1
+			  AND device_id = $2`
+	)
+
+	_, err := s.Exec(ctx, query, userID, deviceID)
+	if err != nil {
+		return fmt.Errorf("%s: failed to remove session: %w", op, err)
+	}
+
+	return nil
+}
+
 func (s *UserStorage) GetSessionByRefreshToken(ctx context.Context, refreshToken string) (models.Session, error) {
 	const (
 		op = "user.storage.GetSessionByRefreshToken"
 
 		querySelect = `
-			SELECT
-				user_id,
-				device_id,
-				last_visit_at,
-				expires_at
+			SELECT user_id, device_id, last_visit_at, expires_at
 			FROM refresh_sessions
             WHERE refresh_token = $1`
 
@@ -255,11 +240,7 @@ func (s *UserStorage) GetSessionByRefreshToken(ctx context.Context, refreshToken
 	var session models.Session
 	session.RefreshToken = refreshToken
 
-	err := s.QueryRow(
-		ctx,
-		querySelect,
-		refreshToken,
-	).Scan(
+	err := s.QueryRow(ctx, querySelect, refreshToken).Scan(
 		&session.UserID,
 		&session.DeviceID,
 		&session.LastVisitAt,
@@ -269,12 +250,12 @@ func (s *UserStorage) GetSessionByRefreshToken(ctx context.Context, refreshToken
 		return session, c.ErrSessionNotFound
 	}
 	if err != nil {
-		return session, fmt.Errorf("%s: failed to get session: %w", op, err)
+		return models.Session{}, fmt.Errorf("%s: failed to get session: %w", op, err)
 	}
 
 	_, err = s.Exec(ctx, queryDelete, refreshToken)
 	if err != nil {
-		return session, fmt.Errorf("%s: failed to delete expired session: %w", op, err)
+		return models.Session{}, fmt.Errorf("%s: failed to delete expired session: %w", op, err)
 	}
 
 	return session, nil
@@ -285,15 +266,7 @@ func (s *UserStorage) AddDevice(ctx context.Context, device models.UserDevice) e
 		op = "user.storage.AddDevice"
 
 		query = `
-			INSERT INTO user_devices
-    		(
-    		 	id,
-				user_id,
-    			user_agent,
-    		 	ip,
-    		 	detached,
-    		 	latest_login_at
-    		)
+			INSERT INTO user_devices (id, user_id, user_agent, ip, detached, latest_login_at)
 			VALUES ($1, $2, $3, $4, $5, $6)`
 	)
 
@@ -319,24 +292,15 @@ func (s *UserStorage) GetUserDevice(ctx context.Context, userID, userAgent strin
 		op = "user.storage.GetUserDevice"
 
 		query = `
-			SELECT
-				id,
-				user_id,
-				user_agent,
-				ip,
-				detached,
-				latest_login_at
+			SELECT id, user_id, user_agent, ip, detached, latest_login_at
 			FROM user_devices
-			WHERE user_id = $1 AND user_agent = $2 AND detached = false`
+			WHERE user_id = $1
+			  AND user_agent = $2
+			  AND detached = false`
 	)
 
 	var device models.UserDevice
-	err := s.QueryRow(
-		ctx,
-		query,
-		userID,
-		userAgent,
-	).Scan(
+	err := s.QueryRow(ctx, query, userID, userAgent).Scan(
 		&device.ID,
 		&device.UserID,
 		&device.UserAgent,
@@ -345,10 +309,10 @@ func (s *UserStorage) GetUserDevice(ctx context.Context, userID, userAgent strin
 		&device.LatestLoginAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return device, c.ErrUserDeviceNotFound
+		return models.UserDevice{}, c.ErrUserDeviceNotFound
 	}
 	if err != nil {
-		return device, fmt.Errorf("%s: failed to get user device: %w", op, err)
+		return models.UserDevice{}, fmt.Errorf("%s: failed to get user device: %w", op, err)
 	}
 
 	return device, nil
@@ -360,29 +324,23 @@ func (s *UserStorage) GetUser(ctx context.Context, userID string) (models.User, 
 		op = "user.storage.GetUser"
 
 		query = `
-			SELECT
-				id,
-				email,
-				updated_at
+			SELECT id, email, updated_at
 			FROM users
-			WHERE id = $1 AND deleted_at IS NULL`
+			WHERE id = $1
+			  AND deleted_at IS NULL`
 	)
 
 	var user models.User
 
-	err := s.QueryRow(
-		ctx,
-		query,
-		userID,
-	).Scan(
+	err := s.QueryRow(ctx, query, userID).Scan(
 		&user.Email,
 		&user.UpdatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return user, c.ErrUserNotFound
+		return models.User{}, c.ErrUserNotFound
 	}
 	if err != nil {
-		return user, fmt.Errorf("%s: failed to get user: %w", op, err)
+		return models.User{}, fmt.Errorf("%s: failed to get user: %w", op, err)
 	}
 
 	user.ID = userID
@@ -395,21 +353,22 @@ func (s *UserStorage) GetUsers(ctx context.Context, pgn models.Pagination) ([]mo
 		op = "user.storage.GetUsers"
 
 		query = `
-			SELECT
-				id,
-				email,
-				updated_at
+			SELECT id, email, updated_at
 			FROM users
 			WHERE deleted_at IS NULL
-			ORDER BY id DESC LIMIT $1 OFFSET $2`
+			  AND id > $1
+			ORDER BY id
+			LIMIT $2`
 	)
 
-	rows, err := s.Query(
-		ctx,
-		query,
-		pgn.Limit,
-		pgn.Offset,
-	)
+	var afterID interface{}
+	if pgn.AfterID != "" {
+		afterID = pgn.AfterID
+	} else {
+		afterID = nil
+	}
+
+	rows, err := s.Query(ctx, query, afterID, pgn.Limit)
 	if err != nil {
 		return nil, fmt.Errorf("%s: failed to execute query: %w", op, err)
 	}
@@ -504,8 +463,7 @@ func (s *UserStorage) UpdateUser(ctx context.Context, user models.User) error {
 		return fmt.Errorf("%s: failed to execute update query: %w", op, err)
 	}
 
-	rowsAffected := result.RowsAffected()
-	if rowsAffected == 0 {
+	if result.RowsAffected() == 0 {
 		return c.ErrUserNotFound
 	}
 
@@ -522,7 +480,8 @@ func getUserPassword(ctx context.Context, tx pgx.Tx, id string) (string, error) 
 		query = `
 			SELECT	password
 			FROM users
-			WHERE id = $1 AND deleted_at IS NULL`
+			WHERE id = $1
+			  AND deleted_at IS NULL`
 	)
 
 	var password string
@@ -546,7 +505,8 @@ func checkEmailUniqueness(ctx context.Context, tx pgx.Tx, email, id string) erro
 		query = `
 			SELECT id
 			FROM users
-			WHERE email = $1 AND deleted_at IS NULL`
+			WHERE email = $1
+			  AND deleted_at IS NULL`
 	)
 
 	var existingUserID string
@@ -569,22 +529,18 @@ func (s *UserStorage) DeleteUser(ctx context.Context, userID string) error {
 		query = `
 			UPDATE users
 			SET deleted_at = $1
-			WHERE id = $2 AND deleted_at IS NULL`
+			WHERE id = $2
+			  AND deleted_at IS NULL`
 		// TODO: add deleting session
 	)
 
-	_, err := s.Exec(
-		ctx,
-		query,
-		time.Now().UTC(),
-		userID,
-	)
-
-	if errors.Is(err, pgx.ErrNoRows) {
-		return c.ErrUserNotFound
-	}
+	result, err := s.Exec(ctx, query, time.Now().UTC(), userID)
 	if err != nil {
 		return fmt.Errorf("%s: failed to delete user: %w", op, err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return c.ErrUserNotFound
 	}
 
 	return nil

@@ -2,7 +2,7 @@ package models
 
 import "time"
 
-// List DB models
+// List DB model
 type List struct {
 	ID        string     `db:"id" json:"id,omitempty"`
 	Title     string     `db:"title" json:"title" validate:"required"`

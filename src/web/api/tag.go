@@ -4,27 +4,27 @@ import (
 	"errors"
 	c "github.com/rshelekhov/reframed/src/constants"
 	"github.com/rshelekhov/reframed/src/logger"
-	"github.com/rshelekhov/reframed/src/server/middleware/jwtoken"
+	"github.com/rshelekhov/reframed/src/server/middleware/jwtoken/service"
 	"github.com/rshelekhov/reframed/src/storage"
 	"log/slog"
 	"net/http"
 )
 
 type TagHandler struct {
-	Logger     logger.Interface
-	TokenAuth  *jwtoken.JWTAuth
-	TagStorage storage.TagStorage
+	logger     logger.Interface
+	tokenAuth  *service.JWTokenService
+	tagStorage storage.TagStorage
 }
 
 func NewTagHandler(
 	log logger.Interface,
-	tokenAuth *jwtoken.JWTAuth,
+	tokenAuth *service.JWTokenService,
 	tagStorage storage.TagStorage,
 ) *TagHandler {
 	return &TagHandler{
-		Logger:     log,
-		TokenAuth:  tokenAuth,
-		TagStorage: tagStorage,
+		logger:     log,
+		tokenAuth:  tokenAuth,
+		tagStorage: tagStorage,
 	}
 }
 
@@ -32,16 +32,16 @@ func (h *TagHandler) GetTagsByUserID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "tag.handlers.GetTagsByUserID"
 
-		log := logger.LogWithRequest(h.Logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
-		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		_, claims, err := service.GetTokenFromContext(r.Context())
 		if err != nil {
 			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
 			return
 		}
 		userID := claims[c.ContextUserID].(string)
 
-		tags, err := h.TagStorage.GetTagsByUserID(r.Context(), userID)
+		tags, err := h.tagStorage.GetTagsByUserID(r.Context(), userID)
 		switch {
 		case errors.Is(err, c.ErrNoTagsFound):
 			handleResponseError(w, r, log, http.StatusNotFound, c.ErrNoTagsFound)

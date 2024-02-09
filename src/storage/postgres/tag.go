@@ -25,18 +25,13 @@ func (s *TagStorage) CreateTagIfNotExists(ctx context.Context, tag, userID strin
 		querySelectTag = `
 			SELECT id
 			FROM tags
-			WHERE title = $1 AND user_id = $2 AND deleted_at IS NULL`
+			WHERE title = $1
+			  AND user_id = $2
+			  AND deleted_at IS NULL`
 
 		queryInsertTag = `
-			INSERT INTO tags
-			(
-				id,
-				title,
-			 	user_id,
-				updated_at
-			)
-			VALUES
-			($1, LOWER($2), $3, $4)`
+			INSERT INTO tags (id, title, user_id, updated_at)
+			VALUES ($1, LOWER($2), $3, $4)`
 	)
 
 	// Check if tag exists
@@ -69,24 +64,15 @@ func (s *TagStorage) LinkTagsToTask(ctx context.Context, taskID string, tags []s
 		op = "tag.storage.LinkTagsToTask"
 
 		query = `
-			INSERT INTO tasks_tags
-			(
-				task_id,
-				tag_id
-			)
-			VALUES
-			($1, (SELECT id
-			      FROM tags
-			      WHERE title = lower($2)))`
+			INSERT INTO tasks_tags (task_id, tag_id)
+			VALUES ($1, (SELECT id
+			      			FROM tags
+			      			WHERE title = lower($2))
+			)`
 	)
 
 	for _, tag := range tags {
-		_, err := s.Exec(
-			ctx,
-			query,
-			taskID,
-			tag,
-		)
+		_, err := s.Exec(ctx, query, taskID, tag)
 		if err != nil {
 			return fmt.Errorf("%s: failed to link tag to task: %w", op, err)
 		}
@@ -110,12 +96,7 @@ func (s *TagStorage) UnlinkTagsFromTask(ctx context.Context, taskID string, tags
 	)
 
 	for _, tag := range tags {
-		_, err := s.Exec(
-			ctx,
-			query,
-			taskID,
-			tag,
-		)
+		_, err := s.Exec(ctx, query, taskID, tag)
 		if err != nil {
 			return fmt.Errorf("%s: failed to unlink tag from task: %w", op, err)
 		}
@@ -129,12 +110,10 @@ func (s *TagStorage) GetTagsByUserID(ctx context.Context, userID string) ([]mode
 		op = "tag.storage.GetTagsByUserID"
 
 		query = `
-			SELECT
-				id,
-				title,
-				updated_at
+			SELECT id, title, updated_at
 			FROM tags
-			WHERE user_id = $1 AND deleted_at IS NULL`
+			WHERE user_id = $1
+			  AND deleted_at IS NULL`
 	)
 
 	rows, err := s.Query(ctx, query, userID)
@@ -156,6 +135,7 @@ func (s *TagStorage) GetTagsByUserID(ctx context.Context, userID string) ([]mode
 		if err != nil {
 			return nil, fmt.Errorf("%s: failed to scan tag: %w", op, err)
 		}
+
 		tags = append(tags, tag)
 	}
 
@@ -175,11 +155,12 @@ func (s *TagStorage) GetTagsByTaskID(ctx context.Context, taskID string) ([]stri
 		op = "tag.storage.GetTagsByTaskID"
 
 		query = `
-			SELECT
-				tags.title
+			SELECT tags.title
 			FROM tags
-			JOIN tasks_tags ON tags.id = tasks_tags.tag_id
-			WHERE tasks_tags.task_id = $1 AND tags.deleted_at IS NULL`
+				JOIN tasks_tags
+				    ON tags.id = tasks_tags.tag_id
+			WHERE tasks_tags.task_id = $1
+			  AND tags.deleted_at IS NULL`
 	)
 
 	rows, err := s.Query(ctx, query, taskID)
@@ -192,10 +173,12 @@ func (s *TagStorage) GetTagsByTaskID(ctx context.Context, taskID string) ([]stri
 
 	for rows.Next() {
 		var tag string
+
 		err = rows.Scan(&tag)
 		if err != nil {
 			return nil, fmt.Errorf("%s: failed to scan tag: %w", op, err)
 		}
+
 		tags = append(tags, tag)
 	}
 
