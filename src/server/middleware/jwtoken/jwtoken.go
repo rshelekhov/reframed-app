@@ -248,15 +248,14 @@ func GetTokenFromContext(ctx context.Context) (*jwt.Token, map[string]interface{
 }
 
 func SetTokenCookie(w http.ResponseWriter, name, value, domain, path string, expiresAt time.Time, httpOnly bool) {
-	cookie := http.Cookie{
+	http.SetCookie(w, &http.Cookie{
 		Name:     name,
 		Value:    value,
 		Domain:   domain,
 		Path:     path,
 		Expires:  expiresAt,
 		HttpOnly: httpOnly,
-	}
-	http.SetCookie(w, &cookie)
+	})
 }
 
 func SetRefreshTokenCookie(w http.ResponseWriter, refreshToken, domain, path string, expiresAt time.Time, httpOnly bool) {

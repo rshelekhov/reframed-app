@@ -10,6 +10,7 @@ type (
 	UserStorage interface {
 		CreateUser(ctx context.Context, user models.User) error
 		SaveSession(ctx context.Context, userID, deviceID string, session models.Session) error
+		RemoveSession(ctx context.Context, userID, deviceID string) error
 		GetSessionByRefreshToken(ctx context.Context, refreshToken string) (models.Session, error)
 		AddDevice(ctx context.Context, device models.UserDevice) error
 		GetUserDevice(ctx context.Context, userID, userAgent string) (models.UserDevice, error)

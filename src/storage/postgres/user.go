@@ -205,6 +205,24 @@ func (s *UserStorage) SaveSession(ctx context.Context, userID, deviceID string, 
 	return nil
 }
 
+func (s *UserStorage) RemoveSession(ctx context.Context, userID, deviceID string) error {
+	const (
+		op = "user.storage.RemoveSession"
+
+		query = `
+			DELETE FROM refresh_sessions
+			WHERE user_id = $1
+			  AND device_id = $2`
+	)
+
+	_, err := s.Exec(ctx, query, userID, deviceID)
+	if err != nil {
+		return fmt.Errorf("%s: failed to remove session: %w", op, err)
+	}
+
+	return nil
+}
+
 func (s *UserStorage) GetSessionByRefreshToken(ctx context.Context, refreshToken string) (models.Session, error) {
 	const (
 		op = "user.storage.GetSessionByRefreshToken"

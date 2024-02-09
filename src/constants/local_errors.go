@@ -18,6 +18,7 @@ const (
 	ErrFailedToRegisterDevice  LocalError = "failed to register device"
 	ErrFailedToCheckDevice     LocalError = "failed to check device"
 	ErrFailedToCreateSession   LocalError = "failed to create session"
+	ErrFailedToRemoveSession   LocalError = "failed to remove session"
 	ErrFailedToGetAccessToken  LocalError = "failed to get token from context"
 	ErrFailedToGetRefreshToken LocalError = "failed to get refresh token from context"
 	ErrRefreshTokenExpired     LocalError = "refresh token expired"
@@ -99,5 +100,5 @@ const (
 	//  other errors
 	//===========================================================================
 
-	ErrEmptyID LocalError = "empty ID"
+	ErrFailedToWriteResponse LocalError = "failed to write response"
 )

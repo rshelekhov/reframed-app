@@ -317,6 +317,47 @@ func (h *UserHandler) createSession(
 func (h *UserHandler) Logout() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.handlers.Logout"
+
+		log := logger.LogWithRequest(h.logger, op, r)
+
+		_, claims, err := jwtoken.GetTokenFromContext(r.Context())
+		if err != nil {
+			handleInternalServerError(w, r, log, c.ErrFailedToGetAccessToken, err)
+			return
+		}
+		userID := claims[c.ContextUserID].(string)
+
+		device, err := h.checkDevice(r, userID)
+		if errors.Is(err, c.ErrUserDeviceNotFound) {
+			handleResponseError(w, r, log, http.StatusUnauthorized, c.ErrUserDeviceNotFound)
+			return
+		}
+		if err != nil {
+			handleInternalServerError(w, r, log, c.ErrFailedToCheckDevice, err)
+			return
+		}
+
+		err = h.userStorage.RemoveSession(r.Context(), userID, device.ID)
+		if err != nil {
+			handleInternalServerError(w, r, log, c.ErrFailedToRemoveSession, err)
+			return
+		}
+
+		http.SetCookie(w, &http.Cookie{
+			Name:     "refreshToken",
+			Value:    "",
+			Path:     "/",
+			Expires:  time.Unix(0, 0),
+			HttpOnly: true,
+			MaxAge:   -1,
+		})
+
+		w.WriteHeader(http.StatusOK)
+		_, err = w.Write([]byte("Logged out successfully"))
+		if err != nil {
+			handleInternalServerError(w, r, log, c.ErrFailedToWriteResponse, err)
+			return
+		}
 	}
 }
 
@@ -368,8 +409,6 @@ func (h *UserHandler) GetUsers() http.HandlerFunc {
 		default:
 			handleResponseSuccess(w, r, log, "users found", users,
 				slog.Int(c.CountKey, len(users)),
-				slog.Int(c.LimitKey, pagination.Limit),
-				slog.Int(c.OffsetKey, pagination.Offset),
 			)
 		}
 	}
