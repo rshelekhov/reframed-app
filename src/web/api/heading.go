@@ -1,4 +1,4 @@
-package handlers
+package api
 
 import (
 	"errors"
@@ -33,7 +33,7 @@ func NewHeadingHandler(
 
 func (h *HeadingHandler) CreateHeading() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "heading.handlers.CreateHeading"
+		const op = "heading.api.CreateHeading"
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
@@ -78,7 +78,7 @@ func (h *HeadingHandler) CreateHeading() http.HandlerFunc {
 
 func (h *HeadingHandler) GetHeadingByID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "heading.handlers.GetHeadingByID"
+		const op = "heading.api.GetHeadingByID"
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
@@ -111,7 +111,7 @@ func (h *HeadingHandler) GetHeadingByID() http.HandlerFunc {
 
 func (h *HeadingHandler) GetHeadingsByListID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "heading.handlers.GetHeadingsByListID"
+		const op = "heading.api.GetHeadingsByListID"
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
@@ -144,7 +144,7 @@ func (h *HeadingHandler) GetHeadingsByListID() http.HandlerFunc {
 
 func (h *HeadingHandler) UpdateHeading() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "heading.handlers.UpdateHeading"
+		const op = "heading.api.UpdateHeading"
 
 		log := logger.LogWithRequest(h.logger, op, r)
 		heading := &models.Heading{}
@@ -188,7 +188,7 @@ func (h *HeadingHandler) UpdateHeading() http.HandlerFunc {
 
 func (h *HeadingHandler) MoveHeadingToAnotherList() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "heading.handlers.MoveTaskToAnotherList"
+		const op = "heading.api.MoveTaskToAnotherList"
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
@@ -227,7 +227,7 @@ func (h *HeadingHandler) MoveHeadingToAnotherList() http.HandlerFunc {
 
 func (h *HeadingHandler) DeleteHeading() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "heading.handlers.DeleteHeading"
+		const op = "heading.api.DeleteHeading"
 
 		log := logger.LogWithRequest(h.logger, op, r)
 

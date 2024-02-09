@@ -1,4 +1,4 @@
-package jwtoken
+package service
 
 import (
 	"context"
@@ -6,36 +6,40 @@ import (
 	"errors"
 	"fmt"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/rshelekhov/reframed/src/models"
 	"github.com/segmentio/ksuid"
 	"net/http"
 	"strings"
 	"time"
 )
 
-type JWTService struct {
+type JWTokenService struct {
 	SignKey                  string
 	SigningMethod            jwt.SigningMethod
 	AccessTokenTTL           time.Duration
 	RefreshTokenTTL          time.Duration
 	RefreshTokenCookieDomain string
 	RefreshTokenCookiePath   string
+	PasswordHash             models.PasswordHashBcrypt
 }
 
-func NewJWTService(
+func NewJWTokenService(
 	signKey string,
 	signingMethod jwt.SigningMethod,
 	accessTokenTTL time.Duration,
 	refreshTokenTTL time.Duration,
 	refreshTokenCookieDomain string,
 	refreshTokenCookiePath string,
-) *JWTService {
-	return &JWTService{
+	passwordHash models.PasswordHashBcrypt,
+) *JWTokenService {
+	return &JWTokenService{
 		SignKey:                  signKey,
 		SigningMethod:            signingMethod,
 		AccessTokenTTL:           accessTokenTTL,
 		RefreshTokenTTL:          refreshTokenTTL,
 		RefreshTokenCookieDomain: refreshTokenCookieDomain,
 		RefreshTokenCookiePath:   refreshTokenCookiePath,
+		PasswordHash:             passwordHash,
 	}
 }
 
@@ -66,7 +70,7 @@ var (
 	ErrFailedToParseTokenClaims = errors.New("failed to parse token claims from context")
 )
 
-func (j *JWTService) NewAccessToken(additionalClaims map[string]interface{}) (string, error) {
+func (j *JWTokenService) NewAccessToken(additionalClaims map[string]interface{}) (string, error) {
 	claims := jwt.MapClaims{
 		"exp": time.Now().Add(j.AccessTokenTTL).Unix(),
 	}
@@ -82,16 +86,16 @@ func (j *JWTService) NewAccessToken(additionalClaims map[string]interface{}) (st
 	return token.SignedString([]byte(j.SignKey))
 }
 
-func (j *JWTService) NewRefreshToken() (string, error) {
+func (j *JWTokenService) NewRefreshToken() (string, error) {
 	token := ksuid.New().String()
 	return token, nil
 }
 
-func Verifier(j *JWTService) func(http.Handler) http.Handler {
+func Verifier(j *JWTokenService) func(http.Handler) http.Handler {
 	return j.Verify(GetTokenFromHeader, GetTokenFromCookie, GetTokenFromQuery)
 }
 
-func (j *JWTService) Verify(findTokenFns ...func(r *http.Request) string) func(http.Handler) http.Handler {
+func (j *JWTokenService) Verify(findTokenFns ...func(r *http.Request) string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
@@ -107,7 +111,7 @@ func (j *JWTService) Verify(findTokenFns ...func(r *http.Request) string) func(h
 	}
 }
 
-func (j *JWTService) FindToken(r *http.Request, findTokenFns ...func(r *http.Request) string) (*jwt.Token, error) {
+func (j *JWTokenService) FindToken(r *http.Request, findTokenFns ...func(r *http.Request) string) (*jwt.Token, error) {
 	var accessTokenString string
 
 	for _, fn := range findTokenFns {
@@ -139,7 +143,7 @@ func FindRefreshToken(r *http.Request) (string, error) {
 	return refreshToken, nil
 }
 
-func (j *JWTService) VerifyToken(accessTokenString string) (*jwt.Token, error) {
+func (j *JWTokenService) VerifyToken(accessTokenString string) (*jwt.Token, error) {
 	token, err := j.DecodeToken(accessTokenString)
 	if err != nil {
 		return nil, Errors(err)
@@ -150,15 +154,15 @@ func (j *JWTService) VerifyToken(accessTokenString string) (*jwt.Token, error) {
 	return token, nil
 }
 
-// func (j *JWTService) EncodeToken
+// func (j *JWTokenService) EncodeToken
 
-func (j *JWTService) DecodeToken(accessTokenString string) (*jwt.Token, error) {
+func (j *JWTokenService) DecodeToken(accessTokenString string) (*jwt.Token, error) {
 	return j.ParseToken(accessTokenString)
 }
 
-func (j *JWTService) ParseToken(accessTokenString string) (*jwt.Token, error) {
+func (j *JWTokenService) ParseToken(accessTokenString string) (*jwt.Token, error) {
 	token, err := jwt.Parse(accessTokenString, func(token *jwt.Token) (interface{}, error) {
-		// TODO: add signing method to JWTService
+		// TODO: add signing method to JWTokenService
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("%v: %v", ErrUnexpectedSigningMethod, token.Header["alg"])
 		}

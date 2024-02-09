@@ -4,11 +4,11 @@ package main
 import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/rshelekhov/reframed/config"
-	"github.com/rshelekhov/reframed/src/handlers"
 	"github.com/rshelekhov/reframed/src/logger"
 	"github.com/rshelekhov/reframed/src/server"
-	"github.com/rshelekhov/reframed/src/server/middleware/jwtoken"
+	"github.com/rshelekhov/reframed/src/server/middleware/jwtoken/service"
 	"github.com/rshelekhov/reframed/src/storage/postgres"
+	api2 "github.com/rshelekhov/reframed/src/web/api"
 	"log/slog"
 )
 
@@ -26,13 +26,14 @@ func main() {
 		slog.String("address", cfg.HTTPServer.Address))
 	log.Debug("logger debug mode enabled")
 
-	tokenAuth := jwtoken.NewJWTAuth(
-		cfg.JWTAuth.Secret,
+	tokenAuth := service.NewJWTokenService(
+		cfg.JWTAuth.SigningKey,
 		jwt.SigningMethodHS256,
 		cfg.JWTAuth.AccessTokenTTL,
 		cfg.JWTAuth.RefreshTokenTTL,
 		cfg.JWTAuth.RefreshTokenCookieDomain,
 		cfg.JWTAuth.RefreshTokenCookiePath,
+		cfg.JWTAuth.PasswordHash,
 	)
 
 	// Storage
@@ -49,11 +50,11 @@ func main() {
 	tagStorage := postgres.NewTagStorage(pg)
 
 	// Handlers
-	user := handlers.NewUserHandler(log, tokenAuth, userStorage, listStorage)
-	list := handlers.NewListHandler(log, tokenAuth, listStorage, headingStorage)
-	task := handlers.NewTaskHandler(log, tokenAuth, taskStorage, headingStorage, tagStorage)
-	heading := handlers.NewHeadingHandler(log, tokenAuth, headingStorage)
-	tag := handlers.NewTagHandler(log, tokenAuth, tagStorage)
+	user := api2.NewUserHandler(log, tokenAuth, userStorage, listStorage)
+	list := api2.NewListHandler(log, tokenAuth, listStorage, headingStorage)
+	task := api2.NewTaskHandler(log, tokenAuth, taskStorage, headingStorage, tagStorage)
+	heading := api2.NewHeadingHandler(log, tokenAuth, headingStorage)
+	tag := api2.NewTagHandler(log, tokenAuth, tagStorage)
 
 	// HTTP Server
 	log.Info("starting server", slog.String("address", cfg.HTTPServer.Address))

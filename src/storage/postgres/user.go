@@ -99,7 +99,7 @@ func replaceSoftDeletedUser(ctx context.Context, tx pgx.Tx, user models.User) er
 			WHERE email = $1`
 
 		queryInsertUser = `
-			INSERT INTO users (id, email, password, updated_at)
+			INSERT INTO users (id, email, password_hash, updated_at)
 			VALUES ($1, $2, $3, $4)`
 	)
 
@@ -114,7 +114,7 @@ func replaceSoftDeletedUser(ctx context.Context, tx pgx.Tx, user models.User) er
 		queryInsertUser,
 		user.ID,
 		user.Email,
-		user.Password,
+		user.PasswordHash,
 		time.Now().UTC(),
 	)
 	if err != nil {
@@ -131,7 +131,7 @@ func insertUser(ctx context.Context, tx pgx.Tx, user models.User) error {
 		op = "user.storage.insertNewUser"
 
 		query = `
-			INSERT INTO users (id, email, password, updated_at)
+			INSERT INTO users (id, email, password_hash, updated_at)
 			VALUES ($1, $2, $3, $4)`
 	)
 
@@ -140,7 +140,7 @@ func insertUser(ctx context.Context, tx pgx.Tx, user models.User) error {
 		query,
 		user.ID,
 		user.Email,
-		user.Password,
+		user.PasswordHash,
 		time.Now().UTC(),
 	)
 	if err != nil {
@@ -151,23 +151,49 @@ func insertUser(ctx context.Context, tx pgx.Tx, user models.User) error {
 	return nil
 }
 
-func (s *UserStorage) GetUserCredentials(ctx context.Context, user *models.User) (models.User, error) {
+func (s *UserStorage) GetUserByEmail(ctx context.Context, email string) (models.User, error) {
 	const (
 		op = "user.storage.GetUserCredentials"
 
 		query = `
-			SELECT id, email, password, updated_at
+			SELECT id, email, updated_at
 			FROM users
 			WHERE email = $1
-			  AND password = $2
 			  AND deleted_at IS NULL`
 	)
 
 	var userDB models.User
-	err := s.QueryRow(ctx, query, user.Email, user.Password).Scan(
+	err := s.QueryRow(ctx, query, email).Scan(
 		&userDB.ID,
 		&userDB.Email,
-		&userDB.Password,
+		&userDB.UpdatedAt,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return models.User{}, c.ErrUserNotFound
+	}
+	if err != nil {
+		return models.User{}, fmt.Errorf("%s: failed to get user credentials: %w", op, err)
+	}
+
+	return userDB, nil
+}
+
+func (s *UserStorage) GetUserByID(ctx context.Context, email string) (models.User, error) {
+	const (
+		op = "user.storage.GetUserCredentials"
+
+		query = `
+			SELECT id, email, password_hash, updated_at
+			FROM users
+			WHERE email = $1
+			  AND deleted_at IS NULL`
+	)
+
+	var userDB models.User
+	err := s.QueryRow(ctx, query, email).Scan(
+		&userDB.ID,
+		&userDB.Email,
+		&userDB.PasswordHash,
 		&userDB.UpdatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -319,9 +345,9 @@ func (s *UserStorage) GetUserDevice(ctx context.Context, userID, userAgent strin
 }
 
 // GetUser returns a user by ID
-func (s *UserStorage) GetUser(ctx context.Context, userID string) (models.User, error) {
+func (s *UserStorage) GetUserProfile(ctx context.Context, userID string) (models.User, error) {
 	const (
-		op = "user.storage.GetUser"
+		op = "user.storage.GetUserProfile"
 
 		query = `
 			SELECT id, email, updated_at
@@ -347,61 +373,6 @@ func (s *UserStorage) GetUser(ctx context.Context, userID string) (models.User, 
 	return user, nil
 }
 
-// GetUsers returns a list of users
-func (s *UserStorage) GetUsers(ctx context.Context, pgn models.Pagination) ([]models.User, error) {
-	const (
-		op = "user.storage.GetUsers"
-
-		query = `
-			SELECT id, email, updated_at
-			FROM users
-			WHERE deleted_at IS NULL
-			  AND id > $1
-			ORDER BY id
-			LIMIT $2`
-	)
-
-	var afterID interface{}
-	if pgn.AfterID != "" {
-		afterID = pgn.AfterID
-	} else {
-		afterID = nil
-	}
-
-	rows, err := s.Query(ctx, query, afterID, pgn.Limit)
-	if err != nil {
-		return nil, fmt.Errorf("%s: failed to execute query: %w", op, err)
-	}
-	defer rows.Close()
-
-	var users []models.User
-
-	for rows.Next() {
-		user := models.User{}
-
-		err = rows.Scan(
-			&user.ID,
-			&user.Email,
-			&user.UpdatedAt,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("%s: failed to scan row: %w", op, err)
-		}
-
-		users = append(users, user)
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("%s: failed to iterate rows: %w", op, err)
-	}
-
-	if len(users) == 0 {
-		return nil, c.ErrNoUsersFound
-	}
-
-	return users, nil
-}
-
 // UpdateUser updates a user by ID
 func (s *UserStorage) UpdateUser(ctx context.Context, user models.User) error {
 	const op = "user.storage.UpdateUser"
@@ -413,7 +384,7 @@ func (s *UserStorage) UpdateUser(ctx context.Context, user models.User) error {
 	}()
 
 	// Check if the user exists
-	currentUser, err := s.GetUser(ctx, user.ID)
+	currentUser, err := s.GetUserProfile(ctx, user.ID)
 	if err != nil {
 		return err
 	}
@@ -425,7 +396,7 @@ func (s *UserStorage) UpdateUser(ctx context.Context, user models.User) error {
 	}
 
 	emailChanged := user.Email != "" && user.Email != currentUser.Email
-	passwordChanged := user.Password != ""
+	passwordChanged := user.PasswordHash != ""
 
 	if !emailChanged && !passwordChanged {
 		return c.ErrNoChangesDetected
@@ -436,7 +407,7 @@ func (s *UserStorage) UpdateUser(ctx context.Context, user models.User) error {
 		return err
 	}
 
-	if passwordChanged && user.Password == currentUserPassword {
+	if passwordChanged && user.PasswordHash == currentUserPassword {
 		return c.ErrNoPasswordChangesDetected
 	}
 
@@ -448,9 +419,9 @@ func (s *UserStorage) UpdateUser(ctx context.Context, user models.User) error {
 		queryUpdate += ", email = $" + strconv.Itoa(len(queryParams)+1)
 		queryParams = append(queryParams, user.Email)
 	}
-	if user.Password != "" {
-		queryUpdate += ", password = $" + strconv.Itoa(len(queryParams)+1)
-		queryParams = append(queryParams, user.Password)
+	if user.PasswordHash != "" {
+		queryUpdate += ", password_hash = $" + strconv.Itoa(len(queryParams)+1)
+		queryParams = append(queryParams, user.PasswordHash)
 	}
 
 	// Add condition for the specific user ID
@@ -478,7 +449,7 @@ func getUserPassword(ctx context.Context, tx pgx.Tx, id string) (string, error) 
 		op = "user.storage.getUserPassword"
 
 		query = `
-			SELECT	password
+			SELECT	password_hash
 			FROM users
 			WHERE id = $1
 			  AND deleted_at IS NULL`

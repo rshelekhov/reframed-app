@@ -1,4 +1,4 @@
-package handlers
+package api
 
 import (
 	"errors"
@@ -36,7 +36,7 @@ func NewListHandler(
 
 func (h *ListHandler) CreateList() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "list.handlers.CreateList"
+		const op = "list.api.CreateList"
 
 		log := logger.LogWithRequest(h.logger, op, r)
 
@@ -89,7 +89,7 @@ func (h *ListHandler) CreateList() http.HandlerFunc {
 func (h *ListHandler) GetListByID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const (
-			op = "list.handlers.GetListByID"
+			op = "list.api.GetListByID"
 		)
 
 		log := logger.LogWithRequest(h.logger, op, r)
@@ -124,7 +124,7 @@ func (h *ListHandler) GetListByID() http.HandlerFunc {
 func (h *ListHandler) GetListsByUserID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const (
-			op = "list.handlers.GetListsByUserID"
+			op = "list.api.GetListsByUserID"
 		)
 
 		log := logger.LogWithRequest(h.logger, op, r)
@@ -154,7 +154,7 @@ func (h *ListHandler) GetListsByUserID() http.HandlerFunc {
 
 func (h *ListHandler) UpdateList() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "list.handlers.UpdateList"
+		const op = "list.api.UpdateList"
 
 		log := logger.LogWithRequest(h.logger, op, r)
 		list := &models.UpdateList{}
@@ -198,7 +198,7 @@ func (h *ListHandler) UpdateList() http.HandlerFunc {
 
 func (h *ListHandler) DeleteList() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "list.handlers.DeleteList"
+		const op = "list.api.DeleteList"
 
 		log := logger.LogWithRequest(h.logger, op, r)
 

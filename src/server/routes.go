@@ -5,13 +5,13 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/httprate"
 	"github.com/go-chi/render"
-	"github.com/rshelekhov/reframed/src/handlers"
-	"github.com/rshelekhov/reframed/src/server/middleware/jwtoken"
+	"github.com/rshelekhov/reframed/src/server/middleware/jwtoken/service"
 	mwlogger "github.com/rshelekhov/reframed/src/server/middleware/logger"
+	"github.com/rshelekhov/reframed/src/web/api"
 	"time"
 )
 
-func (s *Server) initRoutes(jwtAuth *jwtoken.JWTAuth) *chi.Mux {
+func (s *Server) initRoutes(jwtAuth *service.JWTokenService) *chi.Mux {
 	r := chi.NewRouter()
 
 	// Add request_id to each request, for tracing purposes
@@ -26,7 +26,7 @@ func (s *Server) initRoutes(jwtAuth *jwtoken.JWTAuth) *chi.Mux {
 	// our own middleware to log requests:
 	r.Use(mwlogger.New(s.log))
 
-	// If a panic happens somewhere inside the server (request handlers),
+	// If a panic happens somewhere inside the server (request api),
 	// the application should not crash.
 	r.Use(middleware.Recoverer)
 
@@ -40,12 +40,11 @@ func (s *Server) initRoutes(jwtAuth *jwtoken.JWTAuth) *chi.Mux {
 	r.Use(httprate.LimitByIP(100, 1*time.Minute))
 
 	// Health check
-	r.Get("/health", handlers.HealthRead())
+	r.Get("/health", api.HealthRead())
 
 	// Public routes
 	r.Group(func(r chi.Router) {
 		r.Post("/login", s.user.LoginWithPassword())
-		// TODO: add hashing password
 		r.Post("/register", s.user.CreateUser())
 		// TODO: add handler for RequestResetPassword
 
@@ -59,19 +58,15 @@ func (s *Server) initRoutes(jwtAuth *jwtoken.JWTAuth) *chi.Mux {
 	// Protected routes
 	r.Group(func(r chi.Router) {
 		// Seek, verify and validate JWT tokens
-		r.Use(jwtoken.Verifier(jwtAuth))
+		r.Use(service.Verifier(jwtAuth))
 
 		// Handle valid / invalid tokens
-		r.Use(jwtoken.Authenticator())
-
-		// TODO: add roles and permissions
-		// Admin routes
-		r.Get("/users", s.user.GetUsers())
+		r.Use(service.Authenticator())
 
 		// User routes
 		r.Route("/user", func(r chi.Router) {
 			r.Route("/profile", func(r chi.Router) {
-				r.Get("/", s.user.GetUser())
+				r.Get("/", s.user.GetUserProfile())
 				r.Put("/", s.user.UpdateUser())
 				r.Delete("/", s.user.DeleteUser())
 			})
