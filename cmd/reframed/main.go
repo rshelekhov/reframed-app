@@ -4,11 +4,13 @@ package main
 import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/rshelekhov/reframed/config"
-	"github.com/rshelekhov/reframed/src/logger"
-	"github.com/rshelekhov/reframed/src/server"
-	"github.com/rshelekhov/reframed/src/server/middleware/jwtoken/service"
-	"github.com/rshelekhov/reframed/src/storage/postgres"
-	api2 "github.com/rshelekhov/reframed/src/web/api"
+	"github.com/rshelekhov/reframed/internal/controller/http/v1"
+	"github.com/rshelekhov/reframed/internal/storage"
+	"github.com/rshelekhov/reframed/internal/usecase"
+	"github.com/rshelekhov/reframed/pkg/httpserver"
+	"github.com/rshelekhov/reframed/pkg/httpserver/middleware/jwtoken"
+	"github.com/rshelekhov/reframed/pkg/logger"
+	"github.com/rshelekhov/reframed/pkg/postgres"
 	"log/slog"
 )
 
@@ -22,18 +24,19 @@ func main() {
 	log = log.With(slog.String("env", cfg.AppEnv))
 
 	log.Info(
-		"initializing server",
+		"initializing httpserver",
 		slog.String("address", cfg.HTTPServer.Address))
 	log.Debug("logger debug mode enabled")
 
-	tokenAuth := service.NewJWTokenService(
+	tokenAuth := jwtoken.NewJWTokenService(
 		cfg.JWTAuth.SigningKey,
 		jwt.SigningMethodHS256,
 		cfg.JWTAuth.AccessTokenTTL,
 		cfg.JWTAuth.RefreshTokenTTL,
 		cfg.JWTAuth.RefreshTokenCookieDomain,
 		cfg.JWTAuth.RefreshTokenCookiePath,
-		cfg.JWTAuth.PasswordHash,
+		cfg.JWTAuth.PasswordHash.Cost,
+		cfg.JWTAuth.PasswordHash.Salt,
 	)
 
 	// Storage
@@ -43,22 +46,26 @@ func main() {
 	}
 	log.Debug("storage initiated")
 
-	userStorage := postgres.NewUserStorage(pg)
-	listStorage := postgres.NewListStorage(pg)
-	taskStorage := postgres.NewTaskStorage(pg)
-	headingStorage := postgres.NewHeadingStorage(pg)
-	tagStorage := postgres.NewTagStorage(pg)
-
-	// Handlers
-	user := api2.NewUserHandler(log, tokenAuth, userStorage, listStorage)
-	list := api2.NewListHandler(log, tokenAuth, listStorage, headingStorage)
-	task := api2.NewTaskHandler(log, tokenAuth, taskStorage, headingStorage, tagStorage)
-	heading := api2.NewHeadingHandler(log, tokenAuth, headingStorage)
-	tag := api2.NewTagHandler(log, tokenAuth, tagStorage)
+	// Usecases
+	headingUsecase := usecase.NewHeadingUsecase(storage.NewHeadingStorage(pg))
+	listUsecase := usecase.NewListUsecase(storage.NewListStorage(pg), headingUsecase)
+	authUsecase := usecase.NewAuthUsecase(storage.NewAuthStorage(pg), listUsecase)
+	tagUsecase := usecase.NewTagUsecase(storage.NewTagStorage(pg))
+	taskUsecase := usecase.NewTaskUsecase(storage.NewTaskStorage(pg), headingUsecase, tagUsecase)
 
 	// HTTP Server
-	log.Info("starting server", slog.String("address", cfg.HTTPServer.Address))
+	log.Info("starting httpserver", slog.String("address", cfg.HTTPServer.Address))
 
-	srv := server.NewServer(cfg, log, tokenAuth, user, list, task, heading, tag)
+	router := v1.NewRouter(
+		log,
+		tokenAuth,
+		authUsecase,
+		listUsecase,
+		headingUsecase,
+		taskUsecase,
+		tagUsecase,
+	)
+
+	srv := httpserver.NewServer(cfg, log, tokenAuth, router)
 	srv.Start()
 }
