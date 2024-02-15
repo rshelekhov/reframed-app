@@ -7,7 +7,8 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/rshelekhov/reframed/internal/domain"
+	"github.com/rshelekhov/reframed/internal/model"
+	"github.com/rshelekhov/reframed/pkg/constants/le"
 	"strconv"
 )
 
@@ -19,7 +20,7 @@ func NewTaskStorage(pool *pgxpool.Pool) *TaskStorage {
 	return &TaskStorage{Pool: pool}
 }
 
-func (s *TaskStorage) CreateTask(ctx context.Context, task domain.Task) error {
+func (s *TaskStorage) CreateTask(ctx context.Context, task model.Task) error {
 	const (
 		op = "task.storage.CreateTask"
 
@@ -66,7 +67,7 @@ func (s *TaskStorage) CreateTask(ctx context.Context, task domain.Task) error {
 	return nil
 }
 
-func (s *TaskStorage) GetTaskStatusID(ctx context.Context, status domain.StatusName) (int, error) {
+func (s *TaskStorage) GetTaskStatusID(ctx context.Context, status model.StatusName) (int, error) {
 	const (
 		op = "task.storage.GetTaskStatusID"
 
@@ -86,7 +87,7 @@ func (s *TaskStorage) GetTaskStatusID(ctx context.Context, status domain.StatusN
 	return statusID, nil
 }
 
-func (s *TaskStorage) GetTaskByID(ctx context.Context, taskID, userID string) (domain.Task, error) {
+func (s *TaskStorage) GetTaskByID(ctx context.Context, taskID, userID string) (model.Task, error) {
 	const (
 		op = "task.storage.GetTaskByID"
 
@@ -127,7 +128,7 @@ func (s *TaskStorage) GetTaskByID(ctx context.Context, taskID, userID string) (d
 			    t.updated_at`
 	)
 
-	var task domain.Task
+	var task model.Task
 
 	err := s.QueryRow(
 		ctx,
@@ -150,16 +151,16 @@ func (s *TaskStorage) GetTaskByID(ctx context.Context, taskID, userID string) (d
 		&task.UpdatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.Task{}, domain.ErrTaskNotFound
+		return model.Task{}, le.ErrTaskNotFound
 	}
 	if err != nil {
-		return domain.Task{}, fmt.Errorf("%s: failed to get task: %w", op, err)
+		return model.Task{}, fmt.Errorf("%s: failed to get task: %w", op, err)
 	}
 
 	return task, nil
 }
 
-func (s *TaskStorage) GetTasksByUserID(ctx context.Context, userID string, pgn domain.Pagination) ([]domain.Task, error) {
+func (s *TaskStorage) GetTasksByUserID(ctx context.Context, userID string, pgn model.Pagination) ([]model.Task, error) {
 	const (
 		op = "task.storage.GetTasksByUserID"
 
@@ -218,10 +219,10 @@ func (s *TaskStorage) GetTasksByUserID(ctx context.Context, userID string, pgn d
 	}
 	defer rows.Close()
 
-	var tasks []domain.Task
+	var tasks []model.Task
 
 	for rows.Next() {
-		task := domain.Task{}
+		task := model.Task{}
 
 		err = rows.Scan(
 			&task.ID,
@@ -249,13 +250,13 @@ func (s *TaskStorage) GetTasksByUserID(ctx context.Context, userID string, pgn d
 	}
 
 	if len(tasks) == 0 {
-		return nil, domain.ErrNoTasksFound
+		return nil, le.ErrNoTasksFound
 	}
 
 	return tasks, nil
 }
 
-func (s *TaskStorage) GetTasksByListID(ctx context.Context, listID, userID string) ([]domain.Task, error) {
+func (s *TaskStorage) GetTasksByListID(ctx context.Context, listID, userID string) ([]model.Task, error) {
 	const (
 		op = "task.storage.GetTasksByListID"
 
@@ -319,10 +320,10 @@ func (s *TaskStorage) GetTasksByListID(ctx context.Context, listID, userID strin
 	}
 	defer rows.Close()
 
-	var tasks []domain.Task
+	var tasks []model.Task
 
 	for rows.Next() {
-		task := domain.Task{}
+		task := model.Task{}
 
 		err = rows.Scan(
 			&task.ID,
@@ -351,13 +352,13 @@ func (s *TaskStorage) GetTasksByListID(ctx context.Context, listID, userID strin
 	}
 
 	if len(tasks) == 0 {
-		return nil, domain.ErrNoTasksFound
+		return nil, le.ErrNoTasksFound
 	}
 
 	return tasks, nil
 }
 
-func (s *TaskStorage) GetTasksGroupedByHeadings(ctx context.Context, listID, userID string) ([]domain.TaskGroup, error) {
+func (s *TaskStorage) GetTasksGroupedByHeadings(ctx context.Context, listID, userID string) ([]model.TaskGroup, error) {
 	const (
 		op = "task.storage.GetTasksGroupedByHeadings"
 
@@ -426,7 +427,7 @@ func (s *TaskStorage) GetTasksGroupedByHeadings(ctx context.Context, listID, use
 			ORDER BY h.id`
 	)
 
-	var taskGroups []domain.TaskGroup
+	var taskGroups []model.TaskGroup
 
 	rows, err := s.Query(ctx, query, listID, userID)
 	if err != nil {
@@ -435,7 +436,7 @@ func (s *TaskStorage) GetTasksGroupedByHeadings(ctx context.Context, listID, use
 	defer rows.Close()
 
 	for rows.Next() {
-		var taskGroup domain.TaskGroup
+		var taskGroup model.TaskGroup
 		var tasksJSON []byte
 
 		err = rows.Scan(&taskGroup.HeadingID, &tasksJSON)
@@ -443,7 +444,7 @@ func (s *TaskStorage) GetTasksGroupedByHeadings(ctx context.Context, listID, use
 			return nil, fmt.Errorf("%s: failed to scan task: %w", op, err)
 		}
 
-		var tasks []domain.TaskResponseData
+		var tasks []model.TaskResponseData
 
 		err = json.Unmarshal(tasksJSON, &tasks)
 		if err != nil {
@@ -458,13 +459,13 @@ func (s *TaskStorage) GetTasksGroupedByHeadings(ctx context.Context, listID, use
 	}
 
 	if len(taskGroups) == 0 {
-		return nil, domain.ErrNoTasksFound
+		return nil, le.ErrNoTasksFound
 	}
 
 	return taskGroups, nil
 }
 
-func (s *TaskStorage) GetTasksForToday(ctx context.Context, userID string) ([]domain.TaskGroup, error) {
+func (s *TaskStorage) GetTasksForToday(ctx context.Context, userID string) ([]model.TaskGroup, error) {
 	const (
 		op = "task.storage.GetTasksForToday"
 
@@ -532,7 +533,7 @@ func (s *TaskStorage) GetTasksForToday(ctx context.Context, userID string) ([]do
 			ORDER BY l.id`
 	)
 
-	var taskGroups []domain.TaskGroup
+	var taskGroups []model.TaskGroup
 
 	rows, err := s.Query(ctx, query, userID)
 	if err != nil {
@@ -541,7 +542,7 @@ func (s *TaskStorage) GetTasksForToday(ctx context.Context, userID string) ([]do
 	defer rows.Close()
 
 	for rows.Next() {
-		var taskGroup domain.TaskGroup
+		var taskGroup model.TaskGroup
 		var tasksJSON []byte
 
 		err = rows.Scan(&taskGroup.ListID, &tasksJSON)
@@ -549,7 +550,7 @@ func (s *TaskStorage) GetTasksForToday(ctx context.Context, userID string) ([]do
 			return nil, fmt.Errorf("%s: failed to scan task: %w", op, err)
 		}
 
-		var tasks []domain.TaskResponseData
+		var tasks []model.TaskResponseData
 
 		err = json.Unmarshal(tasksJSON, &tasks)
 		if err != nil {
@@ -564,13 +565,13 @@ func (s *TaskStorage) GetTasksForToday(ctx context.Context, userID string) ([]do
 	}
 
 	if len(taskGroups) == 0 {
-		return nil, domain.ErrNoTasksFound
+		return nil, le.ErrNoTasksFound
 	}
 
 	return taskGroups, nil
 }
 
-func (s *TaskStorage) GetUpcomingTasks(ctx context.Context, userID string, pgn domain.Pagination) ([]domain.TaskGroup, error) {
+func (s *TaskStorage) GetUpcomingTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error) {
 	const (
 		op = "task.storage.GetUpcomingTasks"
 
@@ -653,10 +654,10 @@ func (s *TaskStorage) GetUpcomingTasks(ctx context.Context, userID string, pgn d
 	}
 	defer rows.Close()
 
-	var taskGroups []domain.TaskGroup
+	var taskGroups []model.TaskGroup
 
 	for rows.Next() {
-		var taskGroup domain.TaskGroup
+		var taskGroup model.TaskGroup
 		var tasksJSON []byte
 
 		err = rows.Scan(&taskGroup.StartDate, &tasksJSON)
@@ -664,7 +665,7 @@ func (s *TaskStorage) GetUpcomingTasks(ctx context.Context, userID string, pgn d
 			return nil, fmt.Errorf("%s: failed to scan task: %w", op, err)
 		}
 
-		var tasks []domain.TaskResponseData
+		var tasks []model.TaskResponseData
 
 		err = json.Unmarshal(tasksJSON, &tasks)
 		if err != nil {
@@ -679,13 +680,13 @@ func (s *TaskStorage) GetUpcomingTasks(ctx context.Context, userID string, pgn d
 	}
 
 	if len(taskGroups) == 0 {
-		return nil, domain.ErrNoTasksFound
+		return nil, le.ErrNoTasksFound
 	}
 
 	return taskGroups, nil
 }
 
-func (s *TaskStorage) GetOverdueTasks(ctx context.Context, userID string, pgn domain.Pagination) ([]domain.TaskGroup, error) {
+func (s *TaskStorage) GetOverdueTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error) {
 	const (
 		op = "task.storage.GetOverdueTasks"
 
@@ -759,10 +760,10 @@ func (s *TaskStorage) GetOverdueTasks(ctx context.Context, userID string, pgn do
 	}
 	defer rows.Close()
 
-	var taskGroups []domain.TaskGroup
+	var taskGroups []model.TaskGroup
 
 	for rows.Next() {
-		var taskGroup domain.TaskGroup
+		var taskGroup model.TaskGroup
 		var tasksJSON []byte
 
 		err = rows.Scan(&taskGroup.ListID, &tasksJSON)
@@ -770,7 +771,7 @@ func (s *TaskStorage) GetOverdueTasks(ctx context.Context, userID string, pgn do
 			return nil, fmt.Errorf("%s: failed to scan task: %w", op, err)
 		}
 
-		var tasks []domain.TaskResponseData
+		var tasks []model.TaskResponseData
 
 		err = json.Unmarshal(tasksJSON, &tasks)
 		if err != nil {
@@ -785,13 +786,13 @@ func (s *TaskStorage) GetOverdueTasks(ctx context.Context, userID string, pgn do
 	}
 
 	if len(taskGroups) == 0 {
-		return nil, domain.ErrNoTasksFound
+		return nil, le.ErrNoTasksFound
 	}
 
 	return taskGroups, nil
 }
 
-func (s *TaskStorage) GetTasksForSomeday(ctx context.Context, userID string, pgn domain.Pagination) ([]domain.TaskGroup, error) {
+func (s *TaskStorage) GetTasksForSomeday(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error) {
 	const (
 		op = "task.storage.GetTasksForSomeday"
 
@@ -863,10 +864,10 @@ func (s *TaskStorage) GetTasksForSomeday(ctx context.Context, userID string, pgn
 	}
 	defer rows.Close()
 
-	var taskGroups []domain.TaskGroup
+	var taskGroups []model.TaskGroup
 
 	for rows.Next() {
-		var taskGroup domain.TaskGroup
+		var taskGroup model.TaskGroup
 		var tasksJSON []byte
 
 		err = rows.Scan(&taskGroup.ListID, &tasksJSON)
@@ -874,7 +875,7 @@ func (s *TaskStorage) GetTasksForSomeday(ctx context.Context, userID string, pgn
 			return nil, fmt.Errorf("%s: failed to scan task: %w", op, err)
 		}
 
-		var tasks []domain.TaskResponseData
+		var tasks []model.TaskResponseData
 
 		err = json.Unmarshal(tasksJSON, &tasks)
 		if err != nil {
@@ -889,13 +890,13 @@ func (s *TaskStorage) GetTasksForSomeday(ctx context.Context, userID string, pgn
 	}
 
 	if len(taskGroups) == 0 {
-		return nil, domain.ErrNoTasksFound
+		return nil, le.ErrNoTasksFound
 	}
 
 	return taskGroups, nil
 }
 
-func (s *TaskStorage) GetCompletedTasks(ctx context.Context, userID string, pgn domain.Pagination) ([]domain.TaskGroup, error) {
+func (s *TaskStorage) GetCompletedTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error) {
 	const (
 		op    = "task.storage.GetCompletedTasks"
 		query = `
@@ -964,7 +965,7 @@ func (s *TaskStorage) GetCompletedTasks(ctx context.Context, userID string, pgn 
 			LIMIT $4`
 	)
 
-	queryParams := []interface{}{userID, domain.StatusCompleted}
+	queryParams := []interface{}{userID, model.StatusCompleted}
 
 	if pgn.AfterID != "" {
 		queryParams = append(queryParams, pgn.AfterDate)
@@ -980,10 +981,10 @@ func (s *TaskStorage) GetCompletedTasks(ctx context.Context, userID string, pgn 
 	}
 	defer rows.Close()
 
-	var taskGroups []domain.TaskGroup
+	var taskGroups []model.TaskGroup
 
 	for rows.Next() {
-		var taskGroup domain.TaskGroup
+		var taskGroup model.TaskGroup
 		var tasksJSON []byte
 
 		err = rows.Scan(&taskGroup.Month, &tasksJSON)
@@ -991,7 +992,7 @@ func (s *TaskStorage) GetCompletedTasks(ctx context.Context, userID string, pgn 
 			return nil, fmt.Errorf("%s: failed to scan task: %w", op, err)
 		}
 
-		var tasks []domain.TaskResponseData
+		var tasks []model.TaskResponseData
 
 		err = json.Unmarshal(tasksJSON, &tasks)
 		if err != nil {
@@ -1006,13 +1007,13 @@ func (s *TaskStorage) GetCompletedTasks(ctx context.Context, userID string, pgn 
 	}
 
 	if len(taskGroups) == 0 {
-		return nil, domain.ErrNoTasksFound
+		return nil, le.ErrNoTasksFound
 	}
 
 	return taskGroups, nil
 }
 
-func (s *TaskStorage) GetArchivedTasks(ctx context.Context, userID string, pgn domain.Pagination) ([]domain.TaskGroup, error) {
+func (s *TaskStorage) GetArchivedTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error) {
 	const (
 		op = "task.storage.GetArchivedTasks"
 
@@ -1081,7 +1082,7 @@ func (s *TaskStorage) GetArchivedTasks(ctx context.Context, userID string, pgn d
 			LIMIT $4`
 	)
 
-	queryParams := []interface{}{userID, domain.StatusCompleted}
+	queryParams := []interface{}{userID, model.StatusCompleted}
 
 	if pgn.AfterID != "" {
 		queryParams = append(queryParams, pgn.AfterDate)
@@ -1097,10 +1098,10 @@ func (s *TaskStorage) GetArchivedTasks(ctx context.Context, userID string, pgn d
 	}
 	defer rows.Close()
 
-	var taskGroups []domain.TaskGroup
+	var taskGroups []model.TaskGroup
 
 	for rows.Next() {
-		var taskGroup domain.TaskGroup
+		var taskGroup model.TaskGroup
 		var tasksJSON []byte
 
 		err = rows.Scan(&taskGroup.Month, &tasksJSON)
@@ -1108,7 +1109,7 @@ func (s *TaskStorage) GetArchivedTasks(ctx context.Context, userID string, pgn d
 			return nil, fmt.Errorf("%s: failed to scan task: %w", op, err)
 		}
 
-		var tasks []domain.TaskResponseData
+		var tasks []model.TaskResponseData
 
 		err = json.Unmarshal(tasksJSON, &tasks)
 		if err != nil {
@@ -1123,13 +1124,13 @@ func (s *TaskStorage) GetArchivedTasks(ctx context.Context, userID string, pgn d
 	}
 
 	if len(taskGroups) == 0 {
-		return nil, domain.ErrNoTasksFound
+		return nil, le.ErrNoTasksFound
 	}
 
 	return taskGroups, nil
 }
 
-func (s *TaskStorage) UpdateTask(ctx context.Context, task domain.Task) error {
+func (s *TaskStorage) UpdateTask(ctx context.Context, task model.Task) error {
 	const (
 		op = "task.storage.UpdateTask"
 
@@ -1160,11 +1161,11 @@ func (s *TaskStorage) UpdateTask(ctx context.Context, task domain.Task) error {
 		queryUpdate += ", description = $" + strconv.Itoa(len(queryParams)+1)
 		queryParams = append(queryParams, task.Description)
 	}
-	if task.StartDate != nil {
+	if !task.StartDate.IsZero() {
 		queryUpdate += ", start_date = $" + strconv.Itoa(len(queryParams)+1)
 		queryParams = append(queryParams, task.StartDate)
 	}
-	if task.Deadline != nil {
+	if !task.Deadline.IsZero() {
 		queryUpdate += ", deadline = $" + strconv.Itoa(len(queryParams)+1)
 		queryParams = append(queryParams, task.Deadline)
 	}
@@ -1187,18 +1188,14 @@ func (s *TaskStorage) UpdateTask(ctx context.Context, task domain.Task) error {
 	}
 
 	if result.RowsAffected() == 0 {
-		return domain.ErrTaskNotFound
+		return le.ErrTaskNotFound
 	}
 
 	return nil
 }
 
-func (s *TaskStorage) UpdateTaskTime(ctx context.Context, task domain.Task) error {
-	const (
-		op = "task.storage.UpdateTaskTime"
-
-		querySelectStatus = `SELECT id FROM statuses WHERE status_name = $1`
-	)
+func (s *TaskStorage) UpdateTaskTime(ctx context.Context, task model.Task) error {
+	const op = "task.storage.UpdateTaskTime"
 
 	// Get the statusID ID for the planned status
 	var statusID string
@@ -1208,13 +1205,13 @@ func (s *TaskStorage) UpdateTaskTime(ctx context.Context, task domain.Task) erro
 	queryParams := []interface{}{task.UpdatedAt}
 
 	// Add time fields to the query
-	if task.StartTime != nil && task.EndTime != nil {
+	if !task.StartTime.IsZero() && !task.EndTime.IsZero() {
 		queryUpdate += ", start_time = $" + strconv.Itoa(len(queryParams)+1) + ", end_time = $" + strconv.Itoa(len(queryParams)+2)
 		queryParams = append(queryParams, task.StartTime, task.EndTime)
-	} else if task.StartTime == nil && task.EndTime == nil {
+	} else if task.StartTime.IsZero() && task.EndTime.IsZero() {
 		queryUpdate += ", start_time = NULL, end_time = NULL"
 	} else {
-		return domain.ErrInvalidTaskTimeRange
+		return le.ErrInvalidTaskTimeRange
 	}
 
 	// Add statusID ID to the query
@@ -1235,13 +1232,13 @@ func (s *TaskStorage) UpdateTaskTime(ctx context.Context, task domain.Task) erro
 	}
 
 	if result.RowsAffected() == 0 {
-		return domain.ErrTaskNotFound
+		return le.ErrTaskNotFound
 	}
 
 	return nil
 }
 
-func (s *TaskStorage) MoveTaskToAnotherList(ctx context.Context, task domain.Task) error {
+func (s *TaskStorage) MoveTaskToAnotherList(ctx context.Context, task model.Task) error {
 	const (
 		op = "task.storage.MoveTaskToAnotherList"
 
@@ -1269,13 +1266,13 @@ func (s *TaskStorage) MoveTaskToAnotherList(ctx context.Context, task domain.Tas
 	}
 
 	if result.RowsAffected() == 0 {
-		return domain.ErrTaskNotFound
+		return le.ErrTaskNotFound
 	}
 
 	return nil
 }
 
-func (s *TaskStorage) CompleteTask(ctx context.Context, task domain.Task) error {
+func (s *TaskStorage) CompleteTask(ctx context.Context, task model.Task) error {
 	const (
 		op = "task.storage.CompleteTask"
 
@@ -1300,13 +1297,13 @@ func (s *TaskStorage) CompleteTask(ctx context.Context, task domain.Task) error 
 	}
 
 	if result.RowsAffected() == 0 {
-		return domain.ErrTaskNotFound
+		return le.ErrTaskNotFound
 	}
 
 	return nil
 }
 
-func (s *TaskStorage) ArchiveTask(ctx context.Context, task domain.Task) error {
+func (s *TaskStorage) ArchiveTask(ctx context.Context, task model.Task) error {
 	const (
 		op = "task.storage.ArchiveTask"
 
@@ -1331,7 +1328,7 @@ func (s *TaskStorage) ArchiveTask(ctx context.Context, task domain.Task) error {
 	}
 
 	if result.RowsAffected() == 0 {
-		return domain.ErrTaskNotFound
+		return le.ErrTaskNotFound
 	}
 
 	return nil

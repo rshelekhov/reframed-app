@@ -6,7 +6,8 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/rshelekhov/reframed/internal/domain"
+	"github.com/rshelekhov/reframed/internal/model"
+	"github.com/rshelekhov/reframed/pkg/constants/le"
 	"time"
 )
 
@@ -18,7 +19,7 @@ func NewListStorage(pool *pgxpool.Pool) *ListStorage {
 	return &ListStorage{Pool: pool}
 }
 
-func (s *ListStorage) CreateList(ctx context.Context, list domain.List) error {
+func (s *ListStorage) CreateList(ctx context.Context, list model.List) error {
 	const (
 		op = "list.storage.CreateList"
 
@@ -42,7 +43,7 @@ func (s *ListStorage) CreateList(ctx context.Context, list domain.List) error {
 	return nil
 }
 
-func (s *ListStorage) GetListByID(ctx context.Context, listID, userID string) (domain.List, error) {
+func (s *ListStorage) GetListByID(ctx context.Context, listID, userID string) (model.List, error) {
 	const (
 		op = "list.storage.GetListByID"
 
@@ -54,7 +55,7 @@ func (s *ListStorage) GetListByID(ctx context.Context, listID, userID string) (d
 			  AND deleted_at IS NULL`
 	)
 
-	var list domain.List
+	var list model.List
 
 	err := s.QueryRow(ctx, query, listID, userID).Scan(
 		&list.ID,
@@ -63,17 +64,17 @@ func (s *ListStorage) GetListByID(ctx context.Context, listID, userID string) (d
 		&list.UpdatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.List{}, domain.ErrListNotFound
+		return model.List{}, le.ErrListNotFound
 	}
 	if err != nil {
-		return domain.List{}, fmt.Errorf("%s: failed to get list: %w", op, err)
+		return model.List{}, fmt.Errorf("%s: failed to get list: %w", op, err)
 	}
 
 	return list, nil
 
 }
 
-func (s *ListStorage) GetListsByUserID(ctx context.Context, userID string) ([]domain.List, error) {
+func (s *ListStorage) GetListsByUserID(ctx context.Context, userID string) ([]model.List, error) {
 	const (
 		op = "list.storage.GetListsByUserID"
 
@@ -91,10 +92,10 @@ func (s *ListStorage) GetListsByUserID(ctx context.Context, userID string) ([]do
 	}
 	defer rows.Close()
 
-	var lists []domain.List
+	var lists []model.List
 
 	for rows.Next() {
-		list := domain.List{}
+		list := model.List{}
 
 		err = rows.Scan(
 			&list.ID,
@@ -113,13 +114,13 @@ func (s *ListStorage) GetListsByUserID(ctx context.Context, userID string) ([]do
 	}
 
 	if len(lists) == 0 {
-		return nil, domain.ErrNoListsFound
+		return nil, le.ErrNoListsFound
 	}
 
 	return lists, nil
 }
 
-func (s *ListStorage) UpdateList(ctx context.Context, list domain.List) error {
+func (s *ListStorage) UpdateList(ctx context.Context, list model.List) error {
 	const (
 		op = "list.storage.UpdateList"
 
@@ -143,13 +144,13 @@ func (s *ListStorage) UpdateList(ctx context.Context, list domain.List) error {
 	}
 
 	if result.RowsAffected() == 0 {
-		return domain.ErrListNotFound
+		return le.ErrListNotFound
 	}
 
 	return nil
 }
 
-func (s *ListStorage) DeleteList(ctx context.Context, list domain.List) error {
+func (s *ListStorage) DeleteList(ctx context.Context, list model.List) error {
 	const (
 		op = "list.storage.DeleteList"
 
@@ -173,7 +174,7 @@ func (s *ListStorage) DeleteList(ctx context.Context, list domain.List) error {
 	}
 
 	if result.RowsAffected() == 0 {
-		return domain.ErrListNotFound
+		return le.ErrListNotFound
 	}
 
 	return nil

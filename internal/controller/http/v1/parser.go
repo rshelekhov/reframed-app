@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"github.com/rshelekhov/reframed/internal/domain"
+	"github.com/rshelekhov/reframed/internal/model"
 	c "github.com/rshelekhov/reframed/pkg/constants/key"
 	"net/http"
 	"strconv"
@@ -12,7 +12,7 @@ const (
 	DefaultLimit = 30
 )
 
-func ParseLimitAndAfterID(r *http.Request) domain.Pagination {
+func ParseLimitAndAfterID(r *http.Request) model.Pagination {
 	limit, err := strconv.Atoi(r.URL.Query().Get(c.Limit))
 	if err != nil || limit < 0 {
 		limit = DefaultLimit
@@ -20,13 +20,13 @@ func ParseLimitAndAfterID(r *http.Request) domain.Pagination {
 
 	afterID := r.URL.Query().Get(c.AfterID)
 
-	return domain.Pagination{
+	return model.Pagination{
 		Limit:   limit,
 		AfterID: afterID,
 	}
 }
 
-func ParseLimitAndAfterDate(r *http.Request) (domain.Pagination, error) {
+func ParseLimitAndAfterDate(r *http.Request) (model.Pagination, error) {
 	limit, err := strconv.Atoi(r.URL.Query().Get(c.Limit))
 	if err != nil || limit < 0 {
 		limit = DefaultLimit
@@ -34,10 +34,10 @@ func ParseLimitAndAfterDate(r *http.Request) (domain.Pagination, error) {
 
 	afterDate, err := time.Parse(time.DateOnly, r.URL.Query().Get(c.AfterDate))
 	if err != nil {
-		return domain.Pagination{}, err
+		return model.Pagination{}, err
 	}
 
-	return domain.Pagination{
+	return model.Pagination{
 		Limit:     limit,
 		AfterDate: afterDate,
 	}, nil

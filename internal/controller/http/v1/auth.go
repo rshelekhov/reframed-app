@@ -3,8 +3,10 @@ package v1
 import (
 	"errors"
 	"github.com/go-chi/chi/v5"
-	"github.com/rshelekhov/reframed/internal/domain"
+	"github.com/rshelekhov/reframed/internal/model"
+	"github.com/rshelekhov/reframed/internal/port"
 	"github.com/rshelekhov/reframed/pkg/constants/key"
+	"github.com/rshelekhov/reframed/pkg/constants/le"
 	"github.com/rshelekhov/reframed/pkg/httpserver/middleware/jwtoken"
 	"github.com/rshelekhov/reframed/pkg/logger"
 	"log/slog"
@@ -16,14 +18,14 @@ import (
 type authController struct {
 	logger  logger.Interface
 	jwt     *jwtoken.TokenService
-	usecase domain.AuthUsecase
+	usecase port.AuthUsecase
 }
 
 func NewAuthRoutes(
 	r *chi.Mux,
 	log logger.Interface,
 	jwt *jwtoken.TokenService,
-	usecase domain.AuthUsecase,
+	usecase port.AuthUsecase,
 ) {
 	c := &authController{
 		logger:  log,
@@ -63,31 +65,31 @@ func (c *authController) CreateUser() http.HandlerFunc {
 
 		log := logger.LogWithRequest(c.logger, op, r)
 
-		userInput := &domain.UserRequestData{}
+		userInput := &model.UserRequestData{}
 		if err := decodeAndValidateJSON(w, r, log, userInput); err != nil {
 			return
 		}
 
 		// Create the user
 		userID, err := c.usecase.CreateUser(ctx, c.jwt, userInput)
-		if errors.Is(err, domain.ErrUserAlreadyExists) {
-			handleResponseError(w, r, log, http.StatusBadRequest, domain.ErrUserAlreadyExists, slog.String(key.Email, userInput.Email))
+		if errors.Is(err, le.ErrUserAlreadyExists) {
+			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrUserAlreadyExists, slog.String(key.Email, userInput.Email))
 			return
 		}
 		if err != nil {
-			handleInternalServerError(w, r, log, domain.ErrFailedToCreateUser, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToCreateUser, err)
 			return
 		}
 
 		// Create session
-		userDevice := domain.UserDeviceRequestData{
+		userDevice := model.UserDeviceRequestData{
 			UserAgent: r.UserAgent(),
 			IP:        strings.Split(r.RemoteAddr, ":")[0],
 		}
 
 		tokenData, err := c.usecase.CreateUserSession(ctx, c.jwt, userID, userDevice)
 		if err != nil {
-			handleInternalServerError(w, r, log, domain.ErrFailedToCreateSession, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToCreateSession, err)
 			return
 		}
 
@@ -108,36 +110,36 @@ func (c *authController) LoginWithPassword() http.HandlerFunc {
 
 		log := logger.LogWithRequest(c.logger, op, r)
 
-		userInput := &domain.UserRequestData{}
+		userInput := &model.UserRequestData{}
 		if err := decodeAndValidateJSON(w, r, log, userInput); err != nil {
 			return
 		}
 
 		userID, err := c.usecase.LoginUser(ctx, c.jwt, userInput)
 		switch {
-		case errors.Is(err, domain.ErrUserNotFound):
-			handleResponseError(w, r, log, http.StatusUnauthorized, domain.ErrUserNotFound, slog.String(key.Email, userInput.Email))
+		case errors.Is(err, le.ErrUserNotFound):
+			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrUserNotFound, slog.String(key.Email, userInput.Email))
 			return
-		case errors.Is(err, domain.ErrUserHasNoPassword):
-			handleResponseError(w, r, log, http.StatusUnauthorized, domain.ErrUserHasNoPassword, slog.String(key.Email, userInput.Email))
+		case errors.Is(err, le.ErrUserHasNoPassword):
+			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrUserHasNoPassword, slog.String(key.Email, userInput.Email))
 			return
-		case errors.Is(err, domain.ErrInvalidCredentials):
-			handleResponseError(w, r, log, http.StatusUnauthorized, domain.ErrInvalidCredentials, slog.String(key.Email, userInput.Email))
+		case errors.Is(err, le.ErrInvalidCredentials):
+			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrInvalidCredentials, slog.String(key.Email, userInput.Email))
 			return
 		case err != nil:
-			handleInternalServerError(w, r, log, domain.ErrFailedToLogin, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToLogin, err)
 			return
 		}
 
 		// Create session
-		userDevice := domain.UserDeviceRequestData{
+		userDevice := model.UserDeviceRequestData{
 			UserAgent: r.UserAgent(),
 			IP:        strings.Split(r.RemoteAddr, ":")[0],
 		}
 
 		tokenData, err := c.usecase.CreateUserSession(ctx, c.jwt, userID, userDevice)
 		if err != nil {
-			handleInternalServerError(w, r, log, domain.ErrFailedToCreateSession, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToCreateSession, err)
 			return
 		}
 
@@ -161,33 +163,33 @@ func (c *authController) RefreshJWTokens() http.HandlerFunc {
 
 		refreshToken, err := jwtoken.FindRefreshToken(r)
 		if err != nil {
-			handleResponseError(w, r, log, http.StatusUnauthorized, domain.ErrFailedToGetRefreshToken, err)
+			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrFailedToGetRefreshToken, err)
 			return
 		}
 
-		userDevice := domain.UserDeviceRequestData{
+		userDevice := model.UserDeviceRequestData{
 			UserAgent: r.UserAgent(),
 		}
 
 		session, err := c.usecase.CheckSessionAndDevice(ctx, refreshToken, userDevice)
 		switch {
-		case errors.Is(err, domain.ErrSessionNotFound):
-			handleResponseError(w, r, log, http.StatusUnauthorized, domain.ErrSessionNotFound, err, slog.String(key.RefreshToken, refreshToken))
+		case errors.Is(err, le.ErrSessionNotFound):
+			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrSessionNotFound, err, slog.String(key.RefreshToken, refreshToken))
 			return
-		case errors.Is(err, domain.ErrSessionExpired):
-			handleResponseError(w, r, log, http.StatusUnauthorized, domain.ErrSessionExpired, err, slog.String(key.RefreshToken, refreshToken))
+		case errors.Is(err, le.ErrSessionExpired):
+			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrSessionExpired, err, slog.String(key.RefreshToken, refreshToken))
 			return
-		case errors.Is(err, domain.ErrUserDeviceNotFound):
-			handleResponseError(w, r, log, http.StatusUnauthorized, domain.ErrUserDeviceNotFound, err, slog.String(key.RefreshToken, refreshToken))
+		case errors.Is(err, le.ErrUserDeviceNotFound):
+			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrUserDeviceNotFound, err, slog.String(key.RefreshToken, refreshToken))
 		}
 		if err != nil {
-			handleInternalServerError(w, r, log, domain.ErrFailedToRefreshTokens, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToRefreshTokens, err)
 			return
 		}
 
 		tokenData, err := c.usecase.CreateUserSession(ctx, c.jwt, session.UserID, userDevice)
 		if err != nil {
-			handleInternalServerError(w, r, log, domain.ErrFailedToCreateSession, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToCreateSession, err)
 			return
 		}
 
@@ -207,13 +209,13 @@ func (c *authController) Logout() http.HandlerFunc {
 		log := logger.LogWithRequest(c.logger, op, r)
 		userID := jwtoken.GetUserID(ctx).(string)
 
-		userDevice := domain.UserDeviceRequestData{
+		userDevice := model.UserDeviceRequestData{
 			UserAgent: r.UserAgent(),
 		}
 
 		err := c.usecase.LogoutUser(ctx, userID, userDevice)
 		if err != nil {
-			handleInternalServerError(w, r, log, domain.ErrFailedToLogout, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToLogout, err)
 			return
 		}
 
@@ -229,7 +231,7 @@ func (c *authController) Logout() http.HandlerFunc {
 		w.WriteHeader(http.StatusOK)
 		_, err = w.Write([]byte("Logged out successfully"))
 		if err != nil {
-			handleInternalServerError(w, r, log, domain.ErrFailedToWriteResponse, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToWriteResponse, err)
 			return
 		}
 	}
@@ -246,11 +248,11 @@ func (c *authController) GetUserProfile() http.HandlerFunc {
 
 		user, err := c.usecase.GetUserByID(ctx, userID)
 		switch {
-		case errors.Is(err, domain.ErrUserNotFound):
-			handleResponseError(w, r, log, http.StatusNotFound, domain.ErrUserNotFound, slog.String(key.UserID, userID))
+		case errors.Is(err, le.ErrUserNotFound):
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrUserNotFound, slog.String(key.UserID, userID))
 			return
 		case err != nil:
-			handleInternalServerError(w, r, log, domain.ErrFailedToGetData, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
 			return
 		default:
 			handleResponseSuccess(w, r, log, "user received", user, slog.String(key.UserID, userID))
@@ -267,44 +269,44 @@ func (c *authController) UpdateUser() http.HandlerFunc {
 		log := logger.LogWithRequest(c.logger, op, r)
 		userID := jwtoken.GetUserID(ctx).(string)
 
-		userInput := &domain.UserRequestData{}
+		userInput := &model.UserRequestData{}
 		if err := decodeAndValidateJSON(w, r, log, userInput); err != nil {
 			return
 		}
 
 		err := c.usecase.UpdateUser(ctx, c.jwt, userInput, userID)
 		switch {
-		case errors.Is(err, domain.ErrUserNotFound):
-			handleResponseError(w, r, log, http.StatusNotFound, domain.ErrUserNotFound,
+		case errors.Is(err, le.ErrUserNotFound):
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrUserNotFound,
 				slog.String(key.UserID, userID),
 				slog.String(key.Email, userInput.Email),
 			)
 			return
-		case errors.Is(err, domain.ErrEmailAlreadyTaken):
-			handleResponseError(w, r, log, http.StatusBadRequest, domain.ErrEmailAlreadyTaken,
+		case errors.Is(err, le.ErrEmailAlreadyTaken):
+			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmailAlreadyTaken,
 				slog.String(key.UserID, userID),
 				slog.String(key.Email, userInput.Email),
 			)
 			return
-		case errors.Is(err, domain.ErrNoChangesDetected):
-			handleResponseError(w, r, log, http.StatusBadRequest, domain.ErrNoChangesDetected,
+		case errors.Is(err, le.ErrNoChangesDetected):
+			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrNoChangesDetected,
 				slog.String(key.UserID, userID),
 			)
 			return
-		case errors.Is(err, domain.ErrNoPasswordChangesDetected):
-			handleResponseError(w, r, log, http.StatusBadRequest, domain.ErrNoPasswordChangesDetected,
+		case errors.Is(err, le.ErrNoPasswordChangesDetected):
+			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrNoPasswordChangesDetected,
 				slog.String(key.UserID, userID),
 			)
 			return
 		case err != nil:
-			handleInternalServerError(w, r, log, domain.ErrFailedToUpdateUser,
+			handleInternalServerError(w, r, log, le.ErrFailedToUpdateUser,
 				slog.String(key.UserID, userID),
 				slog.Any(key.Error, err),
 			)
 			return
 		default:
 			handleResponseSuccess(w, r, log, "user updated",
-				domain.UserResponseData{ID: userID},
+				model.UserResponseData{ID: userID},
 				slog.String(key.UserID, userID),
 			)
 		}
@@ -320,24 +322,24 @@ func (c *authController) DeleteUser() http.HandlerFunc {
 		log := logger.LogWithRequest(c.logger, op, r)
 		userID := jwtoken.GetUserID(ctx).(string)
 
-		userDevice := domain.UserDeviceRequestData{
+		userDevice := model.UserDeviceRequestData{
 			UserAgent: r.UserAgent(),
 		}
 
 		err := c.usecase.DeleteUser(r.Context(), userID, userDevice)
 		switch {
-		case errors.Is(err, domain.ErrUserNotFound):
+		case errors.Is(err, le.ErrUserNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound,
-				domain.ErrUserNotFound,
+				le.ErrUserNotFound,
 				slog.String(key.UserID, userID),
 			)
 			return
 		case err != nil:
-			handleInternalServerError(w, r, log, domain.ErrFailedToDeleteUser, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToDeleteUser, err)
 			return
 		default:
 			handleResponseSuccess(w, r, log, "user deleted",
-				domain.UserResponseData{ID: userID},
+				model.UserResponseData{ID: userID},
 				slog.String(key.UserID, userID),
 			)
 		}

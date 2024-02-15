@@ -3,8 +3,10 @@ package v1
 import (
 	"errors"
 	"github.com/go-chi/chi/v5"
-	"github.com/rshelekhov/reframed/internal/domain"
+	"github.com/rshelekhov/reframed/internal/model"
+	"github.com/rshelekhov/reframed/internal/port"
 	"github.com/rshelekhov/reframed/pkg/constants/key"
+	"github.com/rshelekhov/reframed/pkg/constants/le"
 	"github.com/rshelekhov/reframed/pkg/httpserver/middleware/jwtoken"
 	"github.com/rshelekhov/reframed/pkg/logger"
 	"log/slog"
@@ -14,14 +16,14 @@ import (
 type taskController struct {
 	logger  logger.Interface
 	jwt     *jwtoken.TokenService
-	usecase domain.TaskUsecase
+	usecase port.TaskUsecase
 }
 
 func NewTaskRoutes(
 	r *chi.Mux,
 	log logger.Interface,
 	jwt *jwtoken.TokenService,
-	usecase domain.TaskUsecase,
+	usecase port.TaskUsecase,
 ) {
 	c := &taskController{
 		logger:  log,
@@ -74,13 +76,13 @@ func (c *taskController) CreateTask() http.HandlerFunc {
 
 		listID := chi.URLParam(r, key.ListID)
 		if listID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, domain.ErrEmptyQueryListID)
+			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryListID)
 			return
 		}
 
 		headingID := chi.URLParam(r, key.HeadingID)
 
-		taskInput := &domain.TaskRequestData{}
+		taskInput := &model.TaskRequestData{}
 		if err := decodeAndValidateJSON(w, r, log, taskInput); err != nil {
 			return
 		}
@@ -91,14 +93,14 @@ func (c *taskController) CreateTask() http.HandlerFunc {
 
 		taskID, err := c.usecase.CreateTask(ctx, taskInput)
 		switch {
-		case errors.Is(err, domain.ErrHeadingNotFound):
-			handleResponseError(w, r, log, http.StatusNotFound, domain.ErrHeadingNotFound)
+		case errors.Is(err, le.ErrHeadingNotFound):
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrHeadingNotFound)
 			return
 		case err != nil:
-			handleInternalServerError(w, r, log, domain.ErrFailedToCreateTask, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToCreateTask, err)
 			return
 		default:
-			handleResponseCreated(w, r, log, "task created", domain.TaskResponseData{ID: taskID}, slog.String(key.TaskID, taskID))
+			handleResponseCreated(w, r, log, "task created", model.TaskResponseData{ID: taskID}, slog.String(key.TaskID, taskID))
 		}
 	}
 }
@@ -113,22 +115,22 @@ func (c *taskController) GetTaskByID() http.HandlerFunc {
 
 		taskID := chi.URLParam(r, key.TaskID)
 		if taskID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, domain.ErrEmptyQueryTaskID)
+			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryTaskID)
 			return
 		}
 
-		taskInput := domain.TaskRequestData{
+		taskInput := model.TaskRequestData{
 			ID:     taskID,
 			UserID: userID,
 		}
 
 		taskResp, err := c.usecase.GetTaskByID(ctx, taskInput)
 		switch {
-		case errors.Is(err, domain.ErrTaskNotFound):
-			handleResponseError(w, r, log, http.StatusNotFound, domain.ErrTaskNotFound)
+		case errors.Is(err, le.ErrTaskNotFound):
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrTaskNotFound)
 			return
 		case err != nil:
-			handleInternalServerError(w, r, log, domain.ErrFailedToGetData, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
 			return
 		default:
 			handleResponseSuccess(w, r, log, "task received", taskResp, slog.String(key.TaskID, taskResp.ID))
@@ -148,11 +150,11 @@ func (c *taskController) GetTasksByUserID() http.HandlerFunc {
 
 		tasksResp, err := c.usecase.GetTasksByUserID(ctx, userID, pagination)
 		switch {
-		case errors.Is(err, domain.ErrNoTasksFound):
-			handleResponseError(w, r, log, http.StatusNotFound, domain.ErrNoTasksFound)
+		case errors.Is(err, le.ErrNoTasksFound):
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrNoTasksFound)
 			return
 		case err != nil:
-			handleInternalServerError(w, r, log, domain.ErrFailedToGetData, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
 			return
 		default:
 			handleResponseSuccess(w, r, log, "tasks found", tasksResp,
@@ -172,22 +174,22 @@ func (c *taskController) GetTasksByListID() http.HandlerFunc {
 
 		listID := chi.URLParam(r, key.ListID)
 		if listID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, domain.ErrEmptyQueryListID)
+			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryListID)
 			return
 		}
 
-		tasksInput := domain.TaskRequestData{
+		tasksInput := model.TaskRequestData{
 			ListID: listID,
 			UserID: userID,
 		}
 
 		tasksResp, err := c.usecase.GetTasksByListID(ctx, tasksInput)
 		switch {
-		case errors.Is(err, domain.ErrNoTasksFound):
-			handleResponseError(w, r, log, http.StatusNotFound, domain.ErrNoTasksFound)
+		case errors.Is(err, le.ErrNoTasksFound):
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrNoTasksFound)
 			return
 		case err != nil:
-			handleInternalServerError(w, r, log, domain.ErrFailedToGetData, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
 			return
 		default:
 			handleResponseSuccess(w, r, log, "tasks found", tasksResp,
@@ -207,22 +209,22 @@ func (c *taskController) GetTasksGroupedByHeadings() http.HandlerFunc {
 
 		listID := chi.URLParam(r, key.ListID)
 		if listID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, domain.ErrEmptyQueryListID)
+			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryListID)
 			return
 		}
 
-		tasksInput := domain.TaskRequestData{
+		tasksInput := model.TaskRequestData{
 			ListID: listID,
 			UserID: userID,
 		}
 
 		tasksResp, err := c.usecase.GetTasksGroupedByHeadings(ctx, tasksInput)
 		switch {
-		case errors.Is(err, domain.ErrNoTasksFound):
-			handleResponseError(w, r, log, http.StatusNotFound, domain.ErrNoTasksFound)
+		case errors.Is(err, le.ErrNoTasksFound):
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrNoTasksFound)
 			return
 		case err != nil:
-			handleInternalServerError(w, r, log, domain.ErrFailedToGetData, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
 			return
 		default:
 			handleResponseSuccess(w, r, log, "tasks grouped by headings found", tasksResp, slog.Int(key.Count, len(tasksResp)))
@@ -240,11 +242,11 @@ func (c *taskController) GetTasksForToday() http.HandlerFunc {
 
 		tasksResp, err := c.usecase.GetTasksForToday(ctx, userID)
 		switch {
-		case errors.Is(err, domain.ErrNoTasksFound):
-			handleResponseError(w, r, log, http.StatusNotFound, domain.ErrNoTasksFound)
+		case errors.Is(err, le.ErrNoTasksFound):
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrNoTasksFound)
 			return
 		case err != nil:
-			handleInternalServerError(w, r, log, domain.ErrFailedToGetData, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
 			return
 		default:
 			handleResponseSuccess(w, r, log, "tasks for today found", tasksResp, slog.Int(key.Count, len(tasksResp)))
@@ -262,17 +264,17 @@ func (c *taskController) GetUpcomingTasks() http.HandlerFunc {
 
 		pagination, err := ParseLimitAndAfterDate(r)
 		if err != nil {
-			handleInternalServerError(w, r, log, domain.ErrFailedToParseQueryParams, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToParseQueryParams, err)
 			return
 		}
 
 		tasksResp, err := c.usecase.GetUpcomingTasks(ctx, userID, pagination)
 		switch {
-		case errors.Is(err, domain.ErrNoTasksFound):
-			handleResponseError(w, r, log, http.StatusNotFound, domain.ErrNoTasksFound)
+		case errors.Is(err, le.ErrNoTasksFound):
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrNoTasksFound)
 			return
 		case err != nil:
-			handleInternalServerError(w, r, log, domain.ErrFailedToGetData, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
 			return
 		default:
 			handleResponseSuccess(w, r, log, "upcoming tasks found", tasksResp, slog.Int(key.Count, len(tasksResp)))
@@ -292,11 +294,11 @@ func (c *taskController) GetOverdueTasks() http.HandlerFunc {
 
 		tasksResp, err := c.usecase.GetOverdueTasks(ctx, userID, pagination)
 		switch {
-		case errors.Is(err, domain.ErrNoTasksFound):
-			handleResponseError(w, r, log, http.StatusNotFound, domain.ErrNoTasksFound)
+		case errors.Is(err, le.ErrNoTasksFound):
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrNoTasksFound)
 			return
 		case err != nil:
-			handleInternalServerError(w, r, log, domain.ErrFailedToGetData, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
 			return
 		default:
 			handleResponseSuccess(w, r, log, "overdue tasks found", tasksResp, slog.Int(key.Count, len(tasksResp)))
@@ -316,11 +318,11 @@ func (c *taskController) GetTasksForSomeday() http.HandlerFunc {
 
 		tasksResp, err := c.usecase.GetTasksForSomeday(ctx, userID, pagination)
 		switch {
-		case errors.Is(err, domain.ErrNoTasksFound):
-			handleResponseError(w, r, log, http.StatusNotFound, domain.ErrNoTasksFound)
+		case errors.Is(err, le.ErrNoTasksFound):
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrNoTasksFound)
 			return
 		case err != nil:
-			handleInternalServerError(w, r, log, domain.ErrFailedToGetData, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
 			return
 		default:
 			handleResponseSuccess(w, r, log, "tasks for someday found", tasksResp, slog.Int(key.Count, len(tasksResp)))
@@ -338,17 +340,17 @@ func (c *taskController) GetCompletedTasks() http.HandlerFunc {
 
 		pagination, err := ParseLimitAndAfterDate(r)
 		if err != nil {
-			handleInternalServerError(w, r, log, domain.ErrFailedToParseQueryParams, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToParseQueryParams, err)
 			return
 		}
 
 		tasksResp, err := c.usecase.GetCompletedTasks(ctx, userID, pagination)
 		switch {
-		case errors.Is(err, domain.ErrNoTasksFound):
-			handleResponseError(w, r, log, http.StatusNotFound, domain.ErrNoTasksFound)
+		case errors.Is(err, le.ErrNoTasksFound):
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrNoTasksFound)
 			return
 		case err != nil:
-			handleInternalServerError(w, r, log, domain.ErrFailedToGetData, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
 			return
 		default:
 			handleResponseSuccess(w, r, log, "completed tasks found", tasksResp, slog.Int(key.Count, len(tasksResp)))
@@ -366,17 +368,17 @@ func (c *taskController) GetArchivedTasks() http.HandlerFunc {
 
 		pagination, err := ParseLimitAndAfterDate(r)
 		if err != nil {
-			handleInternalServerError(w, r, log, domain.ErrFailedToParseQueryParams, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToParseQueryParams, err)
 			return
 		}
 
 		tasksResp, err := c.usecase.GetArchivedTasks(ctx, userID, pagination)
 		switch {
-		case errors.Is(err, domain.ErrNoTasksFound):
-			handleResponseError(w, r, log, http.StatusNotFound, domain.ErrNoTasksFound)
+		case errors.Is(err, le.ErrNoTasksFound):
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrNoTasksFound)
 			return
 		case err != nil:
-			handleInternalServerError(w, r, log, domain.ErrFailedToGetData, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
 			return
 		default:
 			handleResponseSuccess(w, r, log, "archived tasks found", tasksResp, slog.Int(key.Count, len(tasksResp)))
@@ -394,11 +396,11 @@ func (c *taskController) UpdateTask() http.HandlerFunc {
 
 		taskID := chi.URLParam(r, key.TaskID)
 		if taskID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, domain.ErrEmptyQueryTaskID)
+			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryTaskID)
 			return
 		}
 
-		taskInput := &domain.TaskRequestData{}
+		taskInput := &model.TaskRequestData{}
 		if err := decodeAndValidateJSON(w, r, log, taskInput); err != nil {
 			return
 		}
@@ -408,11 +410,11 @@ func (c *taskController) UpdateTask() http.HandlerFunc {
 
 		err := c.usecase.UpdateTask(ctx, taskInput)
 		switch {
-		case errors.Is(err, domain.ErrTaskNotFound):
-			handleResponseError(w, r, log, http.StatusNotFound, domain.ErrTaskNotFound)
+		case errors.Is(err, le.ErrTaskNotFound):
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrTaskNotFound)
 			return
 		case err != nil:
-			handleInternalServerError(w, r, log, domain.ErrFailedToUpdateTask, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToUpdateTask, err)
 			return
 		default:
 			handleResponseSuccess(w, r, log, "task updated", taskID, slog.String(key.TaskID, taskID))
@@ -431,11 +433,11 @@ func (c *taskController) UpdateTaskTime() http.HandlerFunc {
 
 		taskID := chi.URLParam(r, key.TaskID)
 		if taskID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, domain.ErrEmptyQueryTaskID)
+			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryTaskID)
 			return
 		}
 
-		taskInput := &domain.TaskRequestData{}
+		taskInput := &model.TaskRequestData{}
 		if err := decodeAndValidateJSON(w, r, log, taskInput); err != nil {
 			return
 		}
@@ -445,11 +447,11 @@ func (c *taskController) UpdateTaskTime() http.HandlerFunc {
 
 		err := c.usecase.UpdateTaskTime(ctx, taskInput)
 		switch {
-		case errors.Is(err, domain.ErrTaskNotFound):
-			handleResponseError(w, r, log, http.StatusNotFound, domain.ErrTaskNotFound)
+		case errors.Is(err, le.ErrTaskNotFound):
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrTaskNotFound)
 			return
 		case err != nil:
-			handleInternalServerError(w, r, log, domain.ErrFailedToUpdateTask, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToUpdateTask, err)
 			return
 		default:
 			handleResponseSuccess(w, r, log, "task updated", taskID, slog.String(key.TaskID, taskID))
@@ -467,17 +469,17 @@ func (c *taskController) MoveTaskToAnotherList() http.HandlerFunc {
 
 		taskID := chi.URLParam(r, key.TaskID)
 		if taskID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, domain.ErrEmptyQueryTaskID)
+			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryTaskID)
 			return
 		}
 
 		listID := r.URL.Query().Get(key.ListID)
 		if listID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, domain.ErrEmptyQueryListID)
+			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryListID)
 			return
 		}
 
-		taskInput := domain.TaskRequestData{
+		taskInput := model.TaskRequestData{
 			ID:     taskID,
 			ListID: listID,
 			UserID: userID,
@@ -485,11 +487,11 @@ func (c *taskController) MoveTaskToAnotherList() http.HandlerFunc {
 
 		err := c.usecase.MoveTaskToAnotherList(ctx, taskInput)
 		switch {
-		case errors.Is(err, domain.ErrTaskNotFound):
-			handleResponseError(w, r, log, http.StatusNotFound, domain.ErrTaskNotFound)
+		case errors.Is(err, le.ErrTaskNotFound):
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrTaskNotFound)
 			return
 		case err != nil:
-			handleInternalServerError(w, r, log, domain.ErrFailedToMoveTask, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToMoveTask, err)
 			return
 		default:
 			handleResponseSuccess(w, r, log, "task moved to another list", taskID, slog.String(key.TaskID, taskID))
@@ -507,22 +509,22 @@ func (c *taskController) CompleteTask() http.HandlerFunc {
 
 		taskID := chi.URLParam(r, key.TaskID)
 		if taskID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, domain.ErrEmptyQueryTaskID)
+			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryTaskID)
 			return
 		}
 
-		taskInput := domain.TaskRequestData{
+		taskInput := model.TaskRequestData{
 			ID:     taskID,
 			UserID: userID,
 		}
 
 		err := c.usecase.CompleteTask(ctx, taskInput)
 		switch {
-		case errors.Is(err, domain.ErrTaskNotFound):
-			handleResponseError(w, r, log, http.StatusNotFound, domain.ErrTaskNotFound)
+		case errors.Is(err, le.ErrTaskNotFound):
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrTaskNotFound)
 			return
 		case err != nil:
-			handleInternalServerError(w, r, log, domain.ErrFailedToCompleteTask, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToCompleteTask, err)
 			return
 		default:
 			handleResponseSuccess(w, r, log, "task completed", nil, slog.String(key.TaskID, taskID))
@@ -540,25 +542,25 @@ func (c *taskController) ArchiveTask() http.HandlerFunc {
 
 		taskID := chi.URLParam(r, key.TaskID)
 		if taskID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, domain.ErrEmptyQueryTaskID)
+			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryTaskID)
 			return
 		}
 
-		taskInput := domain.TaskRequestData{
+		taskInput := model.TaskRequestData{
 			ID:     taskID,
 			UserID: userID,
 		}
 
 		err := c.usecase.ArchiveTask(ctx, taskInput)
 		switch {
-		case errors.Is(err, domain.ErrTaskNotFound):
-			handleResponseError(w, r, log, http.StatusNotFound, domain.ErrTaskNotFound)
+		case errors.Is(err, le.ErrTaskNotFound):
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrTaskNotFound)
 			return
 		case err != nil:
-			handleInternalServerError(w, r, log, domain.ErrFailedToDeleteTask, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToDeleteTask, err)
 			return
 		default:
-			handleResponseSuccess(w, r, log, "task deleted", domain.Task{ID: taskID}, slog.String(key.TaskID, taskID))
+			handleResponseSuccess(w, r, log, "task deleted", model.Task{ID: taskID}, slog.String(key.TaskID, taskID))
 		}
 	}
 }

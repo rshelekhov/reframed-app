@@ -6,7 +6,8 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/rshelekhov/reframed/internal/domain"
+	"github.com/rshelekhov/reframed/internal/model"
+	"github.com/rshelekhov/reframed/pkg/constants/le"
 )
 
 type TagStorage struct {
@@ -17,7 +18,7 @@ func NewTagStorage(pool *pgxpool.Pool) *TagStorage {
 	return &TagStorage{Pool: pool}
 }
 
-func (s *TagStorage) CreateTag(ctx context.Context, tag domain.Tag) error {
+func (s *TagStorage) CreateTag(ctx context.Context, tag model.Tag) error {
 	const (
 		op = "tag.storage.CreateTag"
 
@@ -103,7 +104,7 @@ func (s *TagStorage) GetTagIDByTitle(ctx context.Context, title, userID string) 
 
 	err := s.QueryRow(ctx, query, title, userID).Scan(&tagID)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return "", domain.ErrTagNotFound
+		return "", le.ErrTagNotFound
 	}
 	if err != nil {
 		return "", fmt.Errorf("%s: failed to check if tag exists: %w", op, err)
@@ -112,7 +113,7 @@ func (s *TagStorage) GetTagIDByTitle(ctx context.Context, title, userID string) 
 	return tagID, nil
 }
 
-func (s *TagStorage) GetTagsByUserID(ctx context.Context, userID string) ([]domain.Tag, error) {
+func (s *TagStorage) GetTagsByUserID(ctx context.Context, userID string) ([]model.Tag, error) {
 	const (
 		op = "tag.storage.GetTagsByUserID"
 
@@ -129,10 +130,10 @@ func (s *TagStorage) GetTagsByUserID(ctx context.Context, userID string) ([]doma
 	}
 	defer rows.Close()
 
-	var tags []domain.Tag
+	var tags []model.Tag
 
 	for rows.Next() {
-		tag := domain.Tag{}
+		tag := model.Tag{}
 
 		err = rows.Scan(
 			&tag.ID,
@@ -151,13 +152,13 @@ func (s *TagStorage) GetTagsByUserID(ctx context.Context, userID string) ([]doma
 	}
 
 	if len(tags) == 0 {
-		return nil, domain.ErrNoTagsFound
+		return nil, le.ErrNoTagsFound
 	}
 
 	return tags, nil
 }
 
-func (s *TagStorage) GetTagsByTaskID(ctx context.Context, taskID string) ([]domain.Tag, error) {
+func (s *TagStorage) GetTagsByTaskID(ctx context.Context, taskID string) ([]model.Tag, error) {
 	const (
 		op = "tag.storage.GetTagsByTaskID"
 
@@ -176,10 +177,10 @@ func (s *TagStorage) GetTagsByTaskID(ctx context.Context, taskID string) ([]doma
 	}
 	defer rows.Close()
 
-	var tags []domain.Tag
+	var tags []model.Tag
 
 	for rows.Next() {
-		tag := domain.Tag{}
+		tag := model.Tag{}
 
 		err = rows.Scan(&tag)
 		if err != nil {

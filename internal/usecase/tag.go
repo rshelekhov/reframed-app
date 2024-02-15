@@ -3,32 +3,31 @@ package usecase
 import (
 	"context"
 	"errors"
-	"github.com/rshelekhov/reframed/internal/domain"
+	"github.com/rshelekhov/reframed/internal/model"
+	"github.com/rshelekhov/reframed/internal/port"
+	"github.com/rshelekhov/reframed/pkg/constants/le"
 	"github.com/segmentio/ksuid"
 	"time"
 )
 
 type TagUsecase struct {
-	tagStorage domain.TagStorage
+	tagStorage port.TagStorage
 }
 
-func NewTagUsecase(storage domain.TagStorage) *TagUsecase {
+func NewTagUsecase(storage port.TagStorage) *TagUsecase {
 	return &TagUsecase{
 		tagStorage: storage,
 	}
 }
 
-func (u *TagUsecase) CreateTagIfNotExists(ctx context.Context, data domain.TagRequestData) error {
+func (u *TagUsecase) CreateTagIfNotExists(ctx context.Context, data model.TagRequestData) error {
 	_, err := u.tagStorage.GetTagIDByTitle(ctx, data.Title, data.UserID)
-	if errors.Is(err, domain.ErrTagNotFound) {
-		// Create new tag
-		updatedAt := time.Now().UTC()
-
-		newTag := domain.Tag{
+	if errors.Is(err, le.ErrTagNotFound) {
+		newTag := model.Tag{
 			ID:        ksuid.New().String(),
 			Title:     data.Title,
 			UserID:    data.UserID,
-			UpdatedAt: &updatedAt,
+			UpdatedAt: time.Now(),
 		}
 		return u.tagStorage.CreateTag(ctx, newTag)
 	}
@@ -47,13 +46,13 @@ func (u *TagUsecase) UnlinkTagsFromTask(ctx context.Context, taskID string, tags
 	return u.tagStorage.UnlinkTagsFromTask(ctx, taskID, tagsToRemove)
 }
 
-func (u *TagUsecase) GetTagsByUserID(ctx context.Context, userID string) ([]domain.TagResponseData, error) {
+func (u *TagUsecase) GetTagsByUserID(ctx context.Context, userID string) ([]model.TagResponseData, error) {
 	tags, err := u.tagStorage.GetTagsByUserID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
 
-	var tagsResp []domain.TagResponseData
+	var tagsResp []model.TagResponseData
 
 	for _, tag := range tags {
 		tagsResp = append(tagsResp, mapTagToTagResponseData(tag))
@@ -62,13 +61,13 @@ func (u *TagUsecase) GetTagsByUserID(ctx context.Context, userID string) ([]doma
 	return tagsResp, nil
 }
 
-func (u *TagUsecase) GetTagsByTaskID(ctx context.Context, taskID string) ([]domain.TagResponseData, error) {
+func (u *TagUsecase) GetTagsByTaskID(ctx context.Context, taskID string) ([]model.TagResponseData, error) {
 	tags, err := u.tagStorage.GetTagsByTaskID(ctx, taskID)
 	if err != nil {
 		return nil, err
 	}
 
-	var tagsResp []domain.TagResponseData
+	var tagsResp []model.TagResponseData
 
 	for _, tag := range tags {
 		tagsResp = append(tagsResp, mapTagToTagResponseData(tag))
@@ -77,8 +76,8 @@ func (u *TagUsecase) GetTagsByTaskID(ctx context.Context, taskID string) ([]doma
 	return tagsResp, nil
 }
 
-func mapTagToTagResponseData(tag domain.Tag) domain.TagResponseData {
-	return domain.TagResponseData{
+func mapTagToTagResponseData(tag model.Tag) model.TagResponseData {
+	return model.TagResponseData{
 		ID:        tag.ID,
 		Title:     tag.Title,
 		UpdatedAt: tag.UpdatedAt,

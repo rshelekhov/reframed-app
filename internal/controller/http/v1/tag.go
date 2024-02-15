@@ -3,8 +3,9 @@ package v1
 import (
 	"errors"
 	"github.com/go-chi/chi/v5"
-	"github.com/rshelekhov/reframed/internal/domain"
+	"github.com/rshelekhov/reframed/internal/port"
 	"github.com/rshelekhov/reframed/pkg/constants/key"
+	"github.com/rshelekhov/reframed/pkg/constants/le"
 	"github.com/rshelekhov/reframed/pkg/httpserver/middleware/jwtoken"
 	"github.com/rshelekhov/reframed/pkg/logger"
 	"log/slog"
@@ -14,14 +15,14 @@ import (
 type tagController struct {
 	logger  logger.Interface
 	jwt     *jwtoken.TokenService
-	usecase domain.TagUsecase
+	usecase port.TagUsecase
 }
 
 func NewTagRoutes(
 	r *chi.Mux,
 	log logger.Interface,
 	jwt *jwtoken.TokenService,
-	usecase domain.TagUsecase,
+	usecase port.TagUsecase,
 ) {
 	c := &tagController{
 		logger:  log,
@@ -48,11 +49,11 @@ func (c *tagController) GetTagsByUserID() http.HandlerFunc {
 
 		tagsResp, err := c.usecase.GetTagsByUserID(ctx, userID)
 		switch {
-		case errors.Is(err, domain.ErrNoTagsFound):
-			handleResponseError(w, r, log, http.StatusNotFound, domain.ErrNoTagsFound)
+		case errors.Is(err, le.ErrNoTagsFound):
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrNoTagsFound)
 			return
 		case err != nil:
-			handleInternalServerError(w, r, log, domain.ErrFailedToGetData, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
 			return
 		default:
 			handleResponseSuccess(w, r, log, "tags found", tagsResp, slog.Int(key.Count, len(tagsResp)))

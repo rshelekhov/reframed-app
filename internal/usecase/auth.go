@@ -4,26 +4,28 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/rshelekhov/reframed/internal/domain"
+	"github.com/rshelekhov/reframed/internal/model"
+	"github.com/rshelekhov/reframed/internal/port"
 	"github.com/rshelekhov/reframed/pkg/constants/key"
+	"github.com/rshelekhov/reframed/pkg/constants/le"
 	"github.com/rshelekhov/reframed/pkg/httpserver/middleware/jwtoken"
 	"github.com/segmentio/ksuid"
 	"time"
 )
 
 type AuthUsecase struct {
-	authStorage domain.AuthStorage
-	listUsecase domain.ListUsecase
+	authStorage port.AuthStorage
+	listUsecase port.ListUsecase
 }
 
-func NewAuthUsecase(storage domain.AuthStorage, listUsecase domain.ListUsecase) *AuthUsecase {
+func NewAuthUsecase(storage port.AuthStorage, listUsecase port.ListUsecase) *AuthUsecase {
 	return &AuthUsecase{
 		authStorage: storage,
 		listUsecase: listUsecase,
 	}
 }
 
-func (u *AuthUsecase) CreateUser(ctx context.Context, jwt *jwtoken.TokenService, data *domain.UserRequestData) (string, error) {
+func (u *AuthUsecase) CreateUser(ctx context.Context, jwt *jwtoken.TokenService, data *model.UserRequestData) (string, error) {
 	const op = "usecase.AuthUsecase.CreateUser"
 
 	hash, err := jwtoken.PasswordHashBcrypt(
@@ -35,13 +37,11 @@ func (u *AuthUsecase) CreateUser(ctx context.Context, jwt *jwtoken.TokenService,
 		return "", fmt.Errorf("%s: failed to generate password hash: %w", op, err)
 	}
 
-	updatedAt := time.Now().UTC()
-
-	user := domain.User{
+	user := model.User{
 		ID:           ksuid.New().String(),
 		Email:        data.Email,
 		PasswordHash: hash,
-		UpdatedAt:    &updatedAt,
+		UpdatedAt:    time.Now(),
 	}
 
 	// Create the user
@@ -50,11 +50,11 @@ func (u *AuthUsecase) CreateUser(ctx context.Context, jwt *jwtoken.TokenService,
 		return "", err
 	}
 
-	defaultList := domain.List{
+	defaultList := model.List{
 		ID:        ksuid.New().String(),
-		Title:     domain.DefaultInboxList.String(),
+		Title:     model.DefaultInboxList.String(),
 		UserID:    user.ID,
-		UpdatedAt: &updatedAt,
+		UpdatedAt: time.Now(),
 	}
 
 	err = u.listUsecase.CreateDefaultList(ctx, defaultList)
@@ -66,7 +66,7 @@ func (u *AuthUsecase) CreateUser(ctx context.Context, jwt *jwtoken.TokenService,
 }
 
 // TODO: Move sessions from Postgres to Redis
-func (u *AuthUsecase) CreateUserSession(ctx context.Context, jwt *jwtoken.TokenService, userID string, data domain.UserDeviceRequestData) (jwtoken.TokenData, error) {
+func (u *AuthUsecase) CreateUserSession(ctx context.Context, jwt *jwtoken.TokenService, userID string, data model.UserDeviceRequestData) (jwtoken.TokenData, error) {
 	additionalClaims := map[string]interface{}{
 		jwtoken.ContextUserID: userID,
 	}
@@ -86,16 +86,14 @@ func (u *AuthUsecase) CreateUserSession(ctx context.Context, jwt *jwtoken.TokenS
 		return jwtoken.TokenData{}, err
 	}
 
-	lastVisitAt := time.Now().UTC()
-
 	expiresAt := time.Now().Add(jwt.RefreshTokenTTL)
 
-	session := domain.Session{
+	session := model.Session{
 		UserID:       userID,
 		DeviceID:     deviceID,
 		RefreshToken: refreshToken,
-		LastVisitAt:  &lastVisitAt,
-		ExpiresAt:    &expiresAt,
+		LastVisitAt:  time.Now(),
+		ExpiresAt:    expiresAt,
 	}
 
 	if err = u.authStorage.SaveSession(ctx, session); err != nil {
@@ -116,9 +114,9 @@ func (u *AuthUsecase) CreateUserSession(ctx context.Context, jwt *jwtoken.TokenS
 	return tokenData, nil
 }
 
-func (u *AuthUsecase) getDeviceID(ctx context.Context, userID string, data domain.UserDeviceRequestData) (string, error) {
+func (u *AuthUsecase) getDeviceID(ctx context.Context, userID string, data model.UserDeviceRequestData) (string, error) {
 	deviceID, err := u.authStorage.GetUserDeviceID(ctx, userID, data.UserAgent)
-	if errors.Is(err, domain.ErrUserDeviceNotFound) {
+	if errors.Is(err, le.ErrUserDeviceNotFound) {
 		return u.registerDevice(ctx, userID, data)
 	}
 	if err != nil {
@@ -133,17 +131,14 @@ func (u *AuthUsecase) getDeviceID(ctx context.Context, userID string, data domai
 	return deviceID, nil
 }
 
-func (u *AuthUsecase) registerDevice(ctx context.Context, userID string, data domain.UserDeviceRequestData) (string, error) {
-	latestLoginAt := time.Now().UTC()
-
-	userDevice := domain.UserDevice{
+func (u *AuthUsecase) registerDevice(ctx context.Context, userID string, data model.UserDeviceRequestData) (string, error) {
+	userDevice := model.UserDevice{
 		ID:            ksuid.New().String(),
 		UserID:        userID,
 		UserAgent:     data.UserAgent,
 		IP:            data.IP,
 		Detached:      false,
-		DetachedAt:    nil,
-		LatestLoginAt: &latestLoginAt,
+		LatestLoginAt: time.Now(),
 	}
 
 	if err := u.authStorage.AddDevice(ctx, userDevice); err != nil {
@@ -158,7 +153,7 @@ func (u *AuthUsecase) updateLatestLoginAt(ctx context.Context, deviceID string) 
 	return u.authStorage.UpdateLatestLoginAt(ctx, deviceID, latestLoginAt)
 }
 
-func (u *AuthUsecase) LoginUser(ctx context.Context, jwt *jwtoken.TokenService, data *domain.UserRequestData) (string, error) {
+func (u *AuthUsecase) LoginUser(ctx context.Context, jwt *jwtoken.TokenService, data *model.UserRequestData) (string, error) {
 	user, err := u.authStorage.GetUserByEmail(ctx, data.Email)
 	if err != nil {
 		return "", err
@@ -171,7 +166,7 @@ func (u *AuthUsecase) LoginUser(ctx context.Context, jwt *jwtoken.TokenService, 
 	return user.ID, nil
 }
 
-func (u *AuthUsecase) VerifyPassword(ctx context.Context, jwt *jwtoken.TokenService, user domain.User, password string) error {
+func (u *AuthUsecase) VerifyPassword(ctx context.Context, jwt *jwtoken.TokenService, user model.User, password string) error {
 	const op = "user.AuthUsecase.VerifyPassword"
 
 	user, err := u.authStorage.GetUserData(ctx, user.ID)
@@ -179,7 +174,7 @@ func (u *AuthUsecase) VerifyPassword(ctx context.Context, jwt *jwtoken.TokenServ
 		return err
 	}
 	if len(user.PasswordHash) == 0 {
-		return domain.ErrUserHasNoPassword
+		return le.ErrUserHasNoPassword
 	}
 
 	matched, err := jwtoken.PasswordMatch(user.PasswordHash, password, []byte(jwt.PasswordHashSalt))
@@ -187,38 +182,38 @@ func (u *AuthUsecase) VerifyPassword(ctx context.Context, jwt *jwtoken.TokenServ
 		return fmt.Errorf("%s: failed to check if password match: %w", op, err)
 	}
 	if !matched {
-		return domain.ErrInvalidCredentials
+		return le.ErrInvalidCredentials
 	}
 	return nil
 }
 
-func (u *AuthUsecase) CheckSessionAndDevice(ctx context.Context, refreshToken string, data domain.UserDeviceRequestData) (domain.Session, error) {
+func (u *AuthUsecase) CheckSessionAndDevice(ctx context.Context, refreshToken string, data model.UserDeviceRequestData) (model.Session, error) {
 	// Get the session by refresh token
 	session, err := u.authStorage.GetSessionByRefreshToken(ctx, refreshToken)
-	if errors.Is(err, domain.ErrSessionNotFound) {
-		return domain.Session{}, domain.ErrSessionNotFound
+	if errors.Is(err, le.ErrSessionNotFound) {
+		return model.Session{}, le.ErrSessionNotFound
 	}
 	if err != nil {
-		return domain.Session{}, err
+		return model.Session{}, err
 	}
 
 	// Check if the session is expired
 	if session.IsExpired() {
-		return domain.Session{}, domain.ErrSessionExpired
+		return model.Session{}, le.ErrSessionExpired
 	}
 
 	// Check if the device exists
 	_, err = u.authStorage.GetUserDeviceID(ctx, session.UserID, data.UserAgent)
-	if errors.Is(err, domain.ErrUserDeviceNotFound) {
-		return domain.Session{}, domain.ErrUserDeviceNotFound
+	if errors.Is(err, le.ErrUserDeviceNotFound) {
+		return model.Session{}, le.ErrUserDeviceNotFound
 	}
 	if err != nil {
-		return domain.Session{}, err
+		return model.Session{}, err
 	}
 	return session, nil
 }
 
-func (u *AuthUsecase) LogoutUser(ctx context.Context, userID string, data domain.UserDeviceRequestData) error {
+func (u *AuthUsecase) LogoutUser(ctx context.Context, userID string, data model.UserDeviceRequestData) error {
 	// Check if the device exists
 	deviceID, err := u.authStorage.GetUserDeviceID(ctx, userID, data.UserAgent)
 	if err != nil {
@@ -227,13 +222,13 @@ func (u *AuthUsecase) LogoutUser(ctx context.Context, userID string, data domain
 	return u.authStorage.RemoveSession(ctx, userID, deviceID)
 }
 
-func (u *AuthUsecase) GetUserByID(ctx context.Context, id string) (domain.UserResponseData, error) {
+func (u *AuthUsecase) GetUserByID(ctx context.Context, id string) (model.UserResponseData, error) {
 	user, err := u.authStorage.GetUserByID(ctx, id)
 	if err != nil {
-		return domain.UserResponseData{}, err
+		return model.UserResponseData{}, err
 	}
 
-	userResponse := domain.UserResponseData{
+	userResponse := model.UserResponseData{
 		ID:        user.ID,
 		Email:     user.Email,
 		UpdatedAt: user.UpdatedAt,
@@ -242,19 +237,17 @@ func (u *AuthUsecase) GetUserByID(ctx context.Context, id string) (domain.UserRe
 	return userResponse, err
 }
 
-func (u *AuthUsecase) UpdateUser(ctx context.Context, jwt *jwtoken.TokenService, data *domain.UserRequestData, userID string) error {
+func (u *AuthUsecase) UpdateUser(ctx context.Context, jwt *jwtoken.TokenService, data *model.UserRequestData, userID string) error {
 
 	user, err := u.authStorage.GetUserData(ctx, userID)
 	if err != nil {
 		return err
 	}
 
-	updatedAt := time.Now().UTC()
-
-	updatedUser := domain.User{
+	updatedUser := model.User{
 		ID:        user.ID,
 		Email:     data.Email,
-		UpdatedAt: &updatedAt,
+		UpdatedAt: time.Now(),
 	}
 
 	if data.Password != "" {
@@ -279,23 +272,21 @@ func (u *AuthUsecase) checkPassword(jwt *jwtoken.TokenService, currentPasswordHa
 	}
 
 	if updatedPasswordHash == currentPasswordHash {
-		return domain.ErrNoPasswordChangesDetected
+		return le.ErrNoPasswordChangesDetected
 	}
 
 	return nil
 }
 
-func (u *AuthUsecase) DeleteUser(ctx context.Context, userID string, data domain.UserDeviceRequestData) error {
+func (u *AuthUsecase) DeleteUser(ctx context.Context, userID string, data model.UserDeviceRequestData) error {
 	deviceID, err := u.authStorage.GetUserDeviceID(ctx, userID, data.UserAgent)
 	if err != nil {
 		return err
 	}
 
-	deletedAt := time.Now().UTC()
-
-	deletedUser := domain.User{
+	deletedUser := model.User{
 		ID:        userID,
-		DeletedAt: &deletedAt,
+		DeletedAt: time.Now(),
 	}
 
 	err = u.authStorage.DeleteUser(ctx, deletedUser)

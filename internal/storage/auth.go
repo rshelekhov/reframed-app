@@ -6,7 +6,8 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/rshelekhov/reframed/internal/domain"
+	"github.com/rshelekhov/reframed/internal/model"
+	"github.com/rshelekhov/reframed/pkg/constants/le"
 	"strconv"
 	"time"
 )
@@ -20,7 +21,7 @@ func NewAuthStorage(pool *pgxpool.Pool) *AuthStorage {
 }
 
 // CreateUser creates a new user
-func (s *AuthStorage) CreateUser(ctx context.Context, user domain.User) error {
+func (s *AuthStorage) CreateUser(ctx context.Context, user model.User) error {
 	const op = "user.storage.CreateUser"
 
 	tx, err := BeginTransaction(s.Pool, ctx, op)
@@ -35,7 +36,7 @@ func (s *AuthStorage) CreateUser(ctx context.Context, user domain.User) error {
 
 	switch userStatus {
 	case "active":
-		return domain.ErrUserAlreadyExists
+		return le.ErrUserAlreadyExists
 	case "soft_deleted":
 		if err = replaceSoftDeletedUser(ctx, tx, user); err != nil {
 			return err
@@ -87,7 +88,7 @@ func getUserStatus(ctx context.Context, tx pgx.Tx, email string) (string, error)
 }
 
 // replaceSoftDeletedUser replaces a soft deleted user with the given user
-func replaceSoftDeletedUser(ctx context.Context, tx pgx.Tx, user domain.User) error {
+func replaceSoftDeletedUser(ctx context.Context, tx pgx.Tx, user model.User) error {
 	const (
 		op = "user.storage.replaceSoftDeletedUser"
 
@@ -124,7 +125,7 @@ func replaceSoftDeletedUser(ctx context.Context, tx pgx.Tx, user domain.User) er
 }
 
 // insertUser inserts a new user
-func insertUser(ctx context.Context, tx pgx.Tx, user domain.User) error {
+func insertUser(ctx context.Context, tx pgx.Tx, user model.User) error {
 	const (
 		op = "user.storage.insertNewUser"
 
@@ -149,7 +150,7 @@ func insertUser(ctx context.Context, tx pgx.Tx, user domain.User) error {
 	return nil
 }
 
-func (s *AuthStorage) AddDevice(ctx context.Context, device domain.UserDevice) error {
+func (s *AuthStorage) AddDevice(ctx context.Context, device model.UserDevice) error {
 	const (
 		op = "user.storage.AddDevice"
 
@@ -165,7 +166,6 @@ func (s *AuthStorage) AddDevice(ctx context.Context, device domain.UserDevice) e
 		device.UserID,
 		device.UserAgent,
 		device.IP,
-		device.Detached,
 		device.LatestLoginAt,
 	)
 	if err != nil {
@@ -175,7 +175,7 @@ func (s *AuthStorage) AddDevice(ctx context.Context, device domain.UserDevice) e
 	return nil
 }
 
-func (s *AuthStorage) SaveSession(ctx context.Context, session domain.Session) error {
+func (s *AuthStorage) SaveSession(ctx context.Context, session model.Session) error {
 	// TODO: add constraint that user can have only active sessions for 5 devices
 	const (
 		op = "user.storage.SaveSession"
@@ -215,7 +215,7 @@ func (s *AuthStorage) GetUserDeviceID(ctx context.Context, userID, userAgent str
 
 	err := s.QueryRow(ctx, query, userID, userAgent).Scan(&deviceID)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return "", domain.ErrUserDeviceNotFound
+		return "", le.ErrUserDeviceNotFound
 	}
 	if err != nil {
 		return "", fmt.Errorf("%s: failed to get id of user device: %w", op, err)
@@ -243,7 +243,7 @@ func (s *AuthStorage) UpdateLatestLoginAt(ctx context.Context, deviceID string, 
 	return nil
 }
 
-func (s *AuthStorage) GetUserByEmail(ctx context.Context, email string) (domain.User, error) {
+func (s *AuthStorage) GetUserByEmail(ctx context.Context, email string) (model.User, error) {
 	const (
 		op = "user.storage.GetUserCredentials"
 
@@ -254,23 +254,23 @@ func (s *AuthStorage) GetUserByEmail(ctx context.Context, email string) (domain.
 			  AND deleted_at IS NULL`
 	)
 
-	var userDB domain.User
+	var userDB model.User
 	err := s.QueryRow(ctx, query, email).Scan(
 		&userDB.ID,
 		&userDB.Email,
 		&userDB.UpdatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.User{}, domain.ErrUserNotFound
+		return model.User{}, le.ErrUserNotFound
 	}
 	if err != nil {
-		return domain.User{}, fmt.Errorf("%s: failed to get user credentials: %w", op, err)
+		return model.User{}, fmt.Errorf("%s: failed to get user credentials: %w", op, err)
 	}
 
 	return userDB, nil
 }
 
-func (s *AuthStorage) GetUserData(ctx context.Context, userID string) (domain.User, error) {
+func (s *AuthStorage) GetUserData(ctx context.Context, userID string) (model.User, error) {
 	const (
 		op = "user.storage.GetUserData"
 
@@ -281,7 +281,7 @@ func (s *AuthStorage) GetUserData(ctx context.Context, userID string) (domain.Us
 			  AND deleted_at IS NULL`
 	)
 
-	var userDB domain.User
+	var userDB model.User
 	err := s.QueryRow(ctx, query, userID).Scan(
 		&userDB.ID,
 		&userDB.Email,
@@ -289,16 +289,16 @@ func (s *AuthStorage) GetUserData(ctx context.Context, userID string) (domain.Us
 		&userDB.UpdatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.User{}, domain.ErrUserNotFound
+		return model.User{}, le.ErrUserNotFound
 	}
 	if err != nil {
-		return domain.User{}, fmt.Errorf("%s: failed to get user credentials: %w", op, err)
+		return model.User{}, fmt.Errorf("%s: failed to get user credentials: %w", op, err)
 	}
 
 	return userDB, nil
 }
 
-func (s *AuthStorage) GetSessionByRefreshToken(ctx context.Context, refreshToken string) (domain.Session, error) {
+func (s *AuthStorage) GetSessionByRefreshToken(ctx context.Context, refreshToken string) (model.Session, error) {
 	const (
 		op = "user.storage.GetSessionByRefreshToken"
 
@@ -312,7 +312,7 @@ func (s *AuthStorage) GetSessionByRefreshToken(ctx context.Context, refreshToken
 			WHERE refresh_token = $1`
 	)
 
-	var session domain.Session
+	var session model.Session
 	session.RefreshToken = refreshToken
 
 	err := s.QueryRow(ctx, querySelect, refreshToken).Scan(
@@ -322,15 +322,15 @@ func (s *AuthStorage) GetSessionByRefreshToken(ctx context.Context, refreshToken
 		&session.ExpiresAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return session, domain.ErrSessionNotFound
+		return session, le.ErrSessionNotFound
 	}
 	if err != nil {
-		return domain.Session{}, fmt.Errorf("%s: failed to get session: %w", op, err)
+		return model.Session{}, fmt.Errorf("%s: failed to get session: %w", op, err)
 	}
 
 	_, err = s.Exec(ctx, queryDelete, refreshToken)
 	if err != nil {
-		return domain.Session{}, fmt.Errorf("%s: failed to delete expired session: %w", op, err)
+		return model.Session{}, fmt.Errorf("%s: failed to delete expired session: %w", op, err)
 	}
 
 	return session, nil
@@ -354,7 +354,7 @@ func (s *AuthStorage) RemoveSession(ctx context.Context, userID, deviceID string
 	return nil
 }
 
-func (s *AuthStorage) GetUserByID(ctx context.Context, userID string) (domain.User, error) {
+func (s *AuthStorage) GetUserByID(ctx context.Context, userID string) (model.User, error) {
 	const (
 		op = "user.storage.GetUserData"
 
@@ -365,7 +365,7 @@ func (s *AuthStorage) GetUserByID(ctx context.Context, userID string) (domain.Us
 			  AND deleted_at IS NULL`
 	)
 
-	var user domain.User
+	var user model.User
 
 	err := s.QueryRow(ctx, query, userID).Scan(
 		&user.ID,
@@ -373,17 +373,17 @@ func (s *AuthStorage) GetUserByID(ctx context.Context, userID string) (domain.Us
 		&user.UpdatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.User{}, domain.ErrUserNotFound
+		return model.User{}, le.ErrUserNotFound
 	}
 	if err != nil {
-		return domain.User{}, fmt.Errorf("%s: failed to get user: %w", op, err)
+		return model.User{}, fmt.Errorf("%s: failed to get user: %w", op, err)
 	}
 
 	return user, nil
 }
 
 // UpdateUser updates a user by ID
-func (s *AuthStorage) UpdateUser(ctx context.Context, updatedUserData domain.User) error {
+func (s *AuthStorage) UpdateUser(ctx context.Context, updatedUserData model.User) error {
 	const op = "UpdateUser.storage.UpdateUser"
 
 	// Begin transaction
@@ -402,7 +402,7 @@ func (s *AuthStorage) UpdateUser(ctx context.Context, updatedUserData domain.Use
 	passwordChanged := updatedUserData.PasswordHash != ""
 
 	if !emailChanged && !passwordChanged {
-		return domain.ErrNoChangesDetected
+		return le.ErrNoChangesDetected
 	}
 
 	// Check if the updatedUserData email exists for a different updatedUserData
@@ -434,7 +434,7 @@ func (s *AuthStorage) UpdateUser(ctx context.Context, updatedUserData domain.Use
 	}
 
 	if result.RowsAffected() == 0 {
-		return domain.ErrUserNotFound
+		return le.ErrUserNotFound
 	}
 
 	CommitTransaction(&err, tx, ctx, op)
@@ -458,7 +458,7 @@ func checkEmailUniqueness(ctx context.Context, tx pgx.Tx, email, id string) erro
 	err := tx.QueryRow(ctx, query, email).Scan(&existingUserID)
 
 	if !errors.Is(err, pgx.ErrNoRows) && existingUserID != id {
-		return domain.ErrEmailAlreadyTaken
+		return le.ErrEmailAlreadyTaken
 	} else if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return fmt.Errorf("%s: failed to check email uniqueness: %w", op, err)
 	}
@@ -467,7 +467,7 @@ func checkEmailUniqueness(ctx context.Context, tx pgx.Tx, email, id string) erro
 }
 
 // DeleteUser deletes a user by ID
-func (s *AuthStorage) DeleteUser(ctx context.Context, user domain.User) error {
+func (s *AuthStorage) DeleteUser(ctx context.Context, user model.User) error {
 	const (
 		op = "user.storage.DeleteUser"
 
@@ -484,7 +484,7 @@ func (s *AuthStorage) DeleteUser(ctx context.Context, user domain.User) error {
 	}
 
 	if result.RowsAffected() == 0 {
-		return domain.ErrUserNotFound
+		return le.ErrUserNotFound
 	}
 
 	return nil

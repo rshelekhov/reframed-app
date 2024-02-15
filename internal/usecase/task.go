@@ -2,18 +2,20 @@ package usecase
 
 import (
 	"context"
-	"github.com/rshelekhov/reframed/internal/domain"
+	"github.com/rshelekhov/reframed/internal/model"
+	"github.com/rshelekhov/reframed/internal/port"
+	"github.com/rshelekhov/reframed/pkg/constants/le"
 	"github.com/segmentio/ksuid"
 	"time"
 )
 
 type TaskUsecase struct {
-	taskStorage    domain.TaskStorage
-	headingUsecase domain.HeadingUsecase
-	tagUsecase     domain.TagUsecase
+	taskStorage    port.TaskStorage
+	headingUsecase port.HeadingUsecase
+	tagUsecase     port.TagUsecase
 }
 
-func NewTaskUsecase(storage domain.TaskStorage, headingUsecase domain.HeadingUsecase, tagUsecase domain.TagUsecase) *TaskUsecase {
+func NewTaskUsecase(storage port.TaskStorage, headingUsecase port.HeadingUsecase, tagUsecase port.TagUsecase) *TaskUsecase {
 	return &TaskUsecase{
 		taskStorage:    storage,
 		headingUsecase: headingUsecase,
@@ -21,9 +23,9 @@ func NewTaskUsecase(storage domain.TaskStorage, headingUsecase domain.HeadingUse
 	}
 }
 
-func (u *TaskUsecase) CreateTask(ctx context.Context, data *domain.TaskRequestData) (string, error) {
+func (u *TaskUsecase) CreateTask(ctx context.Context, data *model.TaskRequestData) (string, error) {
 	if data.HeadingID == "" {
-		defaultHeadingID, err := u.headingUsecase.GetDefaultHeadingID(ctx, domain.HeadingRequestData{
+		defaultHeadingID, err := u.headingUsecase.GetDefaultHeadingID(ctx, model.HeadingRequestData{
 			ListID: data.ListID,
 			UserID: data.UserID,
 		})
@@ -33,15 +35,13 @@ func (u *TaskUsecase) CreateTask(ctx context.Context, data *domain.TaskRequestDa
 		data.HeadingID = defaultHeadingID
 	}
 
-	statusNotStarted, err := u.taskStorage.GetTaskStatusID(ctx, domain.StatusNotStarted)
+	statusNotStarted, err := u.taskStorage.GetTaskStatusID(ctx, model.StatusNotStarted)
 	if err != nil {
 		return "", err
 	}
 	data.StatusID = statusNotStarted
 
-	updatedAt := time.Now().UTC()
-
-	newTask := domain.Task{
+	newTask := model.Task{
 		ID:          ksuid.New().String(),
 		Title:       data.Title,
 		Description: data.Description,
@@ -53,11 +53,11 @@ func (u *TaskUsecase) CreateTask(ctx context.Context, data *domain.TaskRequestDa
 		ListID:      data.ListID,
 		HeadingID:   data.HeadingID,
 		UserID:      data.UserID,
-		UpdatedAt:   &updatedAt,
+		UpdatedAt:   time.Now(),
 	}
 
 	for _, tag := range data.Tags {
-		if err = u.tagUsecase.CreateTagIfNotExists(ctx, domain.TagRequestData{
+		if err = u.tagUsecase.CreateTagIfNotExists(ctx, model.TagRequestData{
 			Title:  tag,
 			UserID: data.UserID,
 		}); err != nil {
@@ -76,12 +76,12 @@ func (u *TaskUsecase) CreateTask(ctx context.Context, data *domain.TaskRequestDa
 	return newTask.ID, nil
 }
 
-func (u *TaskUsecase) GetTaskByID(ctx context.Context, data domain.TaskRequestData) (domain.TaskResponseData, error) {
+func (u *TaskUsecase) GetTaskByID(ctx context.Context, data model.TaskRequestData) (model.TaskResponseData, error) {
 	task, err := u.taskStorage.GetTaskByID(ctx, data.ID, data.UserID)
 	if err != nil {
-		return domain.TaskResponseData{}, err
+		return model.TaskResponseData{}, err
 	}
-	return domain.TaskResponseData{
+	return model.TaskResponseData{
 		ID:        task.ID,
 		Title:     task.Title,
 		StartDate: task.StartDate,
@@ -96,34 +96,34 @@ func (u *TaskUsecase) GetTaskByID(ctx context.Context, data domain.TaskRequestDa
 	}, nil
 }
 
-func (u *TaskUsecase) GetTasksByUserID(ctx context.Context, userID string, pgn domain.Pagination) ([]domain.TaskResponseData, error) {
+func (u *TaskUsecase) GetTasksByUserID(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskResponseData, error) {
 	tasks, err := u.taskStorage.GetTasksByUserID(ctx, userID, pgn)
 	if err != nil {
 		return nil, err
 	}
 
-	var tasksResp []domain.TaskResponseData
+	var tasksResp []model.TaskResponseData
 	for _, task := range tasks {
 		tasksResp = append(tasksResp, mapTaskToResponseData(task))
 	}
 	return tasksResp, nil
 }
 
-func (u *TaskUsecase) GetTasksByListID(ctx context.Context, data domain.TaskRequestData) ([]domain.TaskResponseData, error) {
+func (u *TaskUsecase) GetTasksByListID(ctx context.Context, data model.TaskRequestData) ([]model.TaskResponseData, error) {
 	tasks, err := u.taskStorage.GetTasksByListID(ctx, data.ListID, data.UserID)
 	if err != nil {
 		return nil, err
 	}
 
-	var tasksResp []domain.TaskResponseData
+	var tasksResp []model.TaskResponseData
 	for _, task := range tasks {
 		tasksResp = append(tasksResp, mapTaskToResponseData(task))
 	}
 	return tasksResp, nil
 }
 
-func mapTaskToResponseData(task domain.Task) domain.TaskResponseData {
-	return domain.TaskResponseData{
+func mapTaskToResponseData(task model.Task) model.TaskResponseData {
+	return model.TaskResponseData{
 		ID:        task.ID,
 		Title:     task.Title,
 		StartDate: task.StartDate,
@@ -138,7 +138,7 @@ func mapTaskToResponseData(task domain.Task) domain.TaskResponseData {
 	}
 }
 
-func (u *TaskUsecase) GetTasksGroupedByHeadings(ctx context.Context, data domain.TaskRequestData) ([]domain.TaskGroup, error) {
+func (u *TaskUsecase) GetTasksGroupedByHeadings(ctx context.Context, data model.TaskRequestData) ([]model.TaskGroup, error) {
 	taskGroups, err := u.taskStorage.GetTasksGroupedByHeadings(ctx, data.ListID, data.UserID)
 	if err != nil {
 		return nil, err
@@ -146,7 +146,7 @@ func (u *TaskUsecase) GetTasksGroupedByHeadings(ctx context.Context, data domain
 	return taskGroups, nil
 }
 
-func (u *TaskUsecase) GetTasksForToday(ctx context.Context, userID string) ([]domain.TaskGroup, error) {
+func (u *TaskUsecase) GetTasksForToday(ctx context.Context, userID string) ([]model.TaskGroup, error) {
 	taskGroups, err := u.taskStorage.GetTasksForToday(ctx, userID)
 	if err != nil {
 		return nil, err
@@ -154,7 +154,7 @@ func (u *TaskUsecase) GetTasksForToday(ctx context.Context, userID string) ([]do
 	return taskGroups, nil
 }
 
-func (u *TaskUsecase) GetUpcomingTasks(ctx context.Context, userID string, pgn domain.Pagination) ([]domain.TaskGroup, error) {
+func (u *TaskUsecase) GetUpcomingTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error) {
 	taskGroups, err := u.taskStorage.GetUpcomingTasks(ctx, userID, pgn)
 	if err != nil {
 		return nil, err
@@ -162,7 +162,7 @@ func (u *TaskUsecase) GetUpcomingTasks(ctx context.Context, userID string, pgn d
 	return taskGroups, nil
 }
 
-func (u *TaskUsecase) GetOverdueTasks(ctx context.Context, userID string, pgn domain.Pagination) ([]domain.TaskGroup, error) {
+func (u *TaskUsecase) GetOverdueTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error) {
 	taskGroups, err := u.taskStorage.GetOverdueTasks(ctx, userID, pgn)
 	if err != nil {
 		return nil, err
@@ -170,7 +170,7 @@ func (u *TaskUsecase) GetOverdueTasks(ctx context.Context, userID string, pgn do
 	return taskGroups, nil
 }
 
-func (u *TaskUsecase) GetTasksForSomeday(ctx context.Context, userID string, pgn domain.Pagination) ([]domain.TaskGroup, error) {
+func (u *TaskUsecase) GetTasksForSomeday(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error) {
 	taskGroups, err := u.taskStorage.GetTasksForSomeday(ctx, userID, pgn)
 	if err != nil {
 		return nil, err
@@ -178,7 +178,7 @@ func (u *TaskUsecase) GetTasksForSomeday(ctx context.Context, userID string, pgn
 	return taskGroups, nil
 }
 
-func (u *TaskUsecase) GetCompletedTasks(ctx context.Context, userID string, pgn domain.Pagination) ([]domain.TaskGroup, error) {
+func (u *TaskUsecase) GetCompletedTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error) {
 	taskGroups, err := u.taskStorage.GetCompletedTasks(ctx, userID, pgn)
 	if err != nil {
 		return nil, err
@@ -186,7 +186,7 @@ func (u *TaskUsecase) GetCompletedTasks(ctx context.Context, userID string, pgn 
 	return taskGroups, nil
 }
 
-func (u *TaskUsecase) GetArchivedTasks(ctx context.Context, userID string, pgn domain.Pagination) ([]domain.TaskGroup, error) {
+func (u *TaskUsecase) GetArchivedTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error) {
 	taskGroups, err := u.taskStorage.GetArchivedTasks(ctx, userID, pgn)
 	if err != nil {
 		return nil, err
@@ -194,10 +194,8 @@ func (u *TaskUsecase) GetArchivedTasks(ctx context.Context, userID string, pgn d
 	return taskGroups, nil
 }
 
-func (u *TaskUsecase) UpdateTask(ctx context.Context, data *domain.TaskRequestData) error {
-	updatedAt := time.Now().UTC()
-
-	updatedTask := domain.Task{
+func (u *TaskUsecase) UpdateTask(ctx context.Context, data *model.TaskRequestData) error {
+	updatedTask := model.Task{
 		ID:        data.ID,
 		Title:     data.Title,
 		StartDate: data.StartDate,
@@ -207,7 +205,7 @@ func (u *TaskUsecase) UpdateTask(ctx context.Context, data *domain.TaskRequestDa
 		ListID:    data.ListID,
 		HeadingID: data.HeadingID,
 		UserID:    data.UserID,
-		UpdatedAt: &updatedAt,
+		UpdatedAt: time.Now(),
 	}
 
 	currentTags, err := u.tagUsecase.GetTagsByTaskID(ctx, data.ID)
@@ -218,7 +216,7 @@ func (u *TaskUsecase) UpdateTask(ctx context.Context, data *domain.TaskRequestDa
 	tagsToAdd, tagsToRemove := findTagsToAddAndRemove(currentTags, data.Tags)
 
 	for _, tag := range data.Tags {
-		if err = u.tagUsecase.CreateTagIfNotExists(ctx, domain.TagRequestData{
+		if err = u.tagUsecase.CreateTagIfNotExists(ctx, model.TagRequestData{
 			Title:  tag,
 			UserID: data.UserID,
 		}); err != nil {
@@ -241,7 +239,7 @@ func (u *TaskUsecase) UpdateTask(ctx context.Context, data *domain.TaskRequestDa
 	return nil
 }
 
-func findTagsToAddAndRemove(currentTags []domain.TagResponseData, updatedTags []string) (tagsToAdd, tagsToRemove []string) {
+func findTagsToAddAndRemove(currentTags []model.TagResponseData, updatedTags []string) (tagsToAdd, tagsToRemove []string) {
 	tagMap := make(map[string]bool)
 
 	for _, tag := range currentTags {
@@ -263,37 +261,37 @@ func findTagsToAddAndRemove(currentTags []domain.TagResponseData, updatedTags []
 	return tagsToAdd, tagsToRemove
 }
 
-func (u *TaskUsecase) UpdateTaskTime(ctx context.Context, data *domain.TaskRequestData) error {
-	if data.StartTime == nil && data.EndTime == nil {
-		taskStatusID, err := u.taskStorage.GetTaskStatusID(ctx, domain.StatusNotStarted)
+func (u *TaskUsecase) UpdateTaskTime(ctx context.Context, data *model.TaskRequestData) error {
+	if !data.StartTime.IsZero() && !data.EndTime.IsZero() {
+		taskStatusID, err := u.taskStorage.GetTaskStatusID(ctx, model.StatusPlanned)
+		if err != nil {
+			return err
+		}
+		data.StatusID = taskStatusID
+	} else if data.StartTime.IsZero() && data.EndTime.IsZero() {
+		taskStatusID, err := u.taskStorage.GetTaskStatusID(ctx, model.StatusNotStarted)
 		if err != nil {
 			return err
 		}
 		data.StatusID = taskStatusID
 	} else {
-		taskStatusID, err := u.taskStorage.GetTaskStatusID(ctx, domain.StatusPlanned)
-		if err != nil {
-			return err
-		}
-		data.StatusID = taskStatusID
+		return le.ErrInvalidTaskTimeRange
 	}
 
-	updatedAt := time.Now().UTC()
-
-	updatedTask := domain.Task{
+	updatedTask := model.Task{
 		ID:        data.ID,
 		StartTime: data.StartTime,
 		EndTime:   data.EndTime,
 		StatusID:  data.StatusID,
 		UserID:    data.UserID,
-		UpdatedAt: &updatedAt,
+		UpdatedAt: time.Now(),
 	}
 
 	return u.taskStorage.UpdateTaskTime(ctx, updatedTask)
 }
 
-func (u *TaskUsecase) MoveTaskToAnotherList(ctx context.Context, data domain.TaskRequestData) error {
-	defaultHeadingID, err := u.headingUsecase.GetDefaultHeadingID(ctx, domain.HeadingRequestData{
+func (u *TaskUsecase) MoveTaskToAnotherList(ctx context.Context, data model.TaskRequestData) error {
+	defaultHeadingID, err := u.headingUsecase.GetDefaultHeadingID(ctx, model.HeadingRequestData{
 		ListID: data.ListID,
 		UserID: data.UserID,
 	})
@@ -302,52 +300,46 @@ func (u *TaskUsecase) MoveTaskToAnotherList(ctx context.Context, data domain.Tas
 	}
 	data.HeadingID = defaultHeadingID
 
-	updatedAt := time.Now().UTC()
-
-	updatedTask := domain.Task{
+	updatedTask := model.Task{
 		ID:        data.ID,
 		ListID:    data.ListID,
 		HeadingID: data.HeadingID,
 		UserID:    data.UserID,
-		UpdatedAt: &updatedAt,
+		UpdatedAt: time.Now(),
 	}
 
 	return u.taskStorage.MoveTaskToAnotherList(ctx, updatedTask)
 }
 
-func (u *TaskUsecase) CompleteTask(ctx context.Context, data domain.TaskRequestData) error {
-	statusCompleted, err := u.taskStorage.GetTaskStatusID(ctx, domain.StatusCompleted)
+func (u *TaskUsecase) CompleteTask(ctx context.Context, data model.TaskRequestData) error {
+	statusCompleted, err := u.taskStorage.GetTaskStatusID(ctx, model.StatusCompleted)
 	if err != nil {
 		return err
 	}
 	data.StatusID = statusCompleted
 
-	updatedAt := time.Now().UTC()
-
-	completedTask := domain.Task{
+	completedTask := model.Task{
 		ID:        data.ID,
 		StatusID:  data.StatusID,
 		UserID:    data.UserID,
-		UpdatedAt: &updatedAt,
+		UpdatedAt: time.Now(),
 	}
 
 	return u.taskStorage.CompleteTask(ctx, completedTask)
 }
 
-func (u *TaskUsecase) ArchiveTask(ctx context.Context, data domain.TaskRequestData) error {
-	statusArchived, err := u.taskStorage.GetTaskStatusID(ctx, domain.StatusArchived)
+func (u *TaskUsecase) ArchiveTask(ctx context.Context, data model.TaskRequestData) error {
+	statusArchived, err := u.taskStorage.GetTaskStatusID(ctx, model.StatusArchived)
 	if err != nil {
 		return err
 	}
 	data.StatusID = statusArchived
 
-	updatedAt := time.Now().UTC()
-
-	archivedTask := domain.Task{
+	archivedTask := model.Task{
 		ID:        data.ID,
 		StatusID:  data.StatusID,
 		UserID:    data.UserID,
-		UpdatedAt: &updatedAt,
+		UpdatedAt: time.Now(),
 	}
 
 	return u.taskStorage.ArchiveTask(ctx, archivedTask)

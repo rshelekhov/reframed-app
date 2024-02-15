@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator"
-	"github.com/rshelekhov/reframed/internal/domain"
+	"github.com/rshelekhov/reframed/pkg/constants/le"
 	"github.com/rshelekhov/reframed/pkg/logger"
 	"io"
 	"log/slog"
@@ -16,8 +16,8 @@ import (
 // validateData validates the request
 func validateData(w http.ResponseWriter, r *http.Request, log logger.Interface, data any) error {
 	if data == nil || reflect.DeepEqual(data, reflect.Zero(reflect.TypeOf(data)).Interface()) {
-		handleResponseError(w, r, log, http.StatusBadRequest, domain.ErrEmptyData)
-		return domain.ErrEmptyData
+		handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyData)
+		return le.ErrEmptyData
 	}
 
 	v := validator.New()
@@ -25,13 +25,13 @@ func validateData(w http.ResponseWriter, r *http.Request, log logger.Interface, 
 
 	err := v.Struct(data)
 	if errors.As(err, &ve) {
-		log.Error(domain.ErrInvalidData.Error(), logger.Err(err))
+		log.Error(le.ErrInvalidData.Error(), logger.Err(err))
 		responseValidationErrors(w, r, ve)
-		return domain.ErrInvalidData
+		return le.ErrInvalidData
 	}
 	if err != nil {
-		handleResponseError(w, r, log, http.StatusInternalServerError, domain.ErrFailedToValidateData, err)
-		return domain.ErrFailedToValidateData
+		handleResponseError(w, r, log, http.StatusInternalServerError, le.ErrFailedToValidateData, err)
+		return le.ErrFailedToValidateData
 	}
 	return nil
 }
@@ -41,14 +41,14 @@ func decodeJSON(w http.ResponseWriter, r *http.Request, log logger.Interface, da
 	// Decode the request body
 	err := render.DecodeJSON(r.Body, &data)
 	if errors.Is(err, io.EOF) {
-		log.Error(domain.ErrEmptyRequestBody.Error())
-		responseError(w, r, http.StatusBadRequest, domain.ErrEmptyRequestBody)
-		return domain.ErrEmptyRequestBody
+		log.Error(le.ErrEmptyRequestBody.Error())
+		responseError(w, r, http.StatusBadRequest, le.ErrEmptyRequestBody)
+		return le.ErrEmptyRequestBody
 	}
 	if err != nil {
-		log.Error(domain.ErrInvalidJSON.Error(), logger.Err(err))
-		responseError(w, r, http.StatusBadRequest, domain.ErrInvalidJSON)
-		return domain.ErrInvalidJSON
+		log.Error(le.ErrInvalidJSON.Error(), logger.Err(err))
+		responseError(w, r, http.StatusBadRequest, le.ErrInvalidJSON)
+		return le.ErrInvalidJSON
 	}
 
 	log.Info("request body decoded", slog.Any("user", data))
@@ -152,7 +152,7 @@ func responseError(
 	w http.ResponseWriter,
 	r *http.Request,
 	statusCode int,
-	errorMessage domain.LocalError,
+	errorMessage le.LocalError,
 ) {
 	errorResponse := struct {
 		Code        int    `json:"code"`
@@ -174,7 +174,7 @@ func handleResponseError(
 	r *http.Request,
 	log logger.Interface,
 	status int,
-	error domain.LocalError,
+	error le.LocalError,
 	addLogData ...interface{},
 ) {
 	log.Error(fmt.Sprintf("%v", error), addLogData...)
@@ -185,7 +185,7 @@ func handleInternalServerError(
 	w http.ResponseWriter,
 	r *http.Request,
 	log logger.Interface,
-	error domain.LocalError,
+	error le.LocalError,
 	addLogData ...interface{},
 ) {
 	log.Error("Internal Server Error: ", addLogData...)

@@ -7,7 +7,7 @@ import (
 	"errors"
 	"github.com/go-chi/chi/v5"
 	http2 "github.com/rshelekhov/reframed/internal/controller/http/v1"
-	"github.com/rshelekhov/reframed/internal/domain"
+	"github.com/rshelekhov/reframed/internal/model"
 	"github.com/rshelekhov/reframed/internal/storage"
 	"github.com/rshelekhov/reframed/internal/storage/mocks"
 	"github.com/rshelekhov/reframed/pkg/logger/slogdiscard"
@@ -23,14 +23,14 @@ import (
 func TestUserHandler_CreateUser(t *testing.T) {
 	testCases := []struct {
 		name                     string
-		user                     domain.User
+		user                     model.User
 		expectedCode             int
 		expectedUserStorageError error
 		expectedListStorageError error
 	}{
 		{
 			name: "success",
-			user: domain.User{
+			user: model.User{
 				Email:    "test@example.com",
 				Password: "password123",
 			},
@@ -40,7 +40,7 @@ func TestUserHandler_CreateUser(t *testing.T) {
 		},
 		{
 			name: "invalid email",
-			user: domain.User{
+			user: model.User{
 				Email:    "testexample.com",
 				Password: "password123",
 			},
@@ -50,7 +50,7 @@ func TestUserHandler_CreateUser(t *testing.T) {
 		},
 		{
 			name: "invalid password",
-			user: domain.User{
+			user: model.User{
 				Email:    "test@example.com",
 				Password: "pass",
 			},
@@ -60,7 +60,7 @@ func TestUserHandler_CreateUser(t *testing.T) {
 		},
 		{
 			name: "user already exists",
-			user: domain.User{
+			user: model.User{
 				Email:    "test@example.com",
 				Password: "password123",
 			},
@@ -70,7 +70,7 @@ func TestUserHandler_CreateUser(t *testing.T) {
 		},
 		{
 			name: "email is required",
-			user: domain.User{
+			user: model.User{
 				Password: "password123",
 			},
 			expectedCode:             http.StatusBadRequest,
@@ -79,7 +79,7 @@ func TestUserHandler_CreateUser(t *testing.T) {
 		},
 		{
 			name: "failed to create Inbox list",
-			user: domain.User{
+			user: model.User{
 				Email:    "test@example.com",
 				Password: "password123",
 			},
@@ -106,12 +106,12 @@ func TestUserHandler_CreateUser(t *testing.T) {
 			}
 
 			mockUserStorage.
-				On("CreateUser", mock.Anything, mock.AnythingOfType("domain.User")).
+				On("CreateUser", mock.Anything, mock.AnythingOfType("model.User")).
 				Return(tc.expectedUserStorageError).
 				Once()
 
 			mockListStorage.
-				On("CreateList", mock.Anything, mock.AnythingOfType("domain.List")).
+				On("CreateList", mock.Anything, mock.AnythingOfType("model.List")).
 				Return(tc.expectedListStorageError).
 				Once()
 
@@ -138,14 +138,14 @@ func TestUserHandler_GetUserByID(t *testing.T) {
 	testCases := []struct {
 		name          string
 		userID        string
-		user          domain.User
+		user          model.User
 		expectedCode  int
 		expectedError error
 	}{
 		{
 			name:   "success",
 			userID: "123",
-			user: domain.User{
+			user: model.User{
 				ID:    "123",
 				Email: "test@example.com",
 			},
@@ -155,21 +155,21 @@ func TestUserHandler_GetUserByID(t *testing.T) {
 		{
 			name:          "user not found",
 			userID:        "123",
-			user:          domain.User{},
+			user:          model.User{},
 			expectedCode:  http.StatusNotFound,
 			expectedError: storage.ErrUserNotFound,
 		},
 		{
 			name:          "empty ID",
 			userID:        "",
-			user:          domain.User{},
+			user:          model.User{},
 			expectedCode:  http.StatusBadRequest,
 			expectedError: ErrEmptyID,
 		},
 		{
 			name:          "failed to get user",
 			userID:        "123",
-			user:          domain.User{},
+			user:          model.User{},
 			expectedCode:  http.StatusInternalServerError,
 			expectedError: ErrFailedToGetData,
 		},
@@ -219,14 +219,14 @@ func TestUserHandler_GetUsers(t *testing.T) {
 	testCases := []struct {
 		name          string
 		url           string
-		users         []domain.User
+		users         []model.User
 		expectedCode  int
 		expectedError error
 	}{
 		{
 			name: "success",
 			url:  "/users?limit=100&offset=0",
-			users: []domain.User{
+			users: []model.User{
 				{
 					ID:    "123",
 					Email: "test@example.com",
@@ -242,14 +242,14 @@ func TestUserHandler_GetUsers(t *testing.T) {
 		{
 			name:          "no users found",
 			url:           "/users?limit=100&offset=0",
-			users:         []domain.User{},
+			users:         []model.User{},
 			expectedCode:  http.StatusNotFound,
 			expectedError: storage.ErrNoUsersFound,
 		},
 		{
 			name:          "failed to get users",
 			url:           "/users?limit=100&offset=0",
-			users:         []domain.User{},
+			users:         []model.User{},
 			expectedCode:  http.StatusInternalServerError,
 			expectedError: errors.New("failed to get users"),
 		},
@@ -269,7 +269,7 @@ func TestUserHandler_GetUsers(t *testing.T) {
 				logger:      mockLogger,
 			}
 
-			mockStorage.On("GetUsers", mock.Anything, mock.AnythingOfType("domain.Pagination")).
+			mockStorage.On("GetUsers", mock.Anything, mock.AnythingOfType("model.Pagination")).
 				Return(tc.users, tc.expectedError).
 				Once()
 
@@ -302,14 +302,14 @@ func TestUserHandler_UpdateUser(t *testing.T) {
 	testCases := []struct {
 		name          string
 		userID        string
-		user          domain.UpdateUser
+		user          model.UpdateUser
 		expectedCode  int
 		expectedError error
 	}{
 		{
 			name:   "success",
 			userID: "123",
-			user: domain.UpdateUser{
+			user: model.UpdateUser{
 				Email:    "test@example.com",
 				Password: "password123",
 			},
@@ -319,35 +319,35 @@ func TestUserHandler_UpdateUser(t *testing.T) {
 		{
 			name:          "user not found",
 			userID:        "123",
-			user:          domain.UpdateUser{},
+			user:          model.UpdateUser{},
 			expectedCode:  http.StatusNotFound,
 			expectedError: storage.ErrUserNotFound,
 		},
 		{
 			name:          "email already taken",
 			userID:        "123",
-			user:          domain.UpdateUser{},
+			user:          model.UpdateUser{},
 			expectedCode:  http.StatusBadRequest,
 			expectedError: storage.ErrEmailAlreadyTaken,
 		},
 		{
 			name:          "no changes detected",
 			userID:        "123",
-			user:          domain.UpdateUser{},
+			user:          model.UpdateUser{},
 			expectedCode:  http.StatusBadRequest,
 			expectedError: storage.ErrNoChangesDetected,
 		},
 		{
 			name:          "no password changes detected (the same password)",
 			userID:        "123",
-			user:          domain.UpdateUser{},
+			user:          model.UpdateUser{},
 			expectedCode:  http.StatusBadRequest,
 			expectedError: storage.ErrNoPasswordChangesDetected,
 		},
 		{
 			name:          "failed to update user",
 			userID:        "123",
-			user:          domain.UpdateUser{},
+			user:          model.UpdateUser{},
 			expectedCode:  http.StatusInternalServerError,
 			expectedError: errors.New("failed to update user"),
 		},
@@ -368,7 +368,7 @@ func TestUserHandler_UpdateUser(t *testing.T) {
 			}
 
 			mockStorage.
-				On("UpdateUser", mock.Anything, mock.AnythingOfType("domain.User")).
+				On("UpdateUser", mock.Anything, mock.AnythingOfType("model.User")).
 				Return(tc.expectedError).
 				Once()
 

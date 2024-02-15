@@ -5,7 +5,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/httprate"
 	"github.com/go-chi/render"
-	"github.com/rshelekhov/reframed/internal/domain"
+	"github.com/rshelekhov/reframed/internal/port"
 	"github.com/rshelekhov/reframed/pkg/httpserver/middleware/jwtoken"
 	mwlogger "github.com/rshelekhov/reframed/pkg/httpserver/middleware/logger"
 	"github.com/rshelekhov/reframed/pkg/logger"
@@ -15,11 +15,11 @@ import (
 func NewRouter(
 	log logger.Interface,
 	jwt *jwtoken.TokenService,
-	a domain.AuthUsecase,
-	l domain.ListUsecase,
-	h domain.HeadingUsecase,
-	t domain.TaskUsecase,
-	tag domain.TagUsecase,
+	a port.AuthUsecase,
+	l port.ListUsecase,
+	h port.HeadingUsecase,
+	t port.TaskUsecase,
+	tag port.TagUsecase,
 ) *chi.Mux {
 	r := chi.NewRouter()
 

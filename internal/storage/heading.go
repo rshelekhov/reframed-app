@@ -6,7 +6,8 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/rshelekhov/reframed/internal/domain"
+	"github.com/rshelekhov/reframed/internal/model"
+	"github.com/rshelekhov/reframed/pkg/constants/le"
 )
 
 type HeadingStorage struct {
@@ -17,7 +18,7 @@ func NewHeadingStorage(pool *pgxpool.Pool) *HeadingStorage {
 	return &HeadingStorage{Pool: pool}
 }
 
-func (s *HeadingStorage) CreateHeading(ctx context.Context, heading domain.Heading) error {
+func (s *HeadingStorage) CreateHeading(ctx context.Context, heading model.Heading) error {
 	const (
 		op = "heading.storage.CreateHeading"
 
@@ -60,7 +61,7 @@ func (s *HeadingStorage) GetDefaultHeadingID(ctx context.Context, listID, userID
 
 	err := s.QueryRow(ctx, query, listID, userID).Scan(&headingID)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return "", domain.ErrHeadingNotFound
+		return "", le.ErrHeadingNotFound
 	}
 	if err != nil {
 		return "", fmt.Errorf("%s: failed to get default heading: %w", op, err)
@@ -69,7 +70,7 @@ func (s *HeadingStorage) GetDefaultHeadingID(ctx context.Context, listID, userID
 	return headingID, nil
 }
 
-func (s *HeadingStorage) GetHeadingByID(ctx context.Context, headingID, userID string) (domain.Heading, error) {
+func (s *HeadingStorage) GetHeadingByID(ctx context.Context, headingID, userID string) (model.Heading, error) {
 	const (
 		op = "heading.storage.GetHeadingByID"
 
@@ -81,7 +82,7 @@ func (s *HeadingStorage) GetHeadingByID(ctx context.Context, headingID, userID s
 			  AND deleted_at IS NULL`
 	)
 
-	var heading domain.Heading
+	var heading model.Heading
 
 	err := s.QueryRow(ctx, query, headingID, userID).Scan(
 		&heading.ID,
@@ -91,16 +92,16 @@ func (s *HeadingStorage) GetHeadingByID(ctx context.Context, headingID, userID s
 		&heading.UpdatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.Heading{}, domain.ErrHeadingNotFound
+		return model.Heading{}, le.ErrHeadingNotFound
 	}
 	if err != nil {
-		return domain.Heading{}, fmt.Errorf("%s: failed to get heading: %w", op, err)
+		return model.Heading{}, fmt.Errorf("%s: failed to get heading: %w", op, err)
 	}
 
 	return heading, nil
 }
 
-func (s *HeadingStorage) GetHeadingsByListID(ctx context.Context, listID, userID string) ([]domain.Heading, error) {
+func (s *HeadingStorage) GetHeadingsByListID(ctx context.Context, listID, userID string) ([]model.Heading, error) {
 	const (
 		op = "heading.storage.GetHeadingsByListID"
 
@@ -119,10 +120,10 @@ func (s *HeadingStorage) GetHeadingsByListID(ctx context.Context, listID, userID
 	}
 	defer rows.Close()
 
-	var headings []domain.Heading
+	var headings []model.Heading
 
 	for rows.Next() {
-		heading := domain.Heading{}
+		heading := model.Heading{}
 
 		err = rows.Scan(
 			&heading.ID,
@@ -141,13 +142,13 @@ func (s *HeadingStorage) GetHeadingsByListID(ctx context.Context, listID, userID
 	}
 
 	if len(headings) == 0 {
-		return nil, domain.ErrNoHeadingsFound
+		return nil, le.ErrNoHeadingsFound
 	}
 
 	return headings, nil
 }
 
-func (s *HeadingStorage) UpdateHeading(ctx context.Context, heading domain.Heading) error {
+func (s *HeadingStorage) UpdateHeading(ctx context.Context, heading model.Heading) error {
 	const (
 		op = "heading.storage.UpdateHeading"
 
@@ -171,13 +172,13 @@ func (s *HeadingStorage) UpdateHeading(ctx context.Context, heading domain.Headi
 	}
 
 	if result.RowsAffected() == 0 {
-		return domain.ErrHeadingNotFound
+		return le.ErrHeadingNotFound
 	}
 
 	return nil
 }
 
-func (s *HeadingStorage) MoveHeadingToAnotherList(ctx context.Context, heading domain.Heading, task domain.Task) error {
+func (s *HeadingStorage) MoveHeadingToAnotherList(ctx context.Context, heading model.Heading, task model.Task) error {
 	const (
 		op = "heading.storage.MoveTaskToAnotherList"
 
@@ -207,7 +208,7 @@ func (s *HeadingStorage) MoveHeadingToAnotherList(ctx context.Context, heading d
 	}
 
 	if updateHeading.RowsAffected() == 0 {
-		return domain.ErrHeadingNotFound
+		return le.ErrHeadingNotFound
 	}
 
 	updateTasks, err := s.Exec(
@@ -230,7 +231,7 @@ func (s *HeadingStorage) MoveHeadingToAnotherList(ctx context.Context, heading d
 	return nil
 }
 
-func (s *HeadingStorage) DeleteHeading(ctx context.Context, heading domain.Heading) error {
+func (s *HeadingStorage) DeleteHeading(ctx context.Context, heading model.Heading) error {
 	const (
 		op = "heading.storage.DeleteHeading"
 
@@ -254,7 +255,7 @@ func (s *HeadingStorage) DeleteHeading(ctx context.Context, heading domain.Headi
 	}
 
 	if result.RowsAffected() == 0 {
-		return domain.ErrHeadingNotFound
+		return le.ErrHeadingNotFound
 	}
 
 	return nil

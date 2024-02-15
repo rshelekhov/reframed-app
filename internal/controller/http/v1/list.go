@@ -3,8 +3,10 @@ package v1
 import (
 	"errors"
 	"github.com/go-chi/chi/v5"
-	"github.com/rshelekhov/reframed/internal/domain"
+	"github.com/rshelekhov/reframed/internal/model"
+	"github.com/rshelekhov/reframed/internal/port"
 	"github.com/rshelekhov/reframed/pkg/constants/key"
+	"github.com/rshelekhov/reframed/pkg/constants/le"
 	"github.com/rshelekhov/reframed/pkg/httpserver/middleware/jwtoken"
 	"github.com/rshelekhov/reframed/pkg/logger"
 	"log/slog"
@@ -14,14 +16,14 @@ import (
 type listController struct {
 	logger  logger.Interface
 	jwt     *jwtoken.TokenService
-	usecase domain.ListUsecase
+	usecase port.ListUsecase
 }
 
 func NewListRoutes(
 	r *chi.Mux,
 	log logger.Interface,
 	jwt *jwtoken.TokenService,
-	usecase domain.ListUsecase,
+	usecase port.ListUsecase,
 ) {
 	c := &listController{
 		logger:  log,
@@ -55,7 +57,7 @@ func (c *listController) CreateList() http.HandlerFunc {
 		log := logger.LogWithRequest(c.logger, op, r)
 		userID := jwtoken.GetUserID(ctx).(string)
 
-		listInput := &domain.ListRequestData{}
+		listInput := &model.ListRequestData{}
 		if err := decodeAndValidateJSON(w, r, log, listInput); err != nil {
 			return
 		}
@@ -64,13 +66,13 @@ func (c *listController) CreateList() http.HandlerFunc {
 
 		listID, err := c.usecase.CreateList(ctx, listInput)
 		if err != nil {
-			handleInternalServerError(w, r, log, domain.ErrFailedToCreateList, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToCreateList, err)
 			return
 		}
 
 		handleResponseCreated(
 			w, r, log, "list created",
-			domain.ListResponseData{ID: listID},
+			model.ListResponseData{ID: listID},
 			slog.String(key.ListID, listID),
 		)
 	}
@@ -86,22 +88,22 @@ func (c *listController) GetListByID() http.HandlerFunc {
 
 		listID := chi.URLParam(r, key.ListID)
 		if listID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, domain.ErrEmptyQueryListID)
+			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryListID)
 			return
 		}
 
-		listInput := domain.ListRequestData{
+		listInput := model.ListRequestData{
 			ID:     listID,
 			UserID: userID,
 		}
 
 		listResp, err := c.usecase.GetListByID(ctx, listInput)
 		switch {
-		case errors.Is(err, domain.ErrListNotFound):
-			handleResponseError(w, r, log, http.StatusNotFound, domain.ErrListNotFound)
+		case errors.Is(err, le.ErrListNotFound):
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrListNotFound)
 			return
 		case err != nil:
-			handleInternalServerError(w, r, log, domain.ErrFailedToGetData, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
 			return
 		default:
 			handleResponseSuccess(w, r, log, "list received", listResp, slog.String(key.ListID, listID))
@@ -119,11 +121,11 @@ func (c *listController) GetListsByUserID() http.HandlerFunc {
 
 		listsResp, err := c.usecase.GetListsByUserID(ctx, userID)
 		switch {
-		case errors.Is(err, domain.ErrNoListsFound):
-			handleResponseError(w, r, log, http.StatusNotFound, domain.ErrNoListsFound)
+		case errors.Is(err, le.ErrNoListsFound):
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrNoListsFound)
 			return
 		case err != nil:
-			handleInternalServerError(w, r, log, domain.ErrFailedToGetLists, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToGetLists, err)
 			return
 		default:
 			handleResponseSuccess(w, r, log, "lists found", listsResp,
@@ -143,11 +145,11 @@ func (c *listController) UpdateList() http.HandlerFunc {
 
 		listID := chi.URLParam(r, key.ListID)
 		if listID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, domain.ErrEmptyQueryListID)
+			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryListID)
 			return
 		}
 
-		listInput := &domain.ListRequestData{}
+		listInput := &model.ListRequestData{}
 		if err := decodeAndValidateJSON(w, r, log, listInput); err != nil {
 			return
 		}
@@ -157,11 +159,11 @@ func (c *listController) UpdateList() http.HandlerFunc {
 
 		err := c.usecase.UpdateList(ctx, listInput)
 		switch {
-		case errors.Is(err, domain.ErrListNotFound):
-			handleResponseError(w, r, log, http.StatusNotFound, domain.ErrListNotFound)
+		case errors.Is(err, le.ErrListNotFound):
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrListNotFound)
 			return
 		case err != nil:
-			handleInternalServerError(w, r, log, domain.ErrFailedToUpdateList, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToUpdateList, err)
 			return
 		default:
 			handleResponseSuccess(w, r, log, "list updated", listID, slog.String(key.ListID, listID))
@@ -179,25 +181,25 @@ func (c *listController) DeleteList() http.HandlerFunc {
 
 		listID := chi.URLParam(r, key.ListID)
 		if listID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, domain.ErrEmptyQueryListID)
+			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryListID)
 			return
 		}
 
-		listInput := domain.ListRequestData{
+		listInput := model.ListRequestData{
 			ID:     listID,
 			UserID: userID,
 		}
 
 		err := c.usecase.DeleteList(ctx, listInput)
 		switch {
-		case errors.Is(err, domain.ErrListNotFound):
-			handleResponseError(w, r, log, http.StatusNotFound, domain.ErrListNotFound)
+		case errors.Is(err, le.ErrListNotFound):
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrListNotFound)
 			return
 		case err != nil:
-			handleInternalServerError(w, r, log, domain.ErrFailedToDeleteList, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToDeleteList, err)
 			return
 		default:
-			handleResponseSuccess(w, r, log, "list deleted", domain.ListResponseData{ID: listID}, slog.String(key.ListID, listID))
+			handleResponseSuccess(w, r, log, "list deleted", model.ListResponseData{ID: listID}, slog.String(key.ListID, listID))
 		}
 	}
 }

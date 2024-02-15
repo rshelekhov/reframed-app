@@ -3,8 +3,10 @@ package v1
 import (
 	"errors"
 	"github.com/go-chi/chi/v5"
-	"github.com/rshelekhov/reframed/internal/domain"
+	"github.com/rshelekhov/reframed/internal/model"
+	"github.com/rshelekhov/reframed/internal/port"
 	"github.com/rshelekhov/reframed/pkg/constants/key"
+	"github.com/rshelekhov/reframed/pkg/constants/le"
 	"github.com/rshelekhov/reframed/pkg/httpserver/middleware/jwtoken"
 	"github.com/rshelekhov/reframed/pkg/logger"
 	"log/slog"
@@ -14,14 +16,14 @@ import (
 type headingController struct {
 	logger  logger.Interface
 	jwt     *jwtoken.TokenService
-	usecase domain.HeadingUsecase
+	usecase port.HeadingUsecase
 }
 
 func NewHeadingRoutes(
 	r *chi.Mux,
 	log logger.Interface,
 	jwt *jwtoken.TokenService,
-	usecase domain.HeadingUsecase,
+	usecase port.HeadingUsecase,
 ) {
 	c := &headingController{
 		logger:  log,
@@ -58,11 +60,11 @@ func (c *headingController) CreateHeading() http.HandlerFunc {
 
 		listID := chi.URLParam(r, key.ListID)
 		if listID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, domain.ErrEmptyQueryListID)
+			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryListID)
 			return
 		}
 
-		headingInput := &domain.HeadingRequestData{}
+		headingInput := &model.HeadingRequestData{}
 		if err := decodeAndValidateJSON(w, r, log, headingInput); err != nil {
 			return
 		}
@@ -72,13 +74,13 @@ func (c *headingController) CreateHeading() http.HandlerFunc {
 
 		headingID, err := c.usecase.CreateHeading(ctx, headingInput)
 		if err != nil {
-			handleInternalServerError(w, r, log, domain.ErrFailedToCreateHeading, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToCreateHeading, err)
 			return
 		}
 
 		handleResponseCreated(
 			w, r, log, "heading created",
-			domain.HeadingResponseData{ID: headingID},
+			model.HeadingResponseData{ID: headingID},
 			slog.String(key.HeadingID, headingID),
 		)
 	}
@@ -94,22 +96,22 @@ func (c *headingController) GetHeadingByID() http.HandlerFunc {
 
 		headingID := chi.URLParam(r, key.HeadingID)
 		if headingID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, domain.ErrEmptyQueryHeadingID)
+			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryHeadingID)
 			return
 		}
 
-		headingInput := domain.HeadingRequestData{
+		headingInput := model.HeadingRequestData{
 			ID:     headingID,
 			UserID: userID,
 		}
 
 		headingResp, err := c.usecase.GetHeadingByID(ctx, headingInput)
 		switch {
-		case errors.Is(err, domain.ErrHeadingNotFound):
-			handleResponseError(w, r, log, http.StatusNotFound, domain.ErrHeadingNotFound)
+		case errors.Is(err, le.ErrHeadingNotFound):
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrHeadingNotFound)
 			return
 		case err != nil:
-			handleInternalServerError(w, r, log, domain.ErrFailedToGetData, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
 			return
 		default:
 			handleResponseSuccess(w, r, log, "heading received", headingResp, slog.String(key.HeadingID, headingID))
@@ -127,22 +129,22 @@ func (c *headingController) GetHeadingsByListID() http.HandlerFunc {
 
 		listID := chi.URLParam(r, key.ListID)
 		if listID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, domain.ErrEmptyQueryListID)
+			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryListID)
 			return
 		}
 
-		headingsInput := domain.HeadingRequestData{
+		headingsInput := model.HeadingRequestData{
 			ListID: listID,
 			UserID: userID,
 		}
 
 		headingsResp, err := c.usecase.GetHeadingsByListID(ctx, headingsInput)
 		switch {
-		case errors.Is(err, domain.ErrNoHeadingsFound):
-			handleResponseError(w, r, log, http.StatusNotFound, domain.ErrNoHeadingsFound)
+		case errors.Is(err, le.ErrNoHeadingsFound):
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrNoHeadingsFound)
 			return
 		case err != nil:
-			handleInternalServerError(w, r, log, domain.ErrFailedToGetHeadingsByListID, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToGetHeadingsByListID, err)
 			return
 		default:
 			handleResponseSuccess(w, r, log, "headings found", headingsResp, slog.Int(key.Count, len(headingsResp)))
@@ -160,11 +162,11 @@ func (c *headingController) UpdateHeading() http.HandlerFunc {
 
 		headingID := chi.URLParam(r, key.HeadingID)
 		if headingID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, domain.ErrEmptyQueryHeadingID)
+			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryHeadingID)
 			return
 		}
 
-		headingInput := &domain.HeadingRequestData{}
+		headingInput := &model.HeadingRequestData{}
 		if err := decodeAndValidateJSON(w, r, log, headingInput); err != nil {
 			return
 		}
@@ -174,11 +176,11 @@ func (c *headingController) UpdateHeading() http.HandlerFunc {
 
 		err := c.usecase.UpdateHeading(ctx, headingInput)
 		switch {
-		case errors.Is(err, domain.ErrHeadingNotFound):
-			handleResponseError(w, r, log, http.StatusNotFound, domain.ErrHeadingNotFound)
+		case errors.Is(err, le.ErrHeadingNotFound):
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrHeadingNotFound)
 			return
 		case err != nil:
-			handleInternalServerError(w, r, log, domain.ErrFailedToUpdateHeading, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToUpdateHeading, err)
 			return
 		default:
 			handleResponseSuccess(w, r, log, "heading updated", headingID, slog.String(key.HeadingID, headingID))
@@ -196,17 +198,17 @@ func (c *headingController) MoveHeadingToAnotherList() http.HandlerFunc {
 
 		headingID := chi.URLParam(r, key.HeadingID)
 		if headingID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, domain.ErrEmptyQueryHeadingID)
+			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryHeadingID)
 			return
 		}
 
 		otherListID := r.URL.Query().Get(key.ListID)
 		if otherListID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, domain.ErrEmptyQueryListID)
+			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryListID)
 			return
 		}
 
-		headingInput := domain.HeadingRequestData{
+		headingInput := model.HeadingRequestData{
 			ID:     headingID,
 			ListID: otherListID,
 			UserID: userID,
@@ -214,11 +216,11 @@ func (c *headingController) MoveHeadingToAnotherList() http.HandlerFunc {
 
 		err := c.usecase.MoveHeadingToAnotherList(ctx, headingInput)
 		switch {
-		case errors.Is(err, domain.ErrHeadingNotFound):
-			handleResponseError(w, r, log, http.StatusNotFound, domain.ErrHeadingNotFound)
+		case errors.Is(err, le.ErrHeadingNotFound):
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrHeadingNotFound)
 			return
 		case err != nil:
-			handleInternalServerError(w, r, log, domain.ErrFailedToMoveHeading, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToMoveHeading, err)
 			return
 		default:
 			handleResponseSuccess(w, r, log, "heading moved to another list", headingID, slog.String(key.HeadingID, headingID))
@@ -236,25 +238,25 @@ func (c *headingController) DeleteHeading() http.HandlerFunc {
 
 		headingID := chi.URLParam(r, key.HeadingID)
 		if headingID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, domain.ErrEmptyQueryHeadingID)
+			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryHeadingID)
 			return
 		}
 
-		headingInput := domain.HeadingRequestData{
+		headingInput := model.HeadingRequestData{
 			ID:     headingID,
 			UserID: userID,
 		}
 
 		err := c.usecase.DeleteHeading(ctx, headingInput)
 		switch {
-		case errors.Is(err, domain.ErrHeadingNotFound):
-			handleResponseError(w, r, log, http.StatusNotFound, domain.ErrHeadingNotFound)
+		case errors.Is(err, le.ErrHeadingNotFound):
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrHeadingNotFound)
 			return
 		case err != nil:
-			handleInternalServerError(w, r, log, domain.ErrFailedToDeleteHeading, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToDeleteHeading, err)
 			return
 		default:
-			handleResponseSuccess(w, r, log, "heading deleted", domain.ListResponseData{ID: headingID}, slog.String(key.HeadingID, headingID))
+			handleResponseSuccess(w, r, log, "heading deleted", model.ListResponseData{ID: headingID}, slog.String(key.HeadingID, headingID))
 		}
 	}
 }

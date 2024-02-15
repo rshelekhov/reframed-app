@@ -1,4 +1,4 @@
-package domain
+package le
 
 type LocalError string
 
