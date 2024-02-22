@@ -1,4 +1,4 @@
-package storage
+package postgres
 
 import (
 	"context"
@@ -6,23 +6,31 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rshelekhov/reframed/internal/model"
+	"github.com/rshelekhov/reframed/internal/port"
 	"github.com/rshelekhov/reframed/pkg/constants/le"
 	"strconv"
 )
 
 type TaskStorage struct {
 	*pgxpool.Pool
+	se port.StorageExecutor
 }
 
-func NewTaskStorage(pool *pgxpool.Pool) *TaskStorage {
-	return &TaskStorage{Pool: pool}
+// TODO: update storages - use port instead of struct as a return value
+func NewTaskStorage(pool *pgxpool.Pool, executor port.StorageExecutor) port.TaskStorage {
+	return &TaskStorage{Pool: pool, se: executor}
+}
+
+func (s *TaskStorage) ExecSQL(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error) {
+	return s.se.ExecSQL(ctx, sql, arguments...)
 }
 
 func (s *TaskStorage) CreateTask(ctx context.Context, task model.Task) error {
 	const (
-		op = "task.storage.CreateTask"
+		op = "task.repository.CreateTask"
 
 		query = `
 			INSERT INTO tasks
@@ -44,7 +52,7 @@ func (s *TaskStorage) CreateTask(ctx context.Context, task model.Task) error {
 			    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`
 	)
 
-	_, err := s.Exec(
+	_, err := s.ExecSQL(
 		ctx,
 		query,
 		task.ID,
@@ -69,7 +77,7 @@ func (s *TaskStorage) CreateTask(ctx context.Context, task model.Task) error {
 
 func (s *TaskStorage) GetTaskStatusID(ctx context.Context, status model.StatusName) (int, error) {
 	const (
-		op = "task.storage.GetTaskStatusID"
+		op = "task.repository.GetTaskStatusID"
 
 		query = `
 			SELECT id
@@ -89,7 +97,7 @@ func (s *TaskStorage) GetTaskStatusID(ctx context.Context, status model.StatusNa
 
 func (s *TaskStorage) GetTaskByID(ctx context.Context, taskID, userID string) (model.Task, error) {
 	const (
-		op = "task.storage.GetTaskByID"
+		op = "task.repository.GetTaskByID"
 
 		query = `
 			SELECT
@@ -162,7 +170,7 @@ func (s *TaskStorage) GetTaskByID(ctx context.Context, taskID, userID string) (m
 
 func (s *TaskStorage) GetTasksByUserID(ctx context.Context, userID string, pgn model.Pagination) ([]model.Task, error) {
 	const (
-		op = "task.storage.GetTasksByUserID"
+		op = "task.repository.GetTasksByUserID"
 
 		query = `
 			SELECT
@@ -258,7 +266,7 @@ func (s *TaskStorage) GetTasksByUserID(ctx context.Context, userID string, pgn m
 
 func (s *TaskStorage) GetTasksByListID(ctx context.Context, listID, userID string) ([]model.Task, error) {
 	const (
-		op = "task.storage.GetTasksByListID"
+		op = "task.repository.GetTasksByListID"
 
 		//query = `
 		//	SELECT
@@ -360,7 +368,7 @@ func (s *TaskStorage) GetTasksByListID(ctx context.Context, listID, userID strin
 
 func (s *TaskStorage) GetTasksGroupedByHeadings(ctx context.Context, listID, userID string) ([]model.TaskGroup, error) {
 	const (
-		op = "task.storage.GetTasksGroupedByHeadings"
+		op = "task.repository.GetTasksGroupedByHeadings"
 
 		query = `
 			SELECT
@@ -467,7 +475,7 @@ func (s *TaskStorage) GetTasksGroupedByHeadings(ctx context.Context, listID, use
 
 func (s *TaskStorage) GetTasksForToday(ctx context.Context, userID string) ([]model.TaskGroup, error) {
 	const (
-		op = "task.storage.GetTasksForToday"
+		op = "task.repository.GetTasksForToday"
 
 		query = `
 			SELECT
@@ -573,7 +581,7 @@ func (s *TaskStorage) GetTasksForToday(ctx context.Context, userID string) ([]mo
 
 func (s *TaskStorage) GetUpcomingTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error) {
 	const (
-		op = "task.storage.GetUpcomingTasks"
+		op = "task.repository.GetUpcomingTasks"
 
 		query = `
 			SELECT
@@ -688,7 +696,7 @@ func (s *TaskStorage) GetUpcomingTasks(ctx context.Context, userID string, pgn m
 
 func (s *TaskStorage) GetOverdueTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error) {
 	const (
-		op = "task.storage.GetOverdueTasks"
+		op = "task.repository.GetOverdueTasks"
 
 		query = `
 			SELECT
@@ -794,7 +802,7 @@ func (s *TaskStorage) GetOverdueTasks(ctx context.Context, userID string, pgn mo
 
 func (s *TaskStorage) GetTasksForSomeday(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error) {
 	const (
-		op = "task.storage.GetTasksForSomeday"
+		op = "task.repository.GetTasksForSomeday"
 
 		query = `
 			SELECT
@@ -898,7 +906,7 @@ func (s *TaskStorage) GetTasksForSomeday(ctx context.Context, userID string, pgn
 
 func (s *TaskStorage) GetCompletedTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error) {
 	const (
-		op    = "task.storage.GetCompletedTasks"
+		op    = "task.repository.GetCompletedTasks"
 		query = `
 			SELECT
 			    DATE_TRUNC('month', t.updated_at) AS month,
@@ -1015,7 +1023,7 @@ func (s *TaskStorage) GetCompletedTasks(ctx context.Context, userID string, pgn 
 
 func (s *TaskStorage) GetArchivedTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error) {
 	const (
-		op = "task.storage.GetArchivedTasks"
+		op = "task.repository.GetArchivedTasks"
 
 		query = `
 			SELECT
@@ -1132,7 +1140,7 @@ func (s *TaskStorage) GetArchivedTasks(ctx context.Context, userID string, pgn m
 
 func (s *TaskStorage) UpdateTask(ctx context.Context, task model.Task) error {
 	const (
-		op = "task.storage.UpdateTask"
+		op = "task.repository.UpdateTask"
 
 		queryGetHeadingID = `
 			SELECT heading_id
@@ -1182,7 +1190,7 @@ func (s *TaskStorage) UpdateTask(ctx context.Context, task model.Task) error {
 	queryParams = append(queryParams, task.UserID)
 
 	// Execute the update query
-	result, err := s.Exec(ctx, queryUpdate, queryParams...)
+	result, err := s.ExecSQL(ctx, queryUpdate, queryParams...)
 	if err != nil {
 		return fmt.Errorf("%s: failed to update task: %w", op, err)
 	}
@@ -1195,7 +1203,7 @@ func (s *TaskStorage) UpdateTask(ctx context.Context, task model.Task) error {
 }
 
 func (s *TaskStorage) UpdateTaskTime(ctx context.Context, task model.Task) error {
-	const op = "task.storage.UpdateTaskTime"
+	const op = "task.repository.UpdateTaskTime"
 
 	// Get the statusID ID for the planned status
 	var statusID string
@@ -1240,7 +1248,7 @@ func (s *TaskStorage) UpdateTaskTime(ctx context.Context, task model.Task) error
 
 func (s *TaskStorage) MoveTaskToAnotherList(ctx context.Context, task model.Task) error {
 	const (
-		op = "task.storage.MoveTaskToAnotherList"
+		op = "task.repository.MoveTaskToAnotherList"
 
 		query = `
 			UPDATE tasks
@@ -1272,9 +1280,9 @@ func (s *TaskStorage) MoveTaskToAnotherList(ctx context.Context, task model.Task
 	return nil
 }
 
-func (s *TaskStorage) CompleteTask(ctx context.Context, task model.Task) error {
+func (s *TaskStorage) MarkAsCompleted(ctx context.Context, task model.Task) error {
 	const (
-		op = "task.storage.CompleteTask"
+		op = "task.repository.MarkAsCompleted"
 
 		query = `
 			UPDATE tasks
@@ -1303,9 +1311,9 @@ func (s *TaskStorage) CompleteTask(ctx context.Context, task model.Task) error {
 	return nil
 }
 
-func (s *TaskStorage) ArchiveTask(ctx context.Context, task model.Task) error {
+func (s *TaskStorage) MarkAsArchived(ctx context.Context, task model.Task) error {
 	const (
-		op = "task.storage.ArchiveTask"
+		op = "task.repository.MarkAsArchived"
 
 		query = `
 			UPDATE tasks

@@ -8,8 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	http2 "github.com/rshelekhov/reframed/internal/controller/http/v1"
 	"github.com/rshelekhov/reframed/internal/model"
-	"github.com/rshelekhov/reframed/internal/storage"
-	"github.com/rshelekhov/reframed/internal/storage/mocks"
+	mocks2 "github.com/rshelekhov/reframed/internal/repository/postgres/mock"
 	"github.com/rshelekhov/reframed/pkg/logger/slogdiscard"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -95,8 +94,8 @@ func TestUserHandler_CreateUser(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			mockUserStorage := &mocks.UserStorage{}
-			mockListStorage := &mocks.ListStorage{}
+			mockUserStorage := &mocks2.UserStorage{}
+			mockListStorage := &mocks2.ListStorage{}
 			mockLogger := slogdiscard.NewDiscardLogger()
 
 			handler := &http2.UserHandler{
@@ -181,7 +180,7 @@ func TestUserHandler_GetUserByID(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			mockStorage := &mocks.UserStorage{}
+			mockStorage := &mocks2.UserStorage{}
 			mockLogger := slogdiscard.NewDiscardLogger()
 
 			handler := &http2.UserHandler{
@@ -261,7 +260,7 @@ func TestUserHandler_GetUsers(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			mockStorage := &mocks.UserStorage{}
+			mockStorage := &mocks2.UserStorage{}
 			mockLogger := slogdiscard.NewDiscardLogger()
 
 			handler := &http2.UserHandler{
@@ -359,7 +358,7 @@ func TestUserHandler_UpdateUser(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			mockStorage := &mocks.UserStorage{}
+			mockStorage := &mocks2.UserStorage{}
 			mockLogger := slogdiscard.NewDiscardLogger()
 
 			handler := &http2.UserHandler{
@@ -432,7 +431,7 @@ func TestUserHandler_DeleteUser(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			mockStorage := &mocks.UserStorage{}
+			mockStorage := &mocks2.UserStorage{}
 			mockLogger := slogdiscard.NewDiscardLogger()
 
 			handler := &http2.UserHandler{

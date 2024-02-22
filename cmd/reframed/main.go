@@ -5,12 +5,11 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/rshelekhov/reframed/config"
 	"github.com/rshelekhov/reframed/internal/controller/http/v1"
-	"github.com/rshelekhov/reframed/internal/storage"
+	"github.com/rshelekhov/reframed/internal/repository/postgres"
 	"github.com/rshelekhov/reframed/internal/usecase"
 	"github.com/rshelekhov/reframed/pkg/httpserver"
 	"github.com/rshelekhov/reframed/pkg/httpserver/middleware/jwtoken"
 	"github.com/rshelekhov/reframed/pkg/logger"
-	"github.com/rshelekhov/reframed/pkg/postgres"
 	"log/slog"
 )
 
@@ -42,16 +41,27 @@ func main() {
 	// Storage
 	pg, err := postgres.NewStorage(cfg)
 	if err != nil {
-		log.Error("failed to init storage", logger.Err(err))
+		log.Error("failed to init repository", logger.Err(err))
 	}
-	log.Debug("storage initiated")
+	log.Debug("repository initiated")
+
+	// Transaction manager ... TODO: add description
+	txManager := postgres.NewTransactionManager(pg)
+	// Executor ... TODO: add description
+	executor := postgres.NewExecutor(pg)
+
+	headingStorage := postgres.NewHeadingStorage(pg)
+	listStorage := postgres.NewListStorage(pg)
+	authStorage := postgres.NewAuthStorage(pg, executor)
+	taskStorage := postgres.NewTaskStorage(pg, executor)
+	tagStorage := postgres.NewTagStorage(pg, executor)
 
 	// Usecases
-	headingUsecase := usecase.NewHeadingUsecase(storage.NewHeadingStorage(pg))
-	listUsecase := usecase.NewListUsecase(storage.NewListStorage(pg), headingUsecase)
-	authUsecase := usecase.NewAuthUsecase(storage.NewAuthStorage(pg), listUsecase)
-	tagUsecase := usecase.NewTagUsecase(storage.NewTagStorage(pg))
-	taskUsecase := usecase.NewTaskUsecase(storage.NewTaskStorage(pg), headingUsecase, tagUsecase)
+	headingUsecase := usecase.NewHeadingUsecase(headingStorage)
+	listUsecase := usecase.NewListUsecase(listStorage, headingUsecase)
+	authUsecase := usecase.NewAuthUsecase(authStorage, listUsecase, txManager)
+	tagUsecase := usecase.NewTagUsecase(tagStorage)
+	taskUsecase := usecase.NewTaskUsecase(taskStorage, headingUsecase, tagUsecase, txManager)
 
 	// HTTP Server
 	log.Info("starting httpserver", slog.String("address", cfg.HTTPServer.Address))

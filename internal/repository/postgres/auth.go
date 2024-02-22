@@ -1,12 +1,14 @@
-package storage
+package postgres
 
 import (
 	"context"
 	"errors"
 	"fmt"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rshelekhov/reframed/internal/model"
+	"github.com/rshelekhov/reframed/internal/port"
 	"github.com/rshelekhov/reframed/pkg/constants/le"
 	"strconv"
 	"time"
@@ -14,22 +16,27 @@ import (
 
 type AuthStorage struct {
 	*pgxpool.Pool
+	se port.StorageExecutor // TODO: remove this (?)
+	*Queries
 }
 
-func NewAuthStorage(pool *pgxpool.Pool) *AuthStorage {
-	return &AuthStorage{Pool: pool}
+func NewAuthStorage(pool *pgxpool.Pool, executor port.StorageExecutor) *AuthStorage {
+	return &AuthStorage{
+		Pool:    pool,
+		se:      executor,
+		Queries: New(pool),
+	}
+}
+
+func (s *AuthStorage) ExecSQL(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error) {
+	return s.se.ExecSQL(ctx, sql, arguments...)
 }
 
 // CreateUser creates a new user
 func (s *AuthStorage) CreateUser(ctx context.Context, user model.User) error {
-	const op = "user.storage.CreateUser"
+	const op = "user.repository.CreateUser"
 
-	tx, err := BeginTransaction(s.Pool, ctx, op)
-	defer func() {
-		RollbackOnError(&err, tx, ctx, op)
-	}()
-
-	userStatus, err := getUserStatus(ctx, tx, user.Email)
+	userStatus, err := s.getUserStatus(ctx, user.Email)
 	if err != nil {
 		return err
 	}
@@ -38,26 +45,24 @@ func (s *AuthStorage) CreateUser(ctx context.Context, user model.User) error {
 	case "active":
 		return le.ErrUserAlreadyExists
 	case "soft_deleted":
-		if err = replaceSoftDeletedUser(ctx, tx, user); err != nil {
+		if err = s.replaceSoftDeletedUser(ctx, user); err != nil {
 			return err
 		}
 	case "not_found":
-		if err = insertUser(ctx, tx, user); err != nil {
+		if err = s.insertUser(ctx, user); err != nil {
 			return err
 		}
 	default:
 		return fmt.Errorf("%s: unknown user status: %s", op, userStatus)
 	}
 
-	CommitTransaction(&err, tx, ctx, op)
-
 	return nil
 }
 
 // getUserStatus returns the status of the user with the given email
-func getUserStatus(ctx context.Context, tx pgx.Tx, email string) (string, error) {
+func (s *AuthStorage) getUserStatus(ctx context.Context, email string) (string, error) {
 	const (
-		op = "user.storage.getUserStatus"
+		op = "user.repository.getUserStatus"
 
 		query = `
 			SELECT CASE
@@ -78,9 +83,8 @@ func getUserStatus(ctx context.Context, tx pgx.Tx, email string) (string, error)
 
 	var status string
 
-	err := tx.QueryRow(ctx, query, email).Scan(&status)
+	err := s.QueryRow(ctx, query, email).Scan(&status)
 	if err != nil {
-		RollbackOnError(&err, tx, ctx, op)
 		return "", fmt.Errorf("%s: failed to check if user exists: %w", op, err)
 	}
 
@@ -88,9 +92,9 @@ func getUserStatus(ctx context.Context, tx pgx.Tx, email string) (string, error)
 }
 
 // replaceSoftDeletedUser replaces a soft deleted user with the given user
-func replaceSoftDeletedUser(ctx context.Context, tx pgx.Tx, user model.User) error {
+func (s *AuthStorage) replaceSoftDeletedUser(ctx context.Context, user model.User) error {
 	const (
-		op = "user.storage.replaceSoftDeletedUser"
+		op = "user.repository.replaceSoftDeletedUser"
 
 		querySetDeletedAtNull = `
 			UPDATE users
@@ -102,13 +106,12 @@ func replaceSoftDeletedUser(ctx context.Context, tx pgx.Tx, user model.User) err
 			VALUES ($1, $2, $3, $4)`
 	)
 
-	_, err := tx.Exec(ctx, querySetDeletedAtNull, user.Email)
+	_, err := s.ExecSQL(ctx, querySetDeletedAtNull, user.Email)
 	if err != nil {
-		RollbackOnError(&err, tx, ctx, op)
 		return fmt.Errorf("%s: failed to set deleted_at to NULL: %w", op, err)
 	}
 
-	_, err = tx.Exec(
+	_, err = s.ExecSQL(
 		ctx,
 		queryInsertUser,
 		user.ID,
@@ -117,7 +120,6 @@ func replaceSoftDeletedUser(ctx context.Context, tx pgx.Tx, user model.User) err
 		user.UpdatedAt,
 	)
 	if err != nil {
-		RollbackOnError(&err, tx, ctx, op)
 		return fmt.Errorf("%s: failed to replace soft deleted user: %w", op, err)
 	}
 
@@ -125,16 +127,16 @@ func replaceSoftDeletedUser(ctx context.Context, tx pgx.Tx, user model.User) err
 }
 
 // insertUser inserts a new user
-func insertUser(ctx context.Context, tx pgx.Tx, user model.User) error {
+func (s *AuthStorage) insertUser(ctx context.Context, user model.User) error {
 	const (
-		op = "user.storage.insertNewUser"
+		op = "user.repository.insertNewUser"
 
 		query = `
 			INSERT INTO users (id, email, password_hash, updated_at)
 			VALUES ($1, $2, $3, $4)`
 	)
 
-	_, err := tx.Exec(
+	_, err := s.ExecSQL(
 		ctx,
 		query,
 		user.ID,
@@ -143,7 +145,6 @@ func insertUser(ctx context.Context, tx pgx.Tx, user model.User) error {
 		user.UpdatedAt,
 	)
 	if err != nil {
-		RollbackOnError(&err, tx, ctx, op)
 		return fmt.Errorf("%s: failed to insert new user: %w", op, err)
 	}
 
@@ -152,14 +153,14 @@ func insertUser(ctx context.Context, tx pgx.Tx, user model.User) error {
 
 func (s *AuthStorage) AddDevice(ctx context.Context, device model.UserDevice) error {
 	const (
-		op = "user.storage.AddDevice"
+		op = "user.repository.AddDevice"
 
 		query = `
 			INSERT INTO user_devices (id, user_id, user_agent, ip, detached, latest_login_at)
 			VALUES ($1, $2, $3, $4, $5, $6)`
 	)
 
-	_, err := s.Exec(
+	_, err := s.ExecSQL(
 		ctx,
 		query,
 		device.ID,
@@ -178,14 +179,14 @@ func (s *AuthStorage) AddDevice(ctx context.Context, device model.UserDevice) er
 func (s *AuthStorage) SaveSession(ctx context.Context, session model.Session) error {
 	// TODO: add constraint that user can have only active sessions for 5 devices
 	const (
-		op = "user.storage.SaveSession"
+		op = "user.repository.SaveSession"
 
 		query = `
 			INSERT INTO refresh_sessions (user_id, device_id, refresh_token, last_visit_at, expires_at)
 			VALUES ($1, $2, $3, $4, $5)`
 	)
 
-	_, err := s.Exec(
+	_, err := s.ExecSQL(
 		ctx,
 		query,
 		session.UserID,
@@ -202,7 +203,7 @@ func (s *AuthStorage) SaveSession(ctx context.Context, session model.Session) er
 
 func (s *AuthStorage) GetUserDeviceID(ctx context.Context, userID, userAgent string) (string, error) {
 	const (
-		op    = "user.storage.GetUserDeviceID"
+		op    = "user.repository.GetUserDeviceID"
 		query = `
 			SELECT id
 			FROM user_devices
@@ -227,7 +228,7 @@ func (s *AuthStorage) GetUserDeviceID(ctx context.Context, userID, userAgent str
 
 func (s *AuthStorage) UpdateLatestLoginAt(ctx context.Context, deviceID string, latestLoginAt time.Time) error {
 	const (
-		op = "user.storage.UpdateLatestLoginAt"
+		op = "user.repository.UpdateLatestLoginAt"
 
 		query = `
 			UPDATE user_devices
@@ -235,7 +236,7 @@ func (s *AuthStorage) UpdateLatestLoginAt(ctx context.Context, deviceID string, 
 			WHERE id = $2`
 	)
 
-	_, err := s.Exec(ctx, query, latestLoginAt, deviceID)
+	_, err := s.ExecSQL(ctx, query, latestLoginAt, deviceID)
 	if err != nil {
 		return fmt.Errorf("%s: failed to update latest login at: %w", op, err)
 	}
@@ -245,7 +246,7 @@ func (s *AuthStorage) UpdateLatestLoginAt(ctx context.Context, deviceID string, 
 
 func (s *AuthStorage) GetUserByEmail(ctx context.Context, email string) (model.User, error) {
 	const (
-		op = "user.storage.GetUserCredentials"
+		op = "user.repository.GetUserCredentials"
 
 		query = `
 			SELECT id, email, updated_at
@@ -272,7 +273,7 @@ func (s *AuthStorage) GetUserByEmail(ctx context.Context, email string) (model.U
 
 func (s *AuthStorage) GetUserData(ctx context.Context, userID string) (model.User, error) {
 	const (
-		op = "user.storage.GetUserData"
+		op = "user.repository.GetUserData"
 
 		query = `
 			SELECT id, email, password_hash, updated_at
@@ -300,7 +301,7 @@ func (s *AuthStorage) GetUserData(ctx context.Context, userID string) (model.Use
 
 func (s *AuthStorage) GetSessionByRefreshToken(ctx context.Context, refreshToken string) (model.Session, error) {
 	const (
-		op = "user.storage.GetSessionByRefreshToken"
+		op = "user.repository.GetSessionByRefreshToken"
 
 		querySelect = `
 			SELECT user_id, device_id, last_visit_at, expires_at
@@ -328,7 +329,7 @@ func (s *AuthStorage) GetSessionByRefreshToken(ctx context.Context, refreshToken
 		return model.Session{}, fmt.Errorf("%s: failed to get session: %w", op, err)
 	}
 
-	_, err = s.Exec(ctx, queryDelete, refreshToken)
+	_, err = s.ExecSQL(ctx, queryDelete, refreshToken)
 	if err != nil {
 		return model.Session{}, fmt.Errorf("%s: failed to delete expired session: %w", op, err)
 	}
@@ -338,7 +339,7 @@ func (s *AuthStorage) GetSessionByRefreshToken(ctx context.Context, refreshToken
 
 func (s *AuthStorage) RemoveSession(ctx context.Context, userID, deviceID string) error {
 	const (
-		op = "user.storage.RemoveSession"
+		op = "user.repository.RemoveSession"
 
 		query = `
 			DELETE FROM refresh_sessions
@@ -346,7 +347,7 @@ func (s *AuthStorage) RemoveSession(ctx context.Context, userID, deviceID string
 			  AND device_id = $2`
 	)
 
-	_, err := s.Exec(ctx, query, userID, deviceID)
+	_, err := s.ExecSQL(ctx, query, userID, deviceID)
 	if err != nil {
 		return fmt.Errorf("%s: failed to remove session: %w", op, err)
 	}
@@ -356,7 +357,7 @@ func (s *AuthStorage) RemoveSession(ctx context.Context, userID, deviceID string
 
 func (s *AuthStorage) GetUserByID(ctx context.Context, userID string) (model.User, error) {
 	const (
-		op = "user.storage.GetUserData"
+		op = "user.repository.GetUserData"
 
 		query = `
 			SELECT id, email, updated_at
@@ -383,52 +384,28 @@ func (s *AuthStorage) GetUserByID(ctx context.Context, userID string) (model.Use
 }
 
 // UpdateUser updates a user by ID
-func (s *AuthStorage) UpdateUser(ctx context.Context, updatedUserData model.User) error {
-	const op = "UpdateUser.storage.UpdateUser"
-
-	// Begin transaction
-	tx, err := BeginTransaction(s.Pool, ctx, op)
-	defer func() {
-		RollbackOnError(&err, tx, ctx, op)
-	}()
-
-	// Check if the updatedUserData exists
-	currentUserData, err := s.GetUserByID(ctx, updatedUserData.ID)
-	if err != nil {
-		return err
-	}
-
-	emailChanged := updatedUserData.Email != "" && updatedUserData.Email != currentUserData.Email
-	passwordChanged := updatedUserData.PasswordHash != ""
-
-	if !emailChanged && !passwordChanged {
-		return le.ErrNoChangesDetected
-	}
-
-	// Check if the updatedUserData email exists for a different updatedUserData
-	if err = checkEmailUniqueness(ctx, tx, updatedUserData.Email, updatedUserData.ID); err != nil {
-		return err
-	}
+func (s *AuthStorage) UpdateUser(ctx context.Context, user model.User) error {
+	const op = "UpdateUser.repository.UpdateUser"
 
 	// Prepare the dynamic update query based on the provided fields
 	queryUpdate := "UPDATE users SET updated_at = $1"
-	queryParams := []interface{}{updatedUserData.UpdatedAt}
+	queryParams := []interface{}{user.UpdatedAt}
 
-	if updatedUserData.Email != "" {
+	if user.Email != "" {
 		queryUpdate += ", email = $" + strconv.Itoa(len(queryParams)+1)
-		queryParams = append(queryParams, updatedUserData.Email)
+		queryParams = append(queryParams, user.Email)
 	}
-	if updatedUserData.PasswordHash != "" {
+	if user.PasswordHash != "" {
 		queryUpdate += ", password_hash = $" + strconv.Itoa(len(queryParams)+1)
-		queryParams = append(queryParams, updatedUserData.PasswordHash)
+		queryParams = append(queryParams, user.PasswordHash)
 	}
 
-	// Add condition for the specific updatedUserData ID
+	// Add condition for the specific user ID
 	queryUpdate += " WHERE id = $" + strconv.Itoa(len(queryParams)+1)
-	queryParams = append(queryParams, updatedUserData.ID)
+	queryParams = append(queryParams, user.ID)
 
 	// Execute the update query
-	result, err := tx.Exec(ctx, queryUpdate, queryParams...)
+	result, err := s.ExecSQL(ctx, queryUpdate, queryParams...)
 	if err != nil {
 		return fmt.Errorf("%s: failed to execute update query: %w", op, err)
 	}
@@ -437,15 +414,13 @@ func (s *AuthStorage) UpdateUser(ctx context.Context, updatedUserData model.User
 		return le.ErrUserNotFound
 	}
 
-	CommitTransaction(&err, tx, ctx, op)
-
 	return nil
 }
 
-// checkEmailUniqueness checks if the provided email already exists in the database for another user
-func checkEmailUniqueness(ctx context.Context, tx pgx.Tx, email, id string) error {
+// CheckEmailUniqueness checks if the provided email already exists in the database for another user
+func (s *AuthStorage) CheckEmailUniqueness(ctx context.Context, user model.User) error {
 	const (
-		op = "user.storage.checkEmailUniqueness"
+		op = "user.repository.checkEmailUniqueness"
 
 		query = `
 			SELECT id
@@ -455,9 +430,9 @@ func checkEmailUniqueness(ctx context.Context, tx pgx.Tx, email, id string) erro
 	)
 
 	var existingUserID string
-	err := tx.QueryRow(ctx, query, email).Scan(&existingUserID)
+	err := s.QueryRow(ctx, query, user.Email).Scan(&existingUserID)
 
-	if !errors.Is(err, pgx.ErrNoRows) && existingUserID != id {
+	if !errors.Is(err, pgx.ErrNoRows) && existingUserID != user.ID {
 		return le.ErrEmailAlreadyTaken
 	} else if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return fmt.Errorf("%s: failed to check email uniqueness: %w", op, err)
@@ -469,7 +444,7 @@ func checkEmailUniqueness(ctx context.Context, tx pgx.Tx, email, id string) erro
 // DeleteUser deletes a user by ID
 func (s *AuthStorage) DeleteUser(ctx context.Context, user model.User) error {
 	const (
-		op = "user.storage.DeleteUser"
+		op = "user.repository.DeleteUser"
 
 		query = `
 			UPDATE users
@@ -478,7 +453,7 @@ func (s *AuthStorage) DeleteUser(ctx context.Context, user model.User) error {
 			  AND deleted_at IS NULL`
 	)
 
-	result, err := s.Exec(ctx, query, user.DeletedAt, user.ID)
+	result, err := s.ExecSQL(ctx, query, user.DeletedAt, user.ID)
 	if err != nil {
 		return fmt.Errorf("%s: failed to delete user: %w", op, err)
 	}

@@ -501,7 +501,7 @@ func (c *taskController) MoveTaskToAnotherList() http.HandlerFunc {
 
 func (c *taskController) CompleteTask() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "task.controller.CompleteTask"
+		const op = "task.controller.MarkAsCompleted"
 
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
@@ -534,7 +534,7 @@ func (c *taskController) CompleteTask() http.HandlerFunc {
 
 func (c *taskController) ArchiveTask() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "task.controller.ArchiveTask"
+		const op = "task.controller.MarkAsArchived"
 
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)

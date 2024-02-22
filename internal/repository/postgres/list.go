@@ -1,14 +1,14 @@
-package storage
+package postgres
 
 import (
 	"context"
 	"errors"
 	"fmt"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rshelekhov/reframed/internal/model"
 	"github.com/rshelekhov/reframed/pkg/constants/le"
-	"time"
 )
 
 type ListStorage struct {
@@ -19,22 +19,26 @@ func NewListStorage(pool *pgxpool.Pool) *ListStorage {
 	return &ListStorage{Pool: pool}
 }
 
+func (s *ListStorage) ExecSQL(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error) {
+	return s.ExecSQL(ctx, sql, arguments...)
+}
+
 func (s *ListStorage) CreateList(ctx context.Context, list model.List) error {
 	const (
-		op = "list.storage.CreateList"
+		op = "list.repository.CreateList"
 
 		query = `
 			INSERT INTO lists (id, title, user_id, updated_at)
 			VALUES ($1, $2, $3, $4)`
 	)
 
-	_, err := s.Exec(
+	_, err := s.ExecSQL(
 		ctx,
 		query,
 		list.ID,
 		list.Title,
 		list.UserID,
-		time.Now().UTC(),
+		list.UpdatedAt,
 	)
 	if err != nil {
 		return fmt.Errorf("%s: failed to insert new list: %w", op, err)
@@ -45,7 +49,7 @@ func (s *ListStorage) CreateList(ctx context.Context, list model.List) error {
 
 func (s *ListStorage) GetListByID(ctx context.Context, listID, userID string) (model.List, error) {
 	const (
-		op = "list.storage.GetListByID"
+		op = "list.repository.GetListByID"
 
 		query = `
 			SELECT id, title, user_id, updated_at
@@ -76,7 +80,7 @@ func (s *ListStorage) GetListByID(ctx context.Context, listID, userID string) (m
 
 func (s *ListStorage) GetListsByUserID(ctx context.Context, userID string) ([]model.List, error) {
 	const (
-		op = "list.storage.GetListsByUserID"
+		op = "list.repository.GetListsByUserID"
 
 		query = `
 			SELECT id, title, updated_at
@@ -122,7 +126,7 @@ func (s *ListStorage) GetListsByUserID(ctx context.Context, userID string) ([]mo
 
 func (s *ListStorage) UpdateList(ctx context.Context, list model.List) error {
 	const (
-		op = "list.storage.UpdateList"
+		op = "list.repository.UpdateList"
 
 		query = `
 			UPDATE lists
@@ -131,7 +135,7 @@ func (s *ListStorage) UpdateList(ctx context.Context, list model.List) error {
 			  AND user_id = $4`
 	)
 
-	result, err := s.Exec(
+	result, err := s.ExecSQL(
 		ctx,
 		query,
 		list.Title,
@@ -152,7 +156,7 @@ func (s *ListStorage) UpdateList(ctx context.Context, list model.List) error {
 
 func (s *ListStorage) DeleteList(ctx context.Context, list model.List) error {
 	const (
-		op = "list.storage.DeleteList"
+		op = "list.repository.DeleteList"
 
 		query = `
 			UPDATE lists
@@ -162,7 +166,7 @@ func (s *ListStorage) DeleteList(ctx context.Context, list model.List) error {
 			  AND deleted_at IS NULL`
 	)
 
-	result, err := s.Exec(
+	result, err := s.ExecSQL(
 		ctx,
 		query,
 		list.DeletedAt,

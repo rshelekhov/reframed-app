@@ -1,4 +1,4 @@
-package storage
+package postgres
 
 import (
 	"context"
@@ -20,7 +20,7 @@ func NewHeadingStorage(pool *pgxpool.Pool) *HeadingStorage {
 
 func (s *HeadingStorage) CreateHeading(ctx context.Context, heading model.Heading) error {
 	const (
-		op = "heading.storage.CreateHeading"
+		op = "heading.repository.CreateHeading"
 
 		query = `
 			INSERT INTO headings (id, title, list_id, user_id, is_default, updated_at)
@@ -46,7 +46,7 @@ func (s *HeadingStorage) CreateHeading(ctx context.Context, heading model.Headin
 
 func (s *HeadingStorage) GetDefaultHeadingID(ctx context.Context, listID, userID string) (string, error) {
 	const (
-		op = "heading.storage.GetDefaultHeadingID"
+		op = "heading.repository.GetDefaultHeadingID"
 
 		query = `
 			SELECT id
@@ -72,7 +72,7 @@ func (s *HeadingStorage) GetDefaultHeadingID(ctx context.Context, listID, userID
 
 func (s *HeadingStorage) GetHeadingByID(ctx context.Context, headingID, userID string) (model.Heading, error) {
 	const (
-		op = "heading.storage.GetHeadingByID"
+		op = "heading.repository.GetHeadingByID"
 
 		query = `
 			SELECT id, title, list_id, user_id, updated_at
@@ -103,15 +103,14 @@ func (s *HeadingStorage) GetHeadingByID(ctx context.Context, headingID, userID s
 
 func (s *HeadingStorage) GetHeadingsByListID(ctx context.Context, listID, userID string) ([]model.Heading, error) {
 	const (
-		op = "heading.storage.GetHeadingsByListID"
+		op = "heading.repository.GetHeadingsByListID"
 
 		query = `
 			SELECT id, title, list_id, user_id, updated_at
 			FROM headings
 			WHERE list_id = $1
 			  AND user_id = $2
-			  AND deleted_at IS NULL
-		`
+			  AND deleted_at IS NULL`
 	)
 
 	rows, err := s.Query(ctx, query, listID, userID)
@@ -150,7 +149,7 @@ func (s *HeadingStorage) GetHeadingsByListID(ctx context.Context, listID, userID
 
 func (s *HeadingStorage) UpdateHeading(ctx context.Context, heading model.Heading) error {
 	const (
-		op = "heading.storage.UpdateHeading"
+		op = "heading.repository.UpdateHeading"
 
 		query = `
 			UPDATE headings
@@ -180,7 +179,7 @@ func (s *HeadingStorage) UpdateHeading(ctx context.Context, heading model.Headin
 
 func (s *HeadingStorage) MoveHeadingToAnotherList(ctx context.Context, heading model.Heading, task model.Task) error {
 	const (
-		op = "heading.storage.MoveTaskToAnotherList"
+		op = "heading.repository.MoveTaskToAnotherList"
 
 		queryUpdateHeading = `
 			UPDATE headings
@@ -233,7 +232,7 @@ func (s *HeadingStorage) MoveHeadingToAnotherList(ctx context.Context, heading m
 
 func (s *HeadingStorage) DeleteHeading(ctx context.Context, heading model.Heading) error {
 	const (
-		op = "heading.storage.DeleteHeading"
+		op = "heading.repository.DeleteHeading"
 
 		query = `
 			UPDATE headings

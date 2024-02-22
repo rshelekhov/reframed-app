@@ -1,33 +1,40 @@
-package storage
+package postgres
 
 import (
 	"context"
 	"errors"
 	"fmt"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rshelekhov/reframed/internal/model"
+	"github.com/rshelekhov/reframed/internal/port"
 	"github.com/rshelekhov/reframed/pkg/constants/le"
 )
 
 type TagStorage struct {
 	*pgxpool.Pool
+	se port.StorageExecutor
 }
 
-func NewTagStorage(pool *pgxpool.Pool) *TagStorage {
-	return &TagStorage{Pool: pool}
+func NewTagStorage(pool *pgxpool.Pool, executor port.StorageExecutor) *TagStorage {
+	return &TagStorage{Pool: pool, se: executor}
+}
+
+func (s *TagStorage) ExecSQL(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error) {
+	return s.se.ExecSQL(ctx, sql, arguments...)
 }
 
 func (s *TagStorage) CreateTag(ctx context.Context, tag model.Tag) error {
 	const (
-		op = "tag.storage.CreateTag"
+		op = "tag.repository.CreateTag"
 
 		query = `
 			INSERT INTO tags (id, title, user_id, updated_at)
 			VALUES ($1, LOWER($2), $3, $4)`
 	)
 
-	_, err := s.Exec(
+	_, err := s.ExecSQL(
 		ctx,
 		query,
 		tag.ID,
@@ -44,18 +51,18 @@ func (s *TagStorage) CreateTag(ctx context.Context, tag model.Tag) error {
 
 func (s *TagStorage) LinkTagsToTask(ctx context.Context, taskID string, tags []string) error {
 	const (
-		op = "tag.storage.LinkTagsToTask"
+		op = "tag.repository.LinkTagsToTask"
 
 		query = `
 			INSERT INTO tasks_tags (task_id, tag_id)
 			VALUES ($1, (SELECT id
 			      			FROM tags
-			      			WHERE title = lower($2))
+			      			WHERE title = LOWER($2))
 			)`
 	)
 
 	for _, tag := range tags {
-		_, err := s.Exec(ctx, query, taskID, tag)
+		_, err := s.ExecSQL(ctx, query, taskID, tag)
 		if err != nil {
 			return fmt.Errorf("%s: failed to link tag to task: %w", op, err)
 		}
@@ -66,7 +73,7 @@ func (s *TagStorage) LinkTagsToTask(ctx context.Context, taskID string, tags []s
 
 func (s *TagStorage) UnlinkTagsFromTask(ctx context.Context, taskID string, tags []string) error {
 	const (
-		op = "tag.storage.UnlinkTagsFromTask"
+		op = "tag.repository.UnlinkTagsFromTask"
 
 		query = `
 			DELETE FROM tasks_tags
@@ -79,7 +86,7 @@ func (s *TagStorage) UnlinkTagsFromTask(ctx context.Context, taskID string, tags
 	)
 
 	for _, tag := range tags {
-		_, err := s.Exec(ctx, query, taskID, tag)
+		_, err := s.ExecSQL(ctx, query, taskID, tag)
 		if err != nil {
 			return fmt.Errorf("%s: failed to unlink tag from task: %w", op, err)
 		}
@@ -90,7 +97,7 @@ func (s *TagStorage) UnlinkTagsFromTask(ctx context.Context, taskID string, tags
 
 func (s *TagStorage) GetTagIDByTitle(ctx context.Context, title, userID string) (string, error) {
 	const (
-		op = "tag.storage.GetTagByTitle"
+		op = "tag.repository.GetTagByTitle"
 
 		query = `
 			SELECT id
@@ -115,7 +122,7 @@ func (s *TagStorage) GetTagIDByTitle(ctx context.Context, title, userID string) 
 
 func (s *TagStorage) GetTagsByUserID(ctx context.Context, userID string) ([]model.Tag, error) {
 	const (
-		op = "tag.storage.GetTagsByUserID"
+		op = "tag.repository.GetTagsByUserID"
 
 		query = `
 			SELECT id, title, updated_at
@@ -160,7 +167,7 @@ func (s *TagStorage) GetTagsByUserID(ctx context.Context, userID string) ([]mode
 
 func (s *TagStorage) GetTagsByTaskID(ctx context.Context, taskID string) ([]model.Tag, error) {
 	const (
-		op = "tag.storage.GetTagsByTaskID"
+		op = "tag.repository.GetTagsByTaskID"
 
 		query = `
 			SELECT tags.id, tags.title, tags.updated_at

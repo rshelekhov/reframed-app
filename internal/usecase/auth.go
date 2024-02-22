@@ -16,12 +16,18 @@ import (
 type AuthUsecase struct {
 	authStorage port.AuthStorage
 	listUsecase port.ListUsecase
+	txManager   port.TransactionManager
 }
 
-func NewAuthUsecase(storage port.AuthStorage, listUsecase port.ListUsecase) *AuthUsecase {
+func NewAuthUsecase(
+	storage port.AuthStorage,
+	listUsecase port.ListUsecase,
+	txManager port.TransactionManager,
+) *AuthUsecase {
 	return &AuthUsecase{
 		authStorage: storage,
 		listUsecase: listUsecase,
+		txManager:   txManager,
 	}
 }
 
@@ -45,9 +51,20 @@ func (u *AuthUsecase) CreateUser(ctx context.Context, jwt *jwtoken.TokenService,
 	}
 
 	// Create the user
-	err = u.authStorage.CreateUser(ctx, user)
+	err = u.txManager.WithinTransaction(ctx, op, func(txCtx context.Context) error {
+		return u.createUserWithinTransaction(txCtx, user)
+	})
 	if err != nil {
 		return "", err
+	}
+
+	return user.ID, nil
+}
+
+func (u *AuthUsecase) createUserWithinTransaction(ctx context.Context, user model.User) error {
+	err := u.authStorage.CreateUser(ctx, user)
+	if err != nil {
+		return err
 	}
 
 	defaultList := model.List{
@@ -59,10 +76,10 @@ func (u *AuthUsecase) CreateUser(ctx context.Context, jwt *jwtoken.TokenService,
 
 	err = u.listUsecase.CreateDefaultList(ctx, defaultList)
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	return user.ID, nil
+	return nil
 }
 
 // TODO: Move sessions from Postgres to Redis
@@ -238,20 +255,42 @@ func (u *AuthUsecase) GetUserByID(ctx context.Context, id string) (model.UserRes
 }
 
 func (u *AuthUsecase) UpdateUser(ctx context.Context, jwt *jwtoken.TokenService, data *model.UserRequestData, userID string) error {
+	const op = "usecase.UserUsecase.UpdateUser"
 
-	user, err := u.authStorage.GetUserData(ctx, userID)
+	currentUser, err := u.authStorage.GetUserData(ctx, userID)
 	if err != nil {
 		return err
 	}
 
+	hash, err := jwtoken.PasswordHashBcrypt(
+		data.Password,
+		jwt.PasswordHashCost,
+		[]byte(jwt.PasswordHashSalt),
+	)
+	if err != nil {
+		return fmt.Errorf("%s: failed to generate password hash: %w", op, err)
+	}
+
 	updatedUser := model.User{
-		ID:        user.ID,
-		Email:     data.Email,
-		UpdatedAt: time.Now(),
+		ID:           userID,
+		Email:        data.Email,
+		PasswordHash: hash,
+		UpdatedAt:    time.Now(),
+	}
+
+	emailChanged := updatedUser.Email != "" && updatedUser.Email != currentUser.Email
+	passwordChanged := updatedUser.PasswordHash != ""
+
+	if !emailChanged && !passwordChanged {
+		return le.ErrNoChangesDetected
+	}
+
+	if err = u.authStorage.CheckEmailUniqueness(ctx, updatedUser); err != nil {
+		return err
 	}
 
 	if data.Password != "" {
-		if err = u.checkPassword(jwt, user.PasswordHash, data.Password); err != nil {
+		if err = u.checkPassword(jwt, currentUser.PasswordHash, data.Password); err != nil {
 			return err
 		}
 	}

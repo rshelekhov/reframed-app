@@ -1,4 +1,3 @@
-// Package postgres implements postgres connection.
 package postgres
 
 import (
@@ -10,13 +9,9 @@ import (
 	"net"
 )
 
-type Storage struct {
-	*pgxpool.Pool
-}
-
-// NewStorage creates a new Postgres storage
+// NewStorage creates a new Postgres repository
 func NewStorage(cfg *config.ServerSettings) (*pgxpool.Pool, error) {
-	const op = "storage.postgres.NewStorage"
+	const op = "repository.sqlc.NewStorage"
 
 	poolCfg, err := pgxpool.ParseConfig(cfg.Postgres.ConnURL)
 	if err != nil {
@@ -36,4 +31,8 @@ func NewStorage(cfg *config.ServerSettings) (*pgxpool.Pool, error) {
 	}
 
 	return pool, nil
+}
+
+type Store interface {
+	Querier
 }
