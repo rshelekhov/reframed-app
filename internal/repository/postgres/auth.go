@@ -337,9 +337,9 @@ func (s *AuthStorage) GetSessionByRefreshToken(ctx context.Context, refreshToken
 	return session, nil
 }
 
-func (s *AuthStorage) RemoveSession(ctx context.Context, userID, deviceID string) error {
+func (s *AuthStorage) DeleteSession(ctx context.Context, userID, deviceID string) error {
 	const (
-		op = "user.repository.RemoveSession"
+		op = "user.repository.DeleteSession"
 
 		query = `
 			DELETE FROM refresh_sessions

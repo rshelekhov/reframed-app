@@ -236,7 +236,7 @@ func (u *AuthUsecase) LogoutUser(ctx context.Context, userID string, data model.
 	if err != nil {
 		return err
 	}
-	return u.authStorage.RemoveSession(ctx, userID, deviceID)
+	return u.authStorage.DeleteSession(ctx, userID, deviceID)
 }
 
 func (u *AuthUsecase) GetUserByID(ctx context.Context, id string) (model.UserResponseData, error) {
@@ -333,7 +333,7 @@ func (u *AuthUsecase) DeleteUser(ctx context.Context, userID string, data model.
 		return err
 	}
 
-	err = u.authStorage.RemoveSession(ctx, userID, deviceID)
+	err = u.authStorage.DeleteSession(ctx, userID, deviceID)
 	if err != nil {
 		return err
 	}

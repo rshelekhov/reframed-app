@@ -28,7 +28,7 @@ type (
 		GetUserByEmail(ctx context.Context, email string) (model.User, error)
 		GetUserData(ctx context.Context, userID string) (model.User, error)
 		GetSessionByRefreshToken(ctx context.Context, refreshToken string) (model.Session, error)
-		RemoveSession(ctx context.Context, userID, deviceID string) error
+		DeleteSession(ctx context.Context, userID, deviceID string) error
 		GetUserByID(ctx context.Context, userID string) (model.User, error)
 		CheckEmailUniqueness(ctx context.Context, user model.User) error
 		UpdateUser(ctx context.Context, user model.User) error
