@@ -27,7 +27,7 @@ INSERT INTO tasks (
     user_id,
     updated_at
 ) VALUES (
-    $1, $2,$3, $4, $5, $6, $7, $8, $9, $10, $11, $12
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
 )
 `
 
@@ -108,7 +108,7 @@ FROM (
       AND t.status_id = (
         SELECT id
         FROM statuses
-        WHERE status_name = $2
+        WHERE statuses.title = $2
         )
       AND (t.deleted_at IS NULL
                OR (DATE_TRUNC('month', t.updated_at) > $3 AND t.deleted_at IS NULL)
@@ -132,10 +132,10 @@ LIMIT $4
 `
 
 type GetArchivedTasksParams struct {
-	UserID     string             `db:"user_id"`
-	StatusName string             `db:"status_name"`
-	UpdatedAt  pgtype.Timestamptz `db:"updated_at"`
-	Limit      int32              `db:"limit"`
+	UserID    string             `db:"user_id"`
+	Title     string             `db:"title"`
+	UpdatedAt pgtype.Timestamptz `db:"updated_at"`
+	Limit     int32              `db:"limit"`
 }
 
 type GetArchivedTasksRow struct {
@@ -146,7 +146,7 @@ type GetArchivedTasksRow struct {
 func (q *Queries) GetArchivedTasks(ctx context.Context, arg GetArchivedTasksParams) ([]GetArchivedTasksRow, error) {
 	rows, err := q.db.Query(ctx, getArchivedTasks,
 		arg.UserID,
-		arg.StatusName,
+		arg.Title,
 		arg.UpdatedAt,
 		arg.Limit,
 	)
@@ -212,7 +212,7 @@ FROM (
       AND t.status_id = (
           SELECT id
           FROM statuses
-          WHERE status_name = $2
+          WHERE statuses.title = $2
       )
       AND (t.deleted_at IS NULL
                OR (DATE_TRUNC('month', t.updated_at) > $3 AND t.deleted_at IS NULL)
@@ -236,10 +236,10 @@ LIMIT $4
 `
 
 type GetCompletedTasksParams struct {
-	UserID     string             `db:"user_id"`
-	StatusName string             `db:"status_name"`
-	UpdatedAt  pgtype.Timestamptz `db:"updated_at"`
-	Limit      int32              `db:"limit"`
+	UserID    string             `db:"user_id"`
+	Title     string             `db:"title"`
+	UpdatedAt pgtype.Timestamptz `db:"updated_at"`
+	Limit     int32              `db:"limit"`
 }
 
 type GetCompletedTasksRow struct {
@@ -250,7 +250,7 @@ type GetCompletedTasksRow struct {
 func (q *Queries) GetCompletedTasks(ctx context.Context, arg GetCompletedTasksParams) ([]GetCompletedTasksRow, error) {
 	rows, err := q.db.Query(ctx, getCompletedTasks,
 		arg.UserID,
-		arg.StatusName,
+		arg.Title,
 		arg.UpdatedAt,
 		arg.Limit,
 	)
@@ -354,11 +354,11 @@ func (q *Queries) GetTaskByID(ctx context.Context, arg GetTaskByIDParams) (GetTa
 const getTaskStatusID = `-- name: GetTaskStatusID :one
 SELECT id
 FROM statuses
-WHERE status_name = $1
+WHERE title = $1
 `
 
-func (q *Queries) GetTaskStatusID(ctx context.Context, statusName string) (int32, error) {
-	row := q.db.QueryRow(ctx, getTaskStatusID, statusName)
+func (q *Queries) GetTaskStatusID(ctx context.Context, title string) (int32, error) {
+	row := q.db.QueryRow(ctx, getTaskStatusID, title)
 	var id int32
 	err := row.Scan(&id)
 	return id, err

@@ -53,8 +53,8 @@ type ReminderSetting struct {
 }
 
 type Status struct {
-	ID         int32  `db:"id"`
-	StatusName string `db:"status_name"`
+	ID    int32  `db:"id"`
+	Title string `db:"title"`
 }
 
 type Tag struct {

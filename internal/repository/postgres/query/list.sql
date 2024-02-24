@@ -24,6 +24,6 @@ WHERE id = $3
 
 -- name: DeleteList :exec
 UPDATE lists
-SET deleted_at = @deleted_at::timestamptz
-WHERE id = $1
-  AND user_id = $2;
+SET deleted_at = $1
+WHERE id = $2
+  AND user_id = $3;

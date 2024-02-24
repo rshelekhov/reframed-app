@@ -33,7 +33,7 @@ type Querier interface {
 	GetTagsByTaskID(ctx context.Context, taskID string) ([]GetTagsByTaskIDRow, error)
 	GetTagsByUserID(ctx context.Context, userID string) ([]GetTagsByUserIDRow, error)
 	GetTaskByID(ctx context.Context, arg GetTaskByIDParams) (GetTaskByIDRow, error)
-	GetTaskStatusID(ctx context.Context, statusName string) (int32, error)
+	GetTaskStatusID(ctx context.Context, title string) (int32, error)
 	GetTasksByListID(ctx context.Context, arg GetTasksByListIDParams) ([]GetTasksByListIDRow, error)
 	GetTasksByUserID(ctx context.Context, arg GetTasksByUserIDParams) ([]GetTasksByUserIDRow, error)
 	GetTasksForSomeday(ctx context.Context, arg GetTasksForSomedayParams) ([]GetTasksForSomedayRow, error)

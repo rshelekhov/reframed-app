@@ -35,19 +35,19 @@ func (q *Queries) CreateList(ctx context.Context, arg CreateListParams) error {
 
 const deleteList = `-- name: DeleteList :exec
 UPDATE lists
-SET deleted_at = $3::timestamptz
-WHERE id = $1
-  AND user_id = $2
+SET deleted_at = $1
+WHERE id = $2
+  AND user_id = $3
 `
 
 type DeleteListParams struct {
+	DeletedAt pgtype.Timestamptz `db:"deleted_at"`
 	ID        string             `db:"id"`
 	UserID    string             `db:"user_id"`
-	DeletedAt pgtype.Timestamptz `db:"deleted_at"`
 }
 
 func (q *Queries) DeleteList(ctx context.Context, arg DeleteListParams) error {
-	_, err := q.db.Exec(ctx, deleteList, arg.ID, arg.UserID, arg.DeletedAt)
+	_, err := q.db.Exec(ctx, deleteList, arg.DeletedAt, arg.ID, arg.UserID)
 	return err
 }
 

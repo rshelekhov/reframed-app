@@ -1,12 +1,12 @@
 -- name: CreateTag :exec
 INSERT INTO tags (id, title, user_id, updated_at)
-VALUES ($1, LOWER($2), $3, $4);
+VALUES ($1, $2, $3, $4);
 
 -- name: LinkTagToTask :exec
 INSERT INTO tasks_tags (task_id, tag_id)
 VALUES ($1, (SELECT id
              FROM tags
-             WHERE title = LOWER($2))
+             WHERE title = $2)
 );
 
 -- name: UnlinkTagFromTask :exec
@@ -14,7 +14,7 @@ DELETE FROM tasks_tags
 WHERE task_id = $1
   AND tag_id = (SELECT id
                 FROM tags
-                WHERE title = LOWER($2)
+                WHERE title = $2
 );
 
 -- name: GetTagIDByTitle :one

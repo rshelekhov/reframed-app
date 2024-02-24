@@ -13,13 +13,13 @@ INSERT INTO tasks (
     user_id,
     updated_at
 ) VALUES (
-    $1, $2,$3, $4, $5, $6, $7, $8, $9, $10, $11, $12
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
 );
 
 -- name: GetTaskStatusID :one
 SELECT id
 FROM statuses
-WHERE status_name = $1;
+WHERE title = $1;
 
 -- name: GetTaskByID :one
 SELECT
@@ -432,7 +432,7 @@ FROM (
       AND t.status_id = (
           SELECT id
           FROM statuses
-          WHERE status_name = $2
+          WHERE statuses.title = $2
       )
       AND (t.deleted_at IS NULL
                OR (DATE_TRUNC('month', t.updated_at) > $3 AND t.deleted_at IS NULL)
@@ -498,7 +498,7 @@ FROM (
       AND t.status_id = (
         SELECT id
         FROM statuses
-        WHERE status_name = $2
+        WHERE statuses.title = $2
         )
       AND (t.deleted_at IS NULL
                OR (DATE_TRUNC('month', t.updated_at) > $3 AND t.deleted_at IS NULL)
