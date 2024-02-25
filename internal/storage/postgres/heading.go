@@ -24,7 +24,7 @@ func NewHeadingStorage(pool *pgxpool.Pool) *HeadingStorage {
 }
 
 func (s *HeadingStorage) CreateHeading(ctx context.Context, heading model.Heading) error {
-	const op = "heading.repository.CreateHeading"
+	const op = "heading.storage.CreateHeading"
 
 	if err := s.Queries.CreateHeading(ctx, CreateHeadingParams{
 		ID:        heading.ID,
@@ -42,7 +42,7 @@ func (s *HeadingStorage) CreateHeading(ctx context.Context, heading model.Headin
 }
 
 func (s *HeadingStorage) GetDefaultHeadingID(ctx context.Context, listID, userID string) (string, error) {
-	const op = "heading.repository.GetDefaultHeadingID"
+	const op = "heading.storage.GetDefaultHeadingID"
 
 	headingID, err := s.Queries.GetDefaultHeadingID(ctx, GetDefaultHeadingIDParams{
 		ListID: listID,
@@ -59,7 +59,7 @@ func (s *HeadingStorage) GetDefaultHeadingID(ctx context.Context, listID, userID
 }
 
 func (s *HeadingStorage) GetHeadingByID(ctx context.Context, headingID, userID string) (model.Heading, error) {
-	const op = "heading.repository.GetHeadingByID"
+	const op = "heading.storage.GetHeadingByID"
 
 	heading, err := s.Queries.GetHeadingByID(ctx, GetHeadingByIDParams{
 		ID:     headingID,
@@ -83,7 +83,7 @@ func (s *HeadingStorage) GetHeadingByID(ctx context.Context, headingID, userID s
 }
 
 func (s *HeadingStorage) GetHeadingsByListID(ctx context.Context, listID, userID string) ([]model.Heading, error) {
-	const op = "heading.repository.GetHeadingsByListID"
+	const op = "heading.storage.GetHeadingsByListID"
 
 	items, err := s.Queries.GetHeadingsByListID(ctx, GetHeadingsByListIDParams{
 		ListID: listID,
@@ -111,7 +111,7 @@ func (s *HeadingStorage) GetHeadingsByListID(ctx context.Context, listID, userID
 }
 
 func (s *HeadingStorage) UpdateHeading(ctx context.Context, heading model.Heading) error {
-	const op = "heading.repository.UpdateHeading"
+	const op = "heading.storage.UpdateHeading"
 
 	err := s.Queries.UpdateHeading(ctx, UpdateHeadingParams{
 		Title: heading.Title,
@@ -132,7 +132,7 @@ func (s *HeadingStorage) UpdateHeading(ctx context.Context, heading model.Headin
 }
 
 func (s *HeadingStorage) MoveHeadingToAnotherList(ctx context.Context, heading model.Heading, task model.Task) error {
-	const op = "heading.repository.MoveTaskToAnotherList"
+	const op = "heading.storage.MoveTaskToAnotherList"
 
 	err := s.Queries.MoveHeadingToAnotherList(ctx, MoveHeadingToAnotherListParams{
 		ListID: heading.ListID,
@@ -170,7 +170,7 @@ func (s *HeadingStorage) MoveHeadingToAnotherList(ctx context.Context, heading m
 }
 
 func (s *HeadingStorage) DeleteHeading(ctx context.Context, heading model.Heading) error {
-	const op = "heading.repository.DeleteHeading"
+	const op = "heading.storage.DeleteHeading"
 
 	err := s.Queries.DeleteHeading(ctx, DeleteHeadingParams{
 		ID:     heading.ID,

@@ -24,7 +24,7 @@ func NewTagStorage(pool *pgxpool.Pool) *TagStorage {
 }
 
 func (s *TagStorage) CreateTag(ctx context.Context, tag model.Tag) error {
-	const op = "tag.repository.CreateTag"
+	const op = "tag.storage.CreateTag"
 
 	if err := s.Queries.CreateTag(ctx, CreateTagParams{
 		ID:     tag.ID,
@@ -40,7 +40,7 @@ func (s *TagStorage) CreateTag(ctx context.Context, tag model.Tag) error {
 }
 
 func (s *TagStorage) LinkTagsToTask(ctx context.Context, taskID string, tags []string) error {
-	const op = "tag.repository.LinkTagsToTask"
+	const op = "tag.storage.LinkTagsToTask"
 
 	for _, tag := range tags {
 		if err := s.Queries.LinkTagToTask(ctx, LinkTagToTaskParams{
@@ -54,7 +54,7 @@ func (s *TagStorage) LinkTagsToTask(ctx context.Context, taskID string, tags []s
 }
 
 func (s *TagStorage) UnlinkTagsFromTask(ctx context.Context, taskID string, tags []string) error {
-	const op = "tag.repository.UnlinkTagsFromTask"
+	const op = "tag.storage.UnlinkTagsFromTask"
 
 	for _, tag := range tags {
 		if err := s.Queries.UnlinkTagFromTask(ctx, UnlinkTagFromTaskParams{
@@ -68,7 +68,7 @@ func (s *TagStorage) UnlinkTagsFromTask(ctx context.Context, taskID string, tags
 }
 
 func (s *TagStorage) GetTagIDByTitle(ctx context.Context, title, userID string) (string, error) {
-	const op = "tag.repository.GetTagByTitle"
+	const op = "tag.storage.GetTagByTitle"
 
 	tagID, err := s.Queries.GetTagIDByTitle(ctx, GetTagIDByTitleParams{
 		Title:  title,
@@ -85,7 +85,7 @@ func (s *TagStorage) GetTagIDByTitle(ctx context.Context, title, userID string) 
 }
 
 func (s *TagStorage) GetTagsByUserID(ctx context.Context, userID string) ([]model.Tag, error) {
-	const op = "tag.repository.GetTagsByUserID"
+	const op = "tag.storage.GetTagsByUserID"
 
 	items, err := s.Queries.GetTagsByUserID(ctx, userID)
 	if err != nil {
@@ -108,7 +108,7 @@ func (s *TagStorage) GetTagsByUserID(ctx context.Context, userID string) ([]mode
 }
 
 func (s *TagStorage) GetTagsByTaskID(ctx context.Context, taskID string) ([]model.Tag, error) {
-	const op = "tag.repository.GetTagsByTaskID"
+	const op = "tag.storage.GetTagsByTaskID"
 
 	var tagsTitles []model.Tag
 

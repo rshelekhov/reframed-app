@@ -27,7 +27,7 @@ func NewAuthStorage(pool *pgxpool.Pool) *AuthStorage {
 
 // CreateUser creates a new user
 func (s *AuthStorage) CreateUser(ctx context.Context, user model.User) error {
-	const op = "user.repository.CreateUser"
+	const op = "user.storage.CreateUser"
 
 	userStatus, err := s.getUserStatus(ctx, user.Email)
 	if err != nil {
@@ -54,7 +54,7 @@ func (s *AuthStorage) CreateUser(ctx context.Context, user model.User) error {
 
 // getUserStatus returns the status of the user with the given email
 func (s *AuthStorage) getUserStatus(ctx context.Context, email string) (string, error) {
-	const op = "user.repository.getUserStatus"
+	const op = "user.storage.getUserStatus"
 
 	status, err := s.Queries.GetUserStatus(ctx, email)
 	if err != nil {
@@ -65,7 +65,7 @@ func (s *AuthStorage) getUserStatus(ctx context.Context, email string) (string, 
 
 // replaceSoftDeletedUser replaces a soft deleted user with the given user
 func (s *AuthStorage) replaceSoftDeletedUser(ctx context.Context, user model.User) error {
-	const op = "user.repository.replaceSoftDeletedUser"
+	const op = "user.storage.replaceSoftDeletedUser"
 
 	if err := s.Queries.SetDeletedUserAtNull(ctx, user.Email); err != nil {
 		return fmt.Errorf("%s: failed to set deleted_at to NULL: %w", op, err)
@@ -86,7 +86,7 @@ func (s *AuthStorage) replaceSoftDeletedUser(ctx context.Context, user model.Use
 
 // insertUser inserts a new user
 func (s *AuthStorage) insertUser(ctx context.Context, user model.User) error {
-	const op = "user.repository.insertNewUser"
+	const op = "user.storage.insertNewUser"
 
 	if err := s.Queries.InsertUser(ctx, InsertUserParams{
 		ID:           user.ID,
@@ -102,7 +102,7 @@ func (s *AuthStorage) insertUser(ctx context.Context, user model.User) error {
 }
 
 func (s *AuthStorage) UpdateLatestLoginAt(ctx context.Context, deviceID string, latestLoginAt time.Time) error {
-	const op = "user.repository.UpdateLatestLoginAt"
+	const op = "user.storage.UpdateLatestLoginAt"
 
 	if err := s.Queries.UpdateLatestLoginAt(ctx, UpdateLatestLoginAtParams{
 		ID: deviceID,
@@ -116,7 +116,7 @@ func (s *AuthStorage) UpdateLatestLoginAt(ctx context.Context, deviceID string, 
 }
 
 func (s *AuthStorage) GetUserByEmail(ctx context.Context, email string) (model.User, error) {
-	const op = "user.repository.GetUserCredentials"
+	const op = "user.storage.GetUserCredentials"
 
 	user, err := s.Queries.GetUserByEmail(ctx, email)
 
@@ -135,7 +135,7 @@ func (s *AuthStorage) GetUserByEmail(ctx context.Context, email string) (model.U
 }
 
 func (s *AuthStorage) GetUserData(ctx context.Context, userID string) (model.User, error) {
-	const op = "user.repository.GetUserData"
+	const op = "user.storage.GetUserData"
 
 	user, err := s.Queries.GetUserData(ctx, userID)
 
@@ -155,7 +155,7 @@ func (s *AuthStorage) GetUserData(ctx context.Context, userID string) (model.Use
 }
 
 func (s *AuthStorage) GetUserByID(ctx context.Context, userID string) (model.User, error) {
-	const op = "user.repository.GetUserData"
+	const op = "user.storage.GetUserData"
 
 	user, err := s.Queries.GetUserByID(ctx, userID)
 
@@ -175,7 +175,7 @@ func (s *AuthStorage) GetUserByID(ctx context.Context, userID string) (model.Use
 
 // UpdateUser updates a user by ID
 func (s *AuthStorage) UpdateUser(ctx context.Context, user model.User) error {
-	const op = "UpdateUser.repository.UpdateUser"
+	const op = "UpdateUser.storage.UpdateUser"
 
 	// Prepare the dynamic update query based on the provided fields
 	queryUpdate := "UPDATE users SET updated_at = $1"
@@ -208,7 +208,7 @@ func (s *AuthStorage) UpdateUser(ctx context.Context, user model.User) error {
 
 // CheckEmailUniqueness checks if the provided email already exists in the database for another user
 func (s *AuthStorage) CheckEmailUniqueness(ctx context.Context, user model.User) error {
-	const op = "user.repository.checkEmailUniqueness"
+	const op = "user.storage.checkEmailUniqueness"
 
 	existingUserID, err := s.Queries.GetUserID(ctx, user.Email)
 
@@ -223,7 +223,7 @@ func (s *AuthStorage) CheckEmailUniqueness(ctx context.Context, user model.User)
 
 // DeleteUser deletes a user by ID
 func (s *AuthStorage) DeleteUser(ctx context.Context, user model.User) error {
-	const op = "user.repository.DeleteUser"
+	const op = "user.storage.DeleteUser"
 
 	err := s.Queries.DeleteUser(ctx, DeleteUserParams{
 		ID: user.ID,
@@ -246,7 +246,7 @@ func (s *AuthStorage) DeleteUser(ctx context.Context, user model.User) error {
 //
 
 func (s *AuthStorage) AddDevice(ctx context.Context, device model.UserDevice) error {
-	const op = "user.repository.AddDevice"
+	const op = "user.storage.AddDevice"
 
 	if err := s.Queries.AddDevice(ctx, AddDeviceParams{
 		ID:        device.ID,
@@ -264,7 +264,7 @@ func (s *AuthStorage) AddDevice(ctx context.Context, device model.UserDevice) er
 }
 
 func (s *AuthStorage) GetUserDeviceID(ctx context.Context, userID, userAgent string) (string, error) {
-	const op = "user.repository.GetUserDeviceID"
+	const op = "user.storage.GetUserDeviceID"
 
 	deviceID, err := s.Queries.GetUserDeviceID(ctx, GetUserDeviceIDParams{
 		UserID:    userID,
@@ -283,7 +283,7 @@ func (s *AuthStorage) GetUserDeviceID(ctx context.Context, userID, userAgent str
 
 func (s *AuthStorage) SaveSession(ctx context.Context, session model.Session) error {
 	// TODO: add constraint that user can have only active sessions for 5 devices
-	const op = "user.repository.SaveSession"
+	const op = "user.storage.SaveSession"
 
 	if err := s.Queries.SaveSession(ctx, SaveSessionParams{
 		RefreshToken: session.RefreshToken,
@@ -304,7 +304,7 @@ func (s *AuthStorage) SaveSession(ctx context.Context, session model.Session) er
 }
 
 func (s *AuthStorage) GetSessionByRefreshToken(ctx context.Context, refreshToken string) (model.Session, error) {
-	const op = "user.repository.GetSessionByRefreshToken"
+	const op = "user.storage.GetSessionByRefreshToken"
 
 	session, err := s.Queries.GetSessionByRefreshToken(ctx, refreshToken)
 
@@ -325,7 +325,7 @@ func (s *AuthStorage) GetSessionByRefreshToken(ctx context.Context, refreshToken
 }
 
 func (s *AuthStorage) DeleteRefreshToken(ctx context.Context, refreshToken string) error {
-	const op = "user.repository.DeleteRefreshToken"
+	const op = "user.storage.DeleteRefreshToken"
 
 	if err := s.Queries.DeleteRefreshTokenFromSession(ctx, refreshToken); err != nil {
 		return fmt.Errorf("%s: failed to delete expired session: %w", op, err)
@@ -334,7 +334,7 @@ func (s *AuthStorage) DeleteRefreshToken(ctx context.Context, refreshToken strin
 }
 
 func (s *AuthStorage) DeleteSession(ctx context.Context, userID, deviceID string) error {
-	const op = "user.repository.DeleteSession"
+	const op = "user.storage.DeleteSession"
 
 	err := s.Queries.DeleteSession(ctx, DeleteSessionParams{
 		UserID: pgtype.Text{

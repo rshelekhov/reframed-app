@@ -9,9 +9,9 @@ import (
 	"net"
 )
 
-// NewStorage creates a new Postgres repository
+// NewStorage creates a new Postgres storage
 func NewStorage(cfg *config.ServerSettings) (*pgxpool.Pool, error) {
-	const op = "repository.sqlc.NewStorage"
+	const op = "storage.sqlc.NewStorage"
 
 	poolCfg, err := pgxpool.ParseConfig(cfg.Postgres.ConnURL)
 	if err != nil {

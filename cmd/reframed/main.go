@@ -5,7 +5,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/rshelekhov/reframed/config"
 	"github.com/rshelekhov/reframed/internal/controller/http/v1"
-	"github.com/rshelekhov/reframed/internal/repository/postgres"
+	"github.com/rshelekhov/reframed/internal/storage/postgres"
 	"github.com/rshelekhov/reframed/internal/usecase"
 	"github.com/rshelekhov/reframed/pkg/httpserver"
 	"github.com/rshelekhov/reframed/pkg/httpserver/middleware/jwtoken"
@@ -41,9 +41,9 @@ func main() {
 	// Storage
 	pg, err := postgres.NewStorage(cfg)
 	if err != nil {
-		log.Error("failed to init repository", logger.Err(err))
+		log.Error("failed to init storage", logger.Err(err))
 	}
-	log.Debug("repository initiated")
+	log.Debug("storage initiated")
 
 	headingStorage := postgres.NewHeadingStorage(pg)
 	listStorage := postgres.NewListStorage(pg)

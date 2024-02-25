@@ -24,7 +24,7 @@ func NewListStorage(pool *pgxpool.Pool) *ListStorage {
 }
 
 func (s *ListStorage) CreateList(ctx context.Context, list model.List) error {
-	const op = "list.repository.CreateList"
+	const op = "list.storage.CreateList"
 
 	if err := s.Queries.CreateList(ctx, CreateListParams{
 		ID:     list.ID,
@@ -41,7 +41,7 @@ func (s *ListStorage) CreateList(ctx context.Context, list model.List) error {
 }
 
 func (s *ListStorage) GetListByID(ctx context.Context, listID, userID string) (model.List, error) {
-	const op = "list.repository.GetListByID"
+	const op = "list.storage.GetListByID"
 
 	list, err := s.Queries.GetListByID(ctx, GetListByIDParams{
 		ID:     listID,
@@ -63,7 +63,7 @@ func (s *ListStorage) GetListByID(ctx context.Context, listID, userID string) (m
 }
 
 func (s *ListStorage) GetListsByUserID(ctx context.Context, userID string) ([]model.List, error) {
-	const op = "list.repository.GetListsByUserID"
+	const op = "list.storage.GetListsByUserID"
 
 	items, err := s.Queries.GetListsByUserID(ctx, userID)
 	if err != nil {
@@ -86,7 +86,7 @@ func (s *ListStorage) GetListsByUserID(ctx context.Context, userID string) ([]mo
 }
 
 func (s *ListStorage) UpdateList(ctx context.Context, list model.List) error {
-	const op = "list.repository.UpdateList"
+	const op = "list.storage.UpdateList"
 
 	err := s.Queries.UpdateList(ctx, UpdateListParams{
 		Title: list.Title,
@@ -107,7 +107,7 @@ func (s *ListStorage) UpdateList(ctx context.Context, list model.List) error {
 }
 
 func (s *ListStorage) DeleteList(ctx context.Context, list model.List) error {
-	const op = "list.repository.DeleteList"
+	const op = "list.storage.DeleteList"
 
 	err := s.Queries.DeleteList(ctx, DeleteListParams{
 		ID:     list.ID,

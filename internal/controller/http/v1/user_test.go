@@ -8,7 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	http2 "github.com/rshelekhov/reframed/internal/controller/http/v1"
 	"github.com/rshelekhov/reframed/internal/model"
-	mocks2 "github.com/rshelekhov/reframed/internal/repository/postgres/mock"
+	mocks2 "github.com/rshelekhov/reframed/internal/storage/postgres/mock"
 	"github.com/rshelekhov/reframed/pkg/logger/slogdiscard"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
