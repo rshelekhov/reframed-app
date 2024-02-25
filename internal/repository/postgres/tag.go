@@ -5,30 +5,22 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rshelekhov/reframed/internal/model"
-	"github.com/rshelekhov/reframed/internal/port"
 	"github.com/rshelekhov/reframed/pkg/constants/le"
 )
 
 type TagStorage struct {
 	*pgxpool.Pool
-	se port.StorageExecutor
 	*Queries
 }
 
-func NewTagStorage(pool *pgxpool.Pool, executor port.StorageExecutor) *TagStorage {
+func NewTagStorage(pool *pgxpool.Pool) *TagStorage {
 	return &TagStorage{
 		Pool:    pool,
-		se:      executor,
 		Queries: New(pool),
 	}
-}
-
-func (s *TagStorage) ExecSQL(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error) {
-	return s.se.ExecSQL(ctx, sql, arguments...)
 }
 
 func (s *TagStorage) CreateTag(ctx context.Context, tag model.Tag) error {
@@ -95,24 +87,24 @@ func (s *TagStorage) GetTagIDByTitle(ctx context.Context, title, userID string) 
 func (s *TagStorage) GetTagsByUserID(ctx context.Context, userID string) ([]model.Tag, error) {
 	const op = "tag.repository.GetTagsByUserID"
 
-	tags, err := s.Queries.GetTagsByUserID(ctx, userID)
+	items, err := s.Queries.GetTagsByUserID(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("%s: failed to get tags: %w", op, err)
 	}
-	if len(tags) == 0 {
+	if len(items) == 0 {
 		return nil, le.ErrNoTagsFound
 	}
 
-	var tagsTitles []model.Tag
+	var tags []model.Tag
 
-	for _, tag := range tags {
-		tagsTitles = append(tagsTitles, model.Tag{
-			ID:        tag.ID,
-			Title:     tag.Title,
-			UpdatedAt: tag.UpdatedAt.Time,
+	for _, item := range items {
+		tags = append(tags, model.Tag{
+			ID:        item.ID,
+			Title:     item.Title,
+			UpdatedAt: item.UpdatedAt.Time,
 		})
 	}
-	return tagsTitles, nil
+	return tags, nil
 }
 
 func (s *TagStorage) GetTagsByTaskID(ctx context.Context, taskID string) ([]model.Tag, error) {

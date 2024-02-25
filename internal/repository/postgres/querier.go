@@ -19,12 +19,13 @@ type Querier interface {
 	CreateTask(ctx context.Context, arg CreateTaskParams) error
 	DeleteHeading(ctx context.Context, arg DeleteHeadingParams) error
 	DeleteList(ctx context.Context, arg DeleteListParams) error
-	DeleteRefreshToken(ctx context.Context, refreshToken string) error
+	DeleteRefreshTokenFromSession(ctx context.Context, refreshToken string) error
 	DeleteSession(ctx context.Context, arg DeleteSessionParams) error
 	DeleteUser(ctx context.Context, arg DeleteUserParams) error
 	GetArchivedTasks(ctx context.Context, arg GetArchivedTasksParams) ([]GetArchivedTasksRow, error)
 	GetCompletedTasks(ctx context.Context, arg GetCompletedTasksParams) ([]GetCompletedTasksRow, error)
 	GetDefaultHeadingID(ctx context.Context, arg GetDefaultHeadingIDParams) (string, error)
+	GetHeadingByID(ctx context.Context, arg GetHeadingByIDParams) (GetHeadingByIDRow, error)
 	GetHeadingsByListID(ctx context.Context, arg GetHeadingsByListIDParams) ([]GetHeadingsByListIDRow, error)
 	GetListByID(ctx context.Context, arg GetListByIDParams) (GetListByIDRow, error)
 	GetListsByUserID(ctx context.Context, userID string) ([]GetListsByUserIDRow, error)
@@ -43,7 +44,7 @@ type Querier interface {
 	GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error)
 	GetUserByID(ctx context.Context, id string) (GetUserByIDRow, error)
 	GetUserData(ctx context.Context, id string) (GetUserDataRow, error)
-	GetUserDeviceID(ctx context.Context, arg GetUserDeviceIDParams) error
+	GetUserDeviceID(ctx context.Context, arg GetUserDeviceIDParams) (string, error)
 	GetUserID(ctx context.Context, email string) (string, error)
 	//
 	// SQL queries for user management

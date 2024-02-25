@@ -39,13 +39,13 @@ func (q *Queries) AddDevice(ctx context.Context, arg AddDeviceParams) error {
 	return err
 }
 
-const deleteRefreshToken = `-- name: DeleteRefreshToken :exec
+const deleteRefreshTokenFromSession = `-- name: DeleteRefreshTokenFromSession :exec
 DELETE FROM refresh_sessions
 WHERE refresh_token = $1
 `
 
-func (q *Queries) DeleteRefreshToken(ctx context.Context, refreshToken string) error {
-	_, err := q.db.Exec(ctx, deleteRefreshToken, refreshToken)
+func (q *Queries) DeleteRefreshTokenFromSession(ctx context.Context, refreshToken string) error {
+	_, err := q.db.Exec(ctx, deleteRefreshTokenFromSession, refreshToken)
 	return err
 }
 
@@ -173,7 +173,7 @@ func (q *Queries) GetUserData(ctx context.Context, id string) (GetUserDataRow, e
 	return i, err
 }
 
-const getUserDeviceID = `-- name: GetUserDeviceID :exec
+const getUserDeviceID = `-- name: GetUserDeviceID :one
 SELECT id
 FROM user_devices
 WHERE user_id = $1
@@ -186,9 +186,11 @@ type GetUserDeviceIDParams struct {
 	UserAgent string `db:"user_agent"`
 }
 
-func (q *Queries) GetUserDeviceID(ctx context.Context, arg GetUserDeviceIDParams) error {
-	_, err := q.db.Exec(ctx, getUserDeviceID, arg.UserID, arg.UserAgent)
-	return err
+func (q *Queries) GetUserDeviceID(ctx context.Context, arg GetUserDeviceIDParams) (string, error) {
+	row := q.db.QueryRow(ctx, getUserDeviceID, arg.UserID, arg.UserAgent)
+	var id string
+	err := row.Scan(&id)
+	return id, err
 }
 
 const getUserID = `-- name: GetUserID :one

@@ -10,7 +10,7 @@ WHERE list_id = $1
   AND is_default = TRUE
   AND deleted_at IS NULL;
 
--- mame: GetHeadingByID :one
+-- name: GetHeadingByID :one
 SELECT id, title, list_id, user_id, updated_at
 FROM headings
 WHERE id = $1

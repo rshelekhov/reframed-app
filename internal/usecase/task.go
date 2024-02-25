@@ -13,20 +13,17 @@ type TaskUsecase struct {
 	taskStorage    port.TaskStorage
 	headingUsecase port.HeadingUsecase
 	tagUsecase     port.TagUsecase
-	txManager      port.TransactionManager
 }
 
 func NewTaskUsecase(
 	storage port.TaskStorage,
 	headingUsecase port.HeadingUsecase,
 	tagUsecase port.TagUsecase,
-	txManager port.TransactionManager,
 ) *TaskUsecase {
 	return &TaskUsecase{
 		taskStorage:    storage,
 		headingUsecase: headingUsecase,
 		tagUsecase:     tagUsecase,
-		txManager:      txManager,
 	}
 }
 
@@ -58,42 +55,35 @@ func (u *TaskUsecase) CreateTask(ctx context.Context, data *model.TaskRequestDat
 		Deadline:    data.Deadline,
 		StartTime:   data.StartTime,
 		EndTime:     data.EndTime,
-		StatusID:    data.StatusID,
+		StatusID:    statusNotStarted,
 		ListID:      data.ListID,
 		HeadingID:   data.HeadingID,
 		UserID:      data.UserID,
 		UpdatedAt:   time.Now(),
 	}
 
-	err = u.txManager.WithinTransaction(ctx, op, func(ctx context.Context) error {
-		return u.createTaskWithinTransaction(ctx, newTask)
-	})
-	if err != nil {
-		return "", err
-	}
+	// TODO: add transaction here
 
-	return newTask.ID, nil
-}
-
-func (u *TaskUsecase) createTaskWithinTransaction(ctx context.Context, task model.Task) error {
-	for _, tag := range task.Tags {
-		if err := u.tagUsecase.CreateTagIfNotExists(ctx, model.TagRequestData{
+	for _, tag := range newTask.Tags {
+		if err = u.tagUsecase.CreateTagIfNotExists(ctx, model.TagRequestData{
 			Title:  tag,
-			UserID: task.UserID,
+			UserID: newTask.UserID,
 		}); err != nil {
-			return err
+			return "", err
 		}
 	}
 
-	if err := u.taskStorage.CreateTask(ctx, task); err != nil {
-		return err
+	if err = u.taskStorage.CreateTask(ctx, newTask); err != nil {
+		return "", err
 	}
 
-	if err := u.tagUsecase.LinkTagsToTask(ctx, task.ID, task.Tags); err != nil {
-		return err
+	if err = u.tagUsecase.LinkTagsToTask(ctx, newTask.ID, newTask.Tags); err != nil {
+		return "", err
 	}
 
-	return nil
+	// TODO: finish transaction here
+
+	return newTask.ID, nil
 }
 
 func (u *TaskUsecase) GetTaskByID(ctx context.Context, data model.TaskRequestData) (model.TaskResponseData, error) {
@@ -230,45 +220,38 @@ func (u *TaskUsecase) UpdateTask(ctx context.Context, data *model.TaskRequestDat
 		UpdatedAt: time.Now(),
 	}
 
-	err := u.txManager.WithinTransaction(ctx, op, func(ctx context.Context) error {
-		return u.updateTaskWithinTransaction(ctx, updatedTask)
-	})
-	if err != nil {
-		return err
-	}
+	// TODO: add transaction here
 
-	return nil
-}
-
-func (u *TaskUsecase) updateTaskWithinTransaction(ctx context.Context, task model.Task) error {
-	currentTags, err := u.tagUsecase.GetTagsByTaskID(ctx, task.ID)
+	currentTags, err := u.tagUsecase.GetTagsByTaskID(ctx, updatedTask.ID)
 	if err != nil {
 		return err
 	}
 
 	// Use transactions in these methods
-	tagsToAdd, tagsToRemove := findTagsToAddAndRemove(currentTags, task.Tags)
+	tagsToAdd, tagsToRemove := findTagsToAddAndRemove(currentTags, updatedTask.Tags)
 
-	for _, tag := range task.Tags {
+	for _, tag := range updatedTask.Tags {
 		if err = u.tagUsecase.CreateTagIfNotExists(ctx, model.TagRequestData{
 			Title:  tag,
-			UserID: task.UserID,
+			UserID: updatedTask.UserID,
 		}); err != nil {
 			return err
 		}
 	}
 
-	if err = u.taskStorage.UpdateTask(ctx, task); err != nil {
+	if err = u.taskStorage.UpdateTask(ctx, updatedTask); err != nil {
 		return err
 	}
 
-	if err = u.tagUsecase.UnlinkTagsFromTask(ctx, task.ID, tagsToRemove); err != nil {
+	if err = u.tagUsecase.UnlinkTagsFromTask(ctx, updatedTask.ID, tagsToRemove); err != nil {
 		return err
 	}
 
-	if err = u.tagUsecase.LinkTagsToTask(ctx, task.ID, tagsToAdd); err != nil {
+	if err = u.tagUsecase.LinkTagsToTask(ctx, updatedTask.ID, tagsToAdd); err != nil {
 		return err
 	}
+
+	// TODO: finish transaction here
 
 	return nil
 }
@@ -312,16 +295,14 @@ func (u *TaskUsecase) UpdateTaskTime(ctx context.Context, data *model.TaskReques
 		return le.ErrInvalidTaskTimeRange
 	}
 
-	updatedTask := model.Task{
+	return u.taskStorage.UpdateTaskTime(ctx, model.Task{
 		ID:        data.ID,
 		StartTime: data.StartTime,
 		EndTime:   data.EndTime,
 		StatusID:  data.StatusID,
 		UserID:    data.UserID,
 		UpdatedAt: time.Now(),
-	}
-
-	return u.taskStorage.UpdateTaskTime(ctx, updatedTask)
+	})
 }
 
 func (u *TaskUsecase) MoveTaskToAnotherList(ctx context.Context, data model.TaskRequestData) error {
@@ -334,15 +315,13 @@ func (u *TaskUsecase) MoveTaskToAnotherList(ctx context.Context, data model.Task
 	}
 	data.HeadingID = defaultHeadingID
 
-	updatedTask := model.Task{
+	return u.taskStorage.MoveTaskToAnotherList(ctx, model.Task{
 		ID:        data.ID,
 		ListID:    data.ListID,
 		HeadingID: data.HeadingID,
 		UserID:    data.UserID,
 		UpdatedAt: time.Now(),
-	}
-
-	return u.taskStorage.MoveTaskToAnotherList(ctx, updatedTask)
+	})
 }
 
 func (u *TaskUsecase) CompleteTask(ctx context.Context, data model.TaskRequestData) error {
@@ -352,14 +331,12 @@ func (u *TaskUsecase) CompleteTask(ctx context.Context, data model.TaskRequestDa
 	}
 	data.StatusID = statusCompleted
 
-	completedTask := model.Task{
+	return u.taskStorage.MarkAsCompleted(ctx, model.Task{
 		ID:        data.ID,
 		StatusID:  data.StatusID,
 		UserID:    data.UserID,
 		UpdatedAt: time.Now(),
-	}
-
-	return u.taskStorage.MarkAsCompleted(ctx, completedTask)
+	})
 }
 
 func (u *TaskUsecase) ArchiveTask(ctx context.Context, data model.TaskRequestData) error {
@@ -369,12 +346,10 @@ func (u *TaskUsecase) ArchiveTask(ctx context.Context, data model.TaskRequestDat
 	}
 	data.StatusID = statusArchived
 
-	archivedTask := model.Task{
+	return u.taskStorage.MarkAsArchived(ctx, model.Task{
 		ID:        data.ID,
 		StatusID:  data.StatusID,
 		UserID:    data.UserID,
 		UpdatedAt: time.Now(),
-	}
-
-	return u.taskStorage.MarkAsArchived(ctx, archivedTask)
+	})
 }

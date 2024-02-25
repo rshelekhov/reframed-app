@@ -13,6 +13,7 @@ type (
 		CreateUserSession(ctx context.Context, jwt *jwtoken.TokenService, userID string, device model.UserDeviceRequestData) (jwtoken.TokenData, error)
 		LoginUser(ctx context.Context, jwt *jwtoken.TokenService, data *model.UserRequestData) (string, error)
 		CheckSessionAndDevice(ctx context.Context, refreshToken string, data model.UserDeviceRequestData) (model.Session, error)
+		DeleteRefreshToken(ctx context.Context, refreshToken string) error
 		LogoutUser(ctx context.Context, userID string, data model.UserDeviceRequestData) error
 		GetUserByID(ctx context.Context, id string) (model.UserResponseData, error)
 		UpdateUser(ctx context.Context, jwt *jwtoken.TokenService, data *model.UserRequestData, userID string) error
@@ -28,6 +29,7 @@ type (
 		GetUserByEmail(ctx context.Context, email string) (model.User, error)
 		GetUserData(ctx context.Context, userID string) (model.User, error)
 		GetSessionByRefreshToken(ctx context.Context, refreshToken string) (model.Session, error)
+		DeleteRefreshToken(ctx context.Context, refreshToken string) error
 		DeleteSession(ctx context.Context, userID, deviceID string) error
 		GetUserByID(ctx context.Context, userID string) (model.User, error)
 		CheckEmailUniqueness(ctx context.Context, user model.User) error

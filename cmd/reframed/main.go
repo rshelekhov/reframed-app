@@ -45,23 +45,18 @@ func main() {
 	}
 	log.Debug("repository initiated")
 
-	// Transaction manager ... TODO: add description
-	txManager := postgres.NewTransactionManager(pg)
-	// Executor ... TODO: add description
-	executor := postgres.NewExecutor(pg)
-
 	headingStorage := postgres.NewHeadingStorage(pg)
 	listStorage := postgres.NewListStorage(pg)
-	authStorage := postgres.NewAuthStorage(pg, executor)
-	taskStorage := postgres.NewTaskStorage(pg, executor)
-	tagStorage := postgres.NewTagStorage(pg, executor)
+	authStorage := postgres.NewAuthStorage(pg)
+	taskStorage := postgres.NewTaskStorage(pg)
+	tagStorage := postgres.NewTagStorage(pg)
 
 	// Usecases
 	headingUsecase := usecase.NewHeadingUsecase(headingStorage)
 	listUsecase := usecase.NewListUsecase(listStorage, headingUsecase)
-	authUsecase := usecase.NewAuthUsecase(authStorage, listUsecase, txManager)
+	authUsecase := usecase.NewAuthUsecase(authStorage, listUsecase)
 	tagUsecase := usecase.NewTagUsecase(tagStorage)
-	taskUsecase := usecase.NewTaskUsecase(taskStorage, headingUsecase, tagUsecase, txManager)
+	taskUsecase := usecase.NewTaskUsecase(taskStorage, headingUsecase, tagUsecase)
 
 	// HTTP Server
 	log.Info("starting httpserver", slog.String("address", cfg.HTTPServer.Address))

@@ -77,6 +77,40 @@ func (q *Queries) GetDefaultHeadingID(ctx context.Context, arg GetDefaultHeading
 	return id, err
 }
 
+const getHeadingByID = `-- name: GetHeadingByID :one
+SELECT id, title, list_id, user_id, updated_at
+FROM headings
+WHERE id = $1
+  AND user_id = $2
+  AND deleted_at IS NULL
+`
+
+type GetHeadingByIDParams struct {
+	ID     string `db:"id"`
+	UserID string `db:"user_id"`
+}
+
+type GetHeadingByIDRow struct {
+	ID        string             `db:"id"`
+	Title     string             `db:"title"`
+	ListID    string             `db:"list_id"`
+	UserID    string             `db:"user_id"`
+	UpdatedAt pgtype.Timestamptz `db:"updated_at"`
+}
+
+func (q *Queries) GetHeadingByID(ctx context.Context, arg GetHeadingByIDParams) (GetHeadingByIDRow, error) {
+	row := q.db.QueryRow(ctx, getHeadingByID, arg.ID, arg.UserID)
+	var i GetHeadingByIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.ListID,
+		&i.UserID,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getHeadingsByListID = `-- name: GetHeadingsByListID :many
 SELECT id, title, list_id, user_id, updated_at
 FROM headings

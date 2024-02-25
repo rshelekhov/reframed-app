@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rshelekhov/reframed/internal/model"
 	"github.com/rshelekhov/reframed/internal/port"
@@ -16,16 +15,15 @@ import (
 
 type TaskStorage struct {
 	*pgxpool.Pool
-	se port.StorageExecutor
+	*Queries
 }
 
 // TODO: update storages - use port instead of struct as a return value
-func NewTaskStorage(pool *pgxpool.Pool, executor port.StorageExecutor) port.TaskStorage {
-	return &TaskStorage{Pool: pool, se: executor}
-}
-
-func (s *TaskStorage) ExecSQL(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error) {
-	return s.se.ExecSQL(ctx, sql, arguments...)
+func NewTaskStorage(pool *pgxpool.Pool) port.TaskStorage {
+	return &TaskStorage{
+		Pool:    pool,
+		Queries: New(pool),
+	}
 }
 
 func (s *TaskStorage) CreateTask(ctx context.Context, task model.Task) error {

@@ -70,7 +70,7 @@ WHERE id = $2
 INSERT INTO user_devices (id, user_id, user_agent, ip, detached, latest_login_at)
 VALUES ($1, $2, $3, $4, $5, $6);
 
--- name: GetUserDeviceID :exec
+-- name: GetUserDeviceID :one
 SELECT id
 FROM user_devices
 WHERE user_id = $1
@@ -86,7 +86,7 @@ SELECT user_id, device_id, last_visit_at, expires_at
 FROM refresh_sessions
 WHERE refresh_token = $1;
 
--- name: DeleteRefreshToken :exec
+-- name: DeleteRefreshTokenFromSession :exec
 DELETE FROM refresh_sessions
 WHERE refresh_token = $1;
 

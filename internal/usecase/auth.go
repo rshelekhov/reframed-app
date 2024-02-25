@@ -16,18 +16,15 @@ import (
 type AuthUsecase struct {
 	authStorage port.AuthStorage
 	listUsecase port.ListUsecase
-	txManager   port.TransactionManager
 }
 
 func NewAuthUsecase(
 	storage port.AuthStorage,
 	listUsecase port.ListUsecase,
-	txManager port.TransactionManager,
 ) *AuthUsecase {
 	return &AuthUsecase{
 		authStorage: storage,
 		listUsecase: listUsecase,
-		txManager:   txManager,
 	}
 }
 
@@ -50,21 +47,10 @@ func (u *AuthUsecase) CreateUser(ctx context.Context, jwt *jwtoken.TokenService,
 		UpdatedAt:    time.Now(),
 	}
 
+	// TODO: Add transaction here
 	// Create the user
-	err = u.txManager.WithinTransaction(ctx, op, func(txCtx context.Context) error {
-		return u.createUserWithinTransaction(txCtx, user)
-	})
-	if err != nil {
+	if err = u.authStorage.CreateUser(ctx, user); err != nil {
 		return "", err
-	}
-
-	return user.ID, nil
-}
-
-func (u *AuthUsecase) createUserWithinTransaction(ctx context.Context, user model.User) error {
-	err := u.authStorage.CreateUser(ctx, user)
-	if err != nil {
-		return err
 	}
 
 	defaultList := model.List{
@@ -74,12 +60,13 @@ func (u *AuthUsecase) createUserWithinTransaction(ctx context.Context, user mode
 		UpdatedAt: time.Now(),
 	}
 
-	err = u.listUsecase.CreateDefaultList(ctx, defaultList)
-	if err != nil {
-		return err
+	if err = u.listUsecase.CreateDefaultList(ctx, defaultList); err != nil {
+		return "", err
 	}
 
-	return nil
+	// TODO: finish transaction here
+
+	return user.ID, nil
 }
 
 // TODO: Move sessions from Postgres to Redis
@@ -228,6 +215,10 @@ func (u *AuthUsecase) CheckSessionAndDevice(ctx context.Context, refreshToken st
 		return model.Session{}, err
 	}
 	return session, nil
+}
+
+func (u *AuthUsecase) DeleteRefreshToken(ctx context.Context, refreshToken string) error {
+	return u.authStorage.DeleteRefreshToken(ctx, refreshToken)
 }
 
 func (u *AuthUsecase) LogoutUser(ctx context.Context, userID string, data model.UserDeviceRequestData) error {
