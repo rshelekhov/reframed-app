@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rshelekhov/reframed/internal/model"
+	"github.com/rshelekhov/reframed/internal/port"
 	"github.com/rshelekhov/reframed/pkg/constants/le"
 	"strconv"
 	"time"
@@ -18,7 +19,7 @@ type AuthStorage struct {
 	*Queries
 }
 
-func NewAuthStorage(pool *pgxpool.Pool) *AuthStorage {
+func NewAuthStorage(pool *pgxpool.Pool) port.AuthStorage {
 	return &AuthStorage{
 		Pool:    pool,
 		Queries: New(pool),
