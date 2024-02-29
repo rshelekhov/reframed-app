@@ -6,11 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rshelekhov/reframed/internal/model"
 	"github.com/rshelekhov/reframed/internal/port"
 	"github.com/rshelekhov/reframed/pkg/constants/le"
 	"strconv"
+	"time"
 )
 
 type TaskStorage struct {
@@ -18,7 +20,6 @@ type TaskStorage struct {
 	*Queries
 }
 
-// TODO: update storages - use port instead of struct as a return value
 func NewTaskStorage(pool *pgxpool.Pool) port.TaskStorage {
 	return &TaskStorage{
 		Pool:    pool,
@@ -26,136 +27,66 @@ func NewTaskStorage(pool *pgxpool.Pool) port.TaskStorage {
 	}
 }
 
+// TODO: make all storage methods with custom struct instead of default types like this
 func (s *TaskStorage) CreateTask(ctx context.Context, task model.Task) error {
-	const (
-		op = "task.storage.CreateTask"
+	const op = "task.storage.CreateTask"
 
-		query = `
-			INSERT INTO tasks
-    		(
-				id,
-				title,
-				description,
-				start_date,
-				deadline,
-				start_time,
-				end_time,
-				status_id,
-				list_id,
-    			heading_id,
-				user_id,
-				updated_at
-			)
-			VALUES (
-			    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`
-	)
-
-	_, err := s.ExecSQL(
-		ctx,
-		query,
-		task.ID,
-		task.Title,
-		task.Description,
-		task.StartDate,
-		task.Deadline,
-		task.StartTime,
-		task.EndTime,
-		task.StatusID,
-		task.ListID,
-		task.HeadingID,
-		task.UserID,
-		task.UpdatedAt,
-	)
-	if err != nil {
-		return fmt.Errorf("%s: failed to insert new task: %w", op, err)
+	taskParams := CreateTaskParams{
+		ID:        task.ID,
+		Title:     task.Title,
+		StatusID:  int32(task.StatusID),
+		ListID:    task.ListID,
+		HeadingID: task.HeadingID,
+		UserID:    task.UserID,
+		UpdatedAt: task.UpdatedAt,
+	}
+	if task.Description != "" {
+		taskParams.Description = pgtype.Text{
+			String: task.Description,
+			Valid:  true,
+		}
+	}
+	if !task.StartDate.IsZero() {
+		taskParams.StartDate = pgtype.Timestamptz{
+			Time:  task.StartTime,
+			Valid: true,
+		}
+	}
+	if !task.Deadline.IsZero() {
+		taskParams.Deadline = pgtype.Timestamptz{
+			Time:  task.Deadline,
+			Valid: true,
+		}
 	}
 
+	if err := s.Queries.CreateTask(ctx, taskParams); err != nil {
+		return fmt.Errorf("%s: failed to insert new task: %w", op, err)
+	}
 	return nil
 }
 
 func (s *TaskStorage) GetTaskStatusID(ctx context.Context, status model.StatusName) (int, error) {
-	const (
-		op = "task.storage.GetTaskStatusID"
+	const op = "task.storage.GetTaskStatusID"
 
-		query = `
-			SELECT id
-			FROM statuses
-			WHERE status_name = $1`
-	)
+	statusID, err := s.Queries.GetTaskStatusID(ctx, status.String())
 
-	var statusID int
-
-	err := s.QueryRow(ctx, query, string(status)).Scan(&statusID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return 0, le.ErrTaskStatusNotFound
+	}
 	if err != nil {
 		return 0, fmt.Errorf("%s: failed to get statusID: %w", op, err)
 	}
 
-	return statusID, nil
+	return int(statusID), nil
 }
 
 func (s *TaskStorage) GetTaskByID(ctx context.Context, taskID, userID string) (model.Task, error) {
-	const (
-		op = "task.storage.GetTaskByID"
+	const op = "task.storage.GetTaskByID"
 
-		query = `
-			SELECT
-			    t.id,
-				t.title,
-				t.description,
-				t.start_date,
-				t.deadline,
-				t.start_time,
-				t.end_time,
-				t.status_id,
-				t.list_id,
-				t.heading_id,
-				array_agg(tg.title) AS tags,
-				COALESCE(t.deadline <= CURRENT_DATE, false) AS overdue,
-				t.updated_at
-			FROM tasks t
-				LEFT JOIN tasks_tags tt
-				    ON t.id = tt.task_id
-				LEFT JOIN tags tg
-				    ON tt.tag_id = tg.id
-			WHERE t.id = $1
-			  AND t.user_id = $2
-			  AND t.deleted_at IS NULL
-			GROUP BY 
-			    t.id,
-			    t.title,
-			    t.description,
-			    t.start_date,
-			    t.deadline,
-			    t.start_time,
-			    t.end_time,
-			    t.status_id,
-			    t.list_id,
-			    t.heading_id,
-			    t.updated_at`
-	)
-
-	var task model.Task
-
-	err := s.QueryRow(
-		ctx,
-		query,
-		taskID,
-		userID,
-	).Scan(
-		&task.ID,
-		&task.Title,
-		&task.Description,
-		&task.StartDate,
-		&task.Deadline,
-		&task.StartTime,
-		&task.EndTime,
-		&task.StatusID,
-		&task.ListID,
-		&task.HeadingID,
-		&task.Tags,
-		&task.Overdue,
-		&task.UpdatedAt,
-	)
+	task, err := s.Queries.GetTaskByID(ctx, GetTaskByIDParams{
+		ID:     taskID,
+		UserID: userID,
+	})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return model.Task{}, le.ErrTaskNotFound
 	}
@@ -163,976 +94,467 @@ func (s *TaskStorage) GetTaskByID(ctx context.Context, taskID, userID string) (m
 		return model.Task{}, fmt.Errorf("%s: failed to get task: %w", op, err)
 	}
 
-	return task, nil
+	taskResp := model.Task{
+		ID:        task.ID,
+		Title:     task.Title,
+		StatusID:  int(task.StatusID),
+		ListID:    task.ListID,
+		HeadingID: task.HeadingID,
+		UpdatedAt: task.UpdatedAt,
+		Overdue:   task.Overdue,
+	}
+	if task.Description.Valid {
+		taskResp.Description = task.Description.String
+	}
+	if task.StartDate.Valid {
+		taskResp.StartDate = task.StartDate.Time
+	}
+	if task.Deadline.Valid {
+		taskResp.Deadline = task.Deadline.Time
+	}
+	if task.StartTime.Valid {
+		taskResp.StartTime = task.StartTime.Time
+	}
+	if task.EndTime.Valid {
+		taskResp.EndTime = task.EndTime.Time
+	}
+
+	if task.Tags != nil {
+		tagsArray, ok := task.Tags.([]interface{})
+		if ok {
+			tags := make([]string, 0, len(tagsArray))
+			for _, tag := range tagsArray {
+				if t, ok := tag.(string); ok {
+					tags = append(tags, t)
+				}
+			}
+			taskResp.Tags = tags
+		}
+	}
+
+	return taskResp, nil
 }
 
 func (s *TaskStorage) GetTasksByUserID(ctx context.Context, userID string, pgn model.Pagination) ([]model.Task, error) {
-	const (
-		op = "task.storage.GetTasksByUserID"
+	const op = "task.storage.GetTasksByUserID"
 
-		query = `
-			SELECT
-				t.id,
-				t.title,
-				t.description,
-				t.start_date,
-				t.deadline,
-				t.start_time,
-				t.end_time,
-				t.status_id,
-				t.list_id,
-				t.heading_id,
-				ARRAY_AGG(tg.title) AS tags,
-				COALESCE(t.deadline <= CURRENT_DATE, false) AS overdue,
-				t.updated_at
-			FROM tasks t
-				LEFT JOIN tasks_tags tt
-				    ON t.id = tt.task_id
-				LEFT JOIN tags tg
-				    ON tt.tag_id = tg.id
-			WHERE t.user_id = $1
-			  AND t.deleted_at IS NULL
-			  AND (
-			      ($2 IS NULL AND t.id > $2)
-			      OR ($2 IS NOT NULL AND t.id > $2)
-              )
-			GROUP BY 
-				t.id,
-				t.title,
-				t.description,
-				t.start_date,
-				t.deadline,
-				t.start_time,
-				t.end_time,
-				t.status_id,
-				t.list_id,
-				t.heading_id,
-				t.updated_at				
-			ORDER BY t.id
-			LIMIT $3`
-	)
-
-	var afterID interface{}
+	var afterID string
 	if pgn.AfterID != "" {
 		afterID = pgn.AfterID
-	} else {
-		afterID = nil
 	}
 
-	rows, err := s.Query(ctx, query, userID, afterID, pgn.Limit)
+	tasks, err := s.Queries.GetTasksByUserID(ctx, GetTasksByUserIDParams{
+		UserID:  userID,
+		AfterID: afterID,
+		Limit:   pgn.Limit,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("%s: failed to get tasks: %w", op, err)
 	}
-	defer rows.Close()
 
-	var tasks []model.Task
+	var tasksResp []model.Task
 
-	for rows.Next() {
-		task := model.Task{}
-
-		err = rows.Scan(
-			&task.ID,
-			&task.Title,
-			&task.Description,
-			&task.StartDate,
-			&task.Deadline,
-			&task.StartTime,
-			&task.EndTime,
-			&task.StatusID,
-			&task.ListID,
-			&task.HeadingID,
-			&task.Tags,
-			&task.Overdue,
-			&task.UpdatedAt,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("%s: failed to scan task: %w", op, err)
+	for _, task := range tasks {
+		t := model.Task{
+			ID:        task.ID,
+			Title:     task.Title,
+			StatusID:  int(task.StatusID),
+			ListID:    task.ListID,
+			HeadingID: task.HeadingID,
+			UpdatedAt: task.UpdatedAt,
+			Overdue:   task.Overdue,
 		}
-		tasks = append(tasks, task)
-	}
+		if task.Description.Valid {
+			t.Description = task.Description.String
+		}
+		if task.StartDate.Valid {
+			t.StartDate = task.StartDate.Time
+		}
+		if task.Deadline.Valid {
+			t.Deadline = task.Deadline.Time
+		}
+		if task.StartTime.Valid {
+			t.StartTime = task.StartTime.Time
+		}
+		if task.EndTime.Valid {
+			t.EndTime = task.EndTime.Time
+		}
 
-	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("%s: failed to iterate rows: %w", op, err)
+		if task.Tags != nil {
+			tagsArray, ok := task.Tags.([]interface{})
+			if ok {
+				tags := make([]string, 0, len(tagsArray))
+				for _, tag := range tagsArray {
+					if t, ok := tag.(string); ok {
+						tags = append(tags, t)
+					}
+				}
+				t.Tags = tags
+			}
+		}
+
+		tasksResp = append(tasksResp, t)
 	}
 
 	if len(tasks) == 0 {
 		return nil, le.ErrNoTasksFound
 	}
 
-	return tasks, nil
+	return tasksResp, nil
 }
 
 func (s *TaskStorage) GetTasksByListID(ctx context.Context, listID, userID string) ([]model.Task, error) {
-	const (
-		op = "task.storage.GetTasksByListID"
+	const op = "task.storage.GetTasksByListID"
 
-		//query = `
-		//	SELECT
-		//		id,
-		//		title,
-		//		description,
-		//		start_date,
-		//		deadline,
-		//		start_time,
-		//		end_time,
-		//		status_id,
-		//		updated_at
-		//	FROM tasks
-		//	WHERE list_id = $1 AND user_id = $2 AND deleted_at IS NULL
-		//	ORDER BY id DESC LIMIT $3 OFFSET $4`
-
-		query = `
-			SELECT
-				t.id,
-				t.title,
-				t.description,
-				t.start_date,
-				t.deadline,
-				t.start_time,
-				t.end_time,
-				t.status_id,
-				t.list_id,
-				t.heading_id,
-				t.user_id,
-				ARRAY_AGG(tg.title) AS tags,
-				COALESCE(t.deadline <= CURRENT_DATE, false) AS overdue,
-				t.updated_at
-			FROM tasks t
-				LEFT JOIN tasks_tags tt
-				    ON t.id = tt.task_id
-				LEFT JOIN tags tg
-				    ON tt.tag_id = tg.id
-			WHERE t.list_id = $1
-			  AND t.user_id = $2
-			  AND t.deleted_at IS NULL
-			GROUP BY 
-				t.id,
-				t.title,
-				t.description,
-				t.start_date,
-				t.deadline,
-				t.start_time,
-				t.end_time,
-				t.status_id,
-				t.heading_id,
-				overdue,
-				t.updated_at
-			ORDER BY t.id`
-	)
-
-	rows, err := s.Query(ctx, query, listID, userID)
+	tasks, err := s.Queries.GetTasksByListID(ctx, GetTasksByListIDParams{
+		ListID: listID,
+		UserID: userID,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("%s: failed to get tasks: %w", op, err)
 	}
-	defer rows.Close()
 
-	var tasks []model.Task
+	var tasksResp []model.Task
 
-	for rows.Next() {
-		task := model.Task{}
-
-		err = rows.Scan(
-			&task.ID,
-			&task.Title,
-			&task.Description,
-			&task.StartDate,
-			&task.Deadline,
-			&task.StartTime,
-			&task.EndTime,
-			&task.StatusID,
-			&task.ListID,
-			&task.HeadingID,
-			&task.UserID,
-			&task.Tags,
-			&task.Overdue,
-			&task.UpdatedAt,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("%s: failed to scan task: %w", op, err)
+	for _, task := range tasks {
+		t := model.Task{
+			ID:        task.ID,
+			Title:     task.Title,
+			StatusID:  int(task.StatusID),
+			ListID:    task.ListID,
+			HeadingID: task.HeadingID,
+			UpdatedAt: task.UpdatedAt,
+			Overdue:   task.Overdue,
+		}
+		if task.Description.Valid {
+			t.Description = task.Description.String
+		}
+		if task.StartDate.Valid {
+			t.StartDate = task.StartDate.Time
+		}
+		if task.Deadline.Valid {
+			t.Deadline = task.Deadline.Time
+		}
+		if task.StartTime.Valid {
+			t.StartTime = task.StartTime.Time
+		}
+		if task.EndTime.Valid {
+			t.EndTime = task.EndTime.Time
 		}
 
-		tasks = append(tasks, task)
-	}
-	if rows.Err() != nil {
-		return nil, fmt.Errorf("%s: failed to iterate rows: %w", op, err)
+		if task.Tags != nil {
+			tagsArray, ok := task.Tags.([]interface{})
+			if ok {
+				tags := make([]string, 0, len(tagsArray))
+				for _, tag := range tagsArray {
+					if t, ok := tag.(string); ok {
+						tags = append(tags, t)
+					}
+				}
+				t.Tags = tags
+			}
+		}
+
+		tasksResp = append(tasksResp, t)
 	}
 
 	if len(tasks) == 0 {
 		return nil, le.ErrNoTasksFound
 	}
 
-	return tasks, nil
+	return tasksResp, nil
 }
 
 func (s *TaskStorage) GetTasksGroupedByHeadings(ctx context.Context, listID, userID string) ([]model.TaskGroup, error) {
-	const (
-		op = "task.storage.GetTasksGroupedByHeadings"
+	const op = "task.storage.GetTasksGroupedByHeadings"
 
-		query = `
-			SELECT
-				h.id AS heading_id,
-				ARRAY_TO_JSON(
-					ARRAY_AGG(
-						JSON_BUILD_OBJECT(
-							'id', t.id,
-							'title', t.title,
-							'description', t.description,
-							'start_date', t.start_date,
-							'deadline', t.deadline,
-							'start_time', t.start_time,
-							'end_time', t.end_time,
-							'heading_id', t.heading_id,
-							'user_id', t.user_id,
-							'tags', tags,
-							'overdue', t.deadline <= CURRENT_DATE,
-							'updated_at', t.updated_at,
-							'deleted_at', t.deleted_at
-						)
-					)
-				) AS tasks
-			FROM headings h
-				LEFT JOIN (
-					SELECT
-						t.id,
-						t.title,
-						t.description,
-						t.start_date,
-						t.deadline,
-						t.start_time,
-						t.end_time,
-						t.heading_id,
-						t.user_id,
-						ARRAY_AGG(tg.title) AS tags,
-						t.updated_at,
-						t.deleted_at
-					FROM tasks t
-						LEFT JOIN tasks_tags tt
-						    ON t.id = tt.task_id
-						LEFT JOIN tags tg
-						    ON tt.tag_id = tg.id
-					WHERE t.list_id = $1
-					  AND t.user_id = $2
-					  AND t.deleted_at IS NULL
-					GROUP BY 
-						t.id,
-						t.title,
-						t.description,
-						t.start_date,
-						t.deadline,
-						t.start_time,
-						t.end_time,
-						t.heading_id,
-						t.user_id,
-						t.updated_at,
-						t.deleted_at
-				) t
-				    ON h.id = t.heading_id
-			WHERE h.list_id = $1
-			  AND h.user_id = $2
-			GROUP BY h.id
-			ORDER BY h.id`
-	)
-
-	var taskGroups []model.TaskGroup
-
-	rows, err := s.Query(ctx, query, listID, userID)
+	groups, err := s.Queries.GetTasksGroupedByHeadings(ctx, GetTasksGroupedByHeadingsParams{
+		ListID: listID,
+		UserID: userID,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("%s: failed to get tasks groups: %w", op, err)
 	}
-	defer rows.Close()
+	if len(groups) == 0 {
+		return nil, le.ErrNoTasksFound
+	}
 
-	for rows.Next() {
+	var taskGroups []model.TaskGroup
+
+	for _, group := range groups {
 		var taskGroup model.TaskGroup
-		var tasksJSON []byte
-
-		err = rows.Scan(&taskGroup.HeadingID, &tasksJSON)
-		if err != nil {
-			return nil, fmt.Errorf("%s: failed to scan task: %w", op, err)
-		}
-
 		var tasks []model.TaskResponseData
 
-		err = json.Unmarshal(tasksJSON, &tasks)
+		err = json.Unmarshal(group.Tasks, &tasks)
 		if err != nil {
-			return nil, fmt.Errorf("%s: failed to unmarshal tasks: %w", op, err)
+			return nil, fmt.Errorf("%s: failed to unmarshal tasks from postgres json object: %w", op, err)
 		}
 
+		taskGroup.HeadingID = group.HeadingID
 		taskGroup.Tasks = tasks
-		taskGroups = append(taskGroups, taskGroup)
-	}
-	if rows.Err() != nil {
-		return nil, fmt.Errorf("%s: failed to iterate rows: %w", op, err)
-	}
 
-	if len(taskGroups) == 0 {
-		return nil, le.ErrNoTasksFound
+		taskGroups = append(taskGroups, taskGroup)
 	}
 
 	return taskGroups, nil
 }
 
 func (s *TaskStorage) GetTasksForToday(ctx context.Context, userID string) ([]model.TaskGroup, error) {
-	const (
-		op = "task.storage.GetTasksForToday"
+	const op = "task.storage.GetTasksForToday"
 
-		query = `
-			SELECT
-			    l.id AS list_id,
-			    ARRAY_TO_JSON(
-					ARRAY_AGG(
-						JSON_BUILD_OBJECT(
-							'id', t.id,
-							'title', t.title,
-							'description', t.description,
-							'start_date', t.start_date,
-							'deadline', t.deadline,
-							'start_time', t.start_time,
-							'end_time', t.end_time,
-							'list_id', t.list_id,
-							'user_id', t.user_id,
-							'tags', tags,
-							'overdue', t.deadline <= CURRENT_DATE,
-							'updated_at', t.updated_at,
-							'deleted_at', t.deleted_at
-						)
-					)
-				) AS tasks
-			FROM lists l
-				LEFT JOIN (
-					SELECT
-						t.id,
-						t.title,
-						t.description,
-						t.start_date,
-						t.deadline,
-						t.start_time,
-						t.end_time,
-						t.list_id,
-						t.user_id,
-						ARRAY_AGG(tg.title) AS tags,
-						t.updated_at,
-						t.deleted_at
-					FROM tasks t
-						LEFT JOIN tasks_tags tt
-							ON t.id = tt.task_id
-						LEFT JOIN tags tg
-							ON tt.tag_id = tg.id
-					WHERE t.user_id = $1
-					  AND t.start_date = CURRENT_DATE
-					  AND t.deleted_at IS NULL
-					GROUP BY 
-						t.id,
-						t.title,
-						t.description,
-						t.start_date,
-						t.deadline,
-						t.start_time,
-						t.end_time,
-						t.list_id,
-						t.user_id,
-						t.updated_at,
-						t.deleted_at
-				) t
-				    ON l.id = t.list_id
-			WHERE l.user_id = $1
-			GROUP BY l.id
-			ORDER BY l.id`
-	)
-
-	var taskGroups []model.TaskGroup
-
-	rows, err := s.Query(ctx, query, userID)
+	groups, err := s.Queries.GetTasksForToday(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("%s: failed to get tasks groups: %w", op, err)
 	}
-	defer rows.Close()
+	if len(groups) == 0 {
+		return nil, le.ErrNoTasksFound
+	}
 
-	for rows.Next() {
+	var taskGroups []model.TaskGroup
+
+	for _, group := range groups {
 		var taskGroup model.TaskGroup
-		var tasksJSON []byte
-
-		err = rows.Scan(&taskGroup.ListID, &tasksJSON)
-		if err != nil {
-			return nil, fmt.Errorf("%s: failed to scan task: %w", op, err)
-		}
-
 		var tasks []model.TaskResponseData
 
-		err = json.Unmarshal(tasksJSON, &tasks)
+		err = json.Unmarshal(group.Tasks, &tasks)
 		if err != nil {
-			return nil, fmt.Errorf("%s: failed to unmarshal tasks: %w", op, err)
+			return nil, fmt.Errorf("%s: failed to unmarshal tasks from postgres json object: %w", op, err)
 		}
 
+		taskGroup.ListID = group.ListID
 		taskGroup.Tasks = tasks
-		taskGroups = append(taskGroups, taskGroup)
-	}
-	if rows.Err() != nil {
-		return nil, fmt.Errorf("%s: failed to iterate rows: %w", op, err)
-	}
 
-	if len(taskGroups) == 0 {
-		return nil, le.ErrNoTasksFound
+		taskGroups = append(taskGroups, taskGroup)
 	}
 
 	return taskGroups, nil
 }
 
 func (s *TaskStorage) GetUpcomingTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error) {
-	const (
-		op = "task.storage.GetUpcomingTasks"
+	const op = "task.storage.GetUpcomingTasks"
 
-		query = `
-			SELECT
-			    t.start_date AS start_date,
-			    ARRAY_TO_JSON(
-					ARRAY_AGG(
-						JSON_BUILD_OBJECT(
-							'id', t.id,
-							'title', t.title,
-							'description', t.description,
-							'start_date', t.start_date,
-							'deadline', t.deadline,
-							'start_time', t.start_time,
-							'end_time', t.end_time,
-							'list_id', t.list_id,
-							'user_id', t.user_id,
-							'tags', tags,
-							'updated_at', t.updated_at,
-							'deleted_at', t.deleted_at
-						)
-					)
-				) AS tasks
-			FROM (
-				SELECT
-					t.id,
-					t.title,
-					t.description,
-					t.start_date,
-					t.deadline,
-					t.start_time,
-					t.end_time,
-					t.list_id,
-					t.user_id,
-					ARRAY_AGG(tg.title) AS tags,
-					t.updated_at,
-					t.deleted_at
-				FROM tasks t
-					LEFT JOIN tasks_tags tt
-					    ON t.id = tt.task_id
-					LEFT JOIN tags tg
-					    ON tt.tag_id = tg.id
-				WHERE t.user_id = $1
-				  AND (
-						(t.start_date >= COALESCE($2, CURRENT_DATE + interval '1 day'))
-						AND (t.deleted_at IS NULL)
-				  		AND (COALESCE(t.start_date, $2) > $2)
-                  )
-				GROUP BY 
-					t.id,
-					t.title,
-					t.description,
-					t.start_date,
-					t.deadline,
-					t.start_time,
-					t.end_time,
-					t.list_id,
-					t.user_id,
-					t.updated_at,
-					t.deleted_at
-			) t
-			GROUP BY t.start_date
-			ORDER BY t.start_date
-			LIMIT $3`
-	)
+	var afterDate time.Time
 
-	var params []interface{}
-	var afterDate interface{}
-
-	if pgn.AfterID != "" {
+	if pgn.AfterDate.IsZero() {
+		afterDate = time.Now()
+	} else {
 		afterDate = pgn.AfterDate
 	}
 
-	params = append(params, userID, afterDate, pgn.Limit)
-
-	rows, err := s.Query(ctx, query, params...)
+	groups, err := s.Queries.GetUpcomingTasks(ctx, GetUpcomingTasksParams{
+		UserID: userID,
+		AfterDate: pgtype.Timestamptz{
+			Valid: true,
+			Time:  afterDate,
+		},
+		Limit: pgn.Limit,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("%s: failed to get tasks groups: %w", op, err)
 	}
-	defer rows.Close()
+	if len(groups) == 0 {
+		return nil, le.ErrNoTasksFound
+	}
 
 	var taskGroups []model.TaskGroup
 
-	for rows.Next() {
+	for _, group := range groups {
 		var taskGroup model.TaskGroup
-		var tasksJSON []byte
-
-		err = rows.Scan(&taskGroup.StartDate, &tasksJSON)
-		if err != nil {
-			return nil, fmt.Errorf("%s: failed to scan task: %w", op, err)
-		}
-
 		var tasks []model.TaskResponseData
 
-		err = json.Unmarshal(tasksJSON, &tasks)
+		err = json.Unmarshal(group.Tasks, &tasks)
 		if err != nil {
-			return nil, fmt.Errorf("%s: failed to unmarshal tasks: %w", op, err)
+			return nil, fmt.Errorf("%s: failed to unmarshal tasks from postgres json object: %w", op, err)
 		}
 
+		taskGroup.StartDate = group.StartDate.Time
 		taskGroup.Tasks = tasks
-		taskGroups = append(taskGroups, taskGroup)
-	}
-	if rows.Err() != nil {
-		return nil, fmt.Errorf("%s: failed to iterate rows: %w", op, err)
-	}
 
-	if len(taskGroups) == 0 {
-		return nil, le.ErrNoTasksFound
+		taskGroups = append(taskGroups, taskGroup)
 	}
 
 	return taskGroups, nil
 }
 
 func (s *TaskStorage) GetOverdueTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error) {
-	const (
-		op = "task.storage.GetOverdueTasks"
+	const op = "task.storage.GetOverdueTasks"
 
-		query = `
-			SELECT
-			    l.id AS list_id,
-			    ARRAY_TO_JSON(
-					ARRAY_AGG(
-						JSON_BUILD_OBJECT(
-							'id', t.id,
-							'title', t.title,
-							'description', t.description,
-							'start_date', t.start_date,
-							'deadline', t.deadline,
-							'start_time', t.start_time,
-							'end_time', t.end_time,
-							'list_id', t.list_id,
-							'user_id', t.user_id,
-							'tags', tags,
-							'overdue', t.deadline <= CURRENT_DATE,
-							'updated_at', t.updated_at,
-							'deleted_at', t.deleted_at
-						)
-					)
-				) AS tasks
-			FROM lists l
-			LEFT JOIN (
-				SELECT
-					t.id,
-					t.title,
-					t.description,
-					t.start_date,
-					t.deadline,
-					t.start_time,
-					t.end_time,
-					t.list_id,
-					t.user_id,
-					ARRAY_AGG(tg.title) AS tags,
-					t.updated_at,
-					t.deleted_at
-				FROM tasks t
-					LEFT JOIN tasks_tags tt
-					    ON t.id = tt.task_id
-					LEFT JOIN tags tg
-					    ON tt.tag_id = tg.id
-				WHERE t.user_id = $1
-				  AND t.deadline <= CURRENT_DATE
-				  AND (t.deleted_at IS NULL OR l.id > $2)
-				GROUP BY 
-					t.id,
-					t.title,
-					t.description,
-					t.start_date,
-					t.deadline,
-					t.start_time,
-					t.end_time,
-					t.list_id,
-					t.user_id,
-					t.updated_at,
-					t.deleted_at
-			) t ON l.id = t.list_id
-			WHERE l.user_id = $1
-			GROUP BY l.id
-			ORDER BY l.id
-			LIMIT $3`
-	)
-
-	rows, err := s.Query(ctx, query, userID, pgn.AfterID, pgn.Limit)
+	groups, err := s.Queries.GetOverdueTasks(ctx, GetOverdueTasksParams{
+		UserID:  userID,
+		Limit:   pgn.Limit,
+		AfterID: pgn.AfterID,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("%s: failed to get tasks groups: %w", op, err)
 	}
-	defer rows.Close()
+	if len(groups) == 0 {
+		return nil, le.ErrNoTasksFound
+	}
 
 	var taskGroups []model.TaskGroup
 
-	for rows.Next() {
+	for _, group := range groups {
 		var taskGroup model.TaskGroup
-		var tasksJSON []byte
-
-		err = rows.Scan(&taskGroup.ListID, &tasksJSON)
-		if err != nil {
-			return nil, fmt.Errorf("%s: failed to scan task: %w", op, err)
-		}
-
 		var tasks []model.TaskResponseData
 
-		err = json.Unmarshal(tasksJSON, &tasks)
+		err = json.Unmarshal(group.Tasks, &tasks)
 		if err != nil {
-			return nil, fmt.Errorf("%s: failed to unmarshal tasks: %w", op, err)
+			return nil, fmt.Errorf("%s: failed to unmarshal tasks from postgres json object: %w", op, err)
 		}
 
+		taskGroup.ListID = group.ListID
 		taskGroup.Tasks = tasks
-		taskGroups = append(taskGroups, taskGroup)
-	}
-	if rows.Err() != nil {
-		return nil, fmt.Errorf("%s: failed to iterate rows: %w", op, err)
-	}
 
-	if len(taskGroups) == 0 {
-		return nil, le.ErrNoTasksFound
+		taskGroups = append(taskGroups, taskGroup)
 	}
 
 	return taskGroups, nil
 }
 
 func (s *TaskStorage) GetTasksForSomeday(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error) {
-	const (
-		op = "task.storage.GetTasksForSomeday"
+	const op = "task.storage.GetTasksForSomeday"
 
-		query = `
-			SELECT
-			    l.id AS list_id,
-			    ARRAY_TO_JSON(
-					ARRAY_AGG(
-						JSON_BUILD_OBJECT(
-							'id', t.id,
-							'title', t.title,
-							'description', t.description,
-							'deadline', t.deadline,
-							'start_time', t.start_time,
-							'end_time', t.end_time,
-							'list_id', t.list_id,
-							'user_id', t.user_id,
-							'tags', tags,
-							'overdue', t.deadline <= CURRENT_DATE,
-							'updated_at', t.updated_at,
-							'deleted_at', t.deleted_at
-						)
-					)
-				) AS tasks
-			FROM lists l
-			LEFT JOIN (
-				SELECT
-					t.id,
-					t.title,
-					t.description,
-					t.deadline,
-					t.start_time,
-					t.end_time,
-					t.list_id,
-					t.user_id,
-					ARRAY_AGG(tg.title) AS tags,
-					t.updated_at,
-					t.deleted_at
-				FROM tasks t
-					LEFT JOIN tasks_tags tt
-					    ON t.id = tt.task_id
-					LEFT JOIN tags tg
-					    ON tt.tag_id = tg.id
-				WHERE t.user_id = $1
-				  AND t.start_date IS NULL
-				  AND t.deadline > CURRENT_DATE
-				  AND (t.deleted_at IS NULL OR l.id > $2)
-				GROUP BY 
-					t.id,
-					t.title,
-					t.description,
-					t.deadline,
-					t.start_time,
-					t.end_time,
-					t.list_id,
-					t.user_id,
-					t.updated_at,
-					t.deleted_at
-			) t ON l.id = t.list_id
-			WHERE l.user_id = $1
-			GROUP BY l.id
-			ORDER BY l.id
-			LIMIT $3`
-	)
+	var afterDate time.Time
 
-	rows, err := s.Query(ctx, query, userID, pgn.AfterID, pgn.Limit)
+	if pgn.AfterDate.IsZero() {
+		afterDate = time.Now()
+	} else {
+		afterDate = pgn.AfterDate
+	}
+
+	groups, err := s.Queries.GetUpcomingTasks(ctx, GetUpcomingTasksParams{
+		UserID: userID,
+		AfterDate: pgtype.Timestamptz{
+			Valid: true,
+			Time:  afterDate,
+		},
+		Limit: pgn.Limit,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("%s: failed to get tasks groups: %w", op, err)
 	}
-	defer rows.Close()
+	if len(groups) == 0 {
+		return nil, le.ErrNoTasksFound
+	}
 
 	var taskGroups []model.TaskGroup
 
-	for rows.Next() {
+	for _, group := range groups {
 		var taskGroup model.TaskGroup
-		var tasksJSON []byte
-
-		err = rows.Scan(&taskGroup.ListID, &tasksJSON)
-		if err != nil {
-			return nil, fmt.Errorf("%s: failed to scan task: %w", op, err)
-		}
-
 		var tasks []model.TaskResponseData
 
-		err = json.Unmarshal(tasksJSON, &tasks)
+		err = json.Unmarshal(group.Tasks, &tasks)
 		if err != nil {
-			return nil, fmt.Errorf("%s: failed to unmarshal tasks: %w", op, err)
+			return nil, fmt.Errorf("%s: failed to unmarshal tasks from postgres json object: %w", op, err)
 		}
 
+		if group.StartDate.Valid {
+			taskGroup.StartDate = group.StartDate.Time
+		}
 		taskGroup.Tasks = tasks
-		taskGroups = append(taskGroups, taskGroup)
-	}
-	if rows.Err() != nil {
-		return nil, fmt.Errorf("%s: failed to iterate rows: %w", op, err)
-	}
 
-	if len(taskGroups) == 0 {
-		return nil, le.ErrNoTasksFound
+		taskGroups = append(taskGroups, taskGroup)
 	}
 
 	return taskGroups, nil
 }
 
 func (s *TaskStorage) GetCompletedTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error) {
-	const (
-		op    = "task.storage.GetCompletedTasks"
-		query = `
-			SELECT
-			    DATE_TRUNC('month', t.updated_at) AS month,
-			    ARRAY_TO_JSON(
-					ARRAY_AGG(
-						JSON_BUILD_OBJECT(
-							'id', t.id,
-							'title', t.title,
-							'description', t.description,
-							'start_date', t.start_date,
-							'deadline', t.deadline,
-							'start_time', t.start_time,
-							'end_time', t.end_time,
-							'list_id', t.list_id,
-							'user_id', t.user_id,
-							'tags', tags,
-							'updated_at', t.updated_at,
-							'deleted_at', t.deleted_at
-						)
-					)
-				) AS tasks
-			FROM (
-				SELECT
-					t.id,
-					t.title,
-					t.description,
-					t.start_date,
-					t.deadline,
-					t.start_time,
-					t.end_time,
-					t.list_id,
-					t.user_id,
-					ARRAY_AGG(tg.title) AS tags,
-					t.updated_at,
-					t.deleted_at
-				FROM tasks t
-					LEFT JOIN tasks_tags tt
-					    ON t.id = tt.task_id
-					LEFT JOIN tags tg
-					    ON tt.tag_id = tg.id
-				WHERE t.user_id = $1
-				  AND t.status_id = (
-				  		SELECT id
-				    	FROM statuses
-				    	WHERE status_name = $2
-				  ) 
-				  AND (t.deleted_at IS NULL
-				           OR (DATE_TRUNC('month', t.updated_at) > $3 AND t.deleted_at IS NULL))
-				GROUP BY 
-					t.id,
-					t.title,
-					t.description,
-					t.start_date,
-					t.deadline,
-					t.start_time,
-					t.end_time,
-					t.list_id,
-					t.user_id,
-					t.updated_at,
-					t.deleted_at
-			) t
-			GROUP BY month
-			ORDER BY month
-			LIMIT $4`
-	)
+	const op = "task.storage.GetCompletedTasks"
 
-	queryParams := []interface{}{userID, model.StatusCompleted}
+	var afterDate time.Time
 
-	if pgn.AfterID != "" {
-		queryParams = append(queryParams, pgn.AfterDate)
+	if pgn.AfterDate.IsZero() {
+		afterDate = time.Now()
 	} else {
-		queryParams = append(queryParams, nil)
+		afterDate = pgn.AfterDate
 	}
 
-	queryParams = append(queryParams, pgn.Limit)
-
-	rows, err := s.Query(ctx, query, queryParams...)
+	groups, err := s.Queries.GetCompletedTasks(ctx, GetCompletedTasksParams{
+		UserID:      userID,
+		Limit:       pgn.Limit,
+		StatusTitle: model.StatusCompleted.String(),
+		AfterDate: pgtype.Timestamptz{
+			Valid: true,
+			Time:  afterDate,
+		},
+	})
 	if err != nil {
 		return nil, fmt.Errorf("%s: failed to get tasks groups: %w", op, err)
 	}
-	defer rows.Close()
+	if len(groups) == 0 {
+		return nil, le.ErrNoTasksFound
+	}
 
 	var taskGroups []model.TaskGroup
 
-	for rows.Next() {
+	for _, group := range groups {
 		var taskGroup model.TaskGroup
-		var tasksJSON []byte
-
-		err = rows.Scan(&taskGroup.Month, &tasksJSON)
-		if err != nil {
-			return nil, fmt.Errorf("%s: failed to scan task: %w", op, err)
-		}
-
 		var tasks []model.TaskResponseData
 
-		err = json.Unmarshal(tasksJSON, &tasks)
+		err = json.Unmarshal(group.Tasks, &tasks)
 		if err != nil {
-			return nil, fmt.Errorf("%s: failed to unmarshal tasks: %w", op, err)
+			return nil, fmt.Errorf("%s: failed to unmarshal tasks from postgres json object: %w", op, err)
 		}
 
+		// TODO: check the response for this field
+		if group.Month.Valid {
+			taskGroup.Month = group.Month.Months
+		}
 		taskGroup.Tasks = tasks
-		taskGroups = append(taskGroups, taskGroup)
-	}
-	if rows.Err() != nil {
-		return nil, fmt.Errorf("%s: failed to iterate rows: %w", op, err)
-	}
 
-	if len(taskGroups) == 0 {
-		return nil, le.ErrNoTasksFound
+		taskGroups = append(taskGroups, taskGroup)
 	}
 
 	return taskGroups, nil
 }
 
 func (s *TaskStorage) GetArchivedTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error) {
-	const (
-		op = "task.storage.GetArchivedTasks"
+	const op = "task.storage.GetArchivedTasks"
 
-		query = `
-			SELECT
-			    DATE_TRUNC('month', t.updated_at) AS month,
-			    ARRAY_TO_JSON(
-					ARRAY_AGG(
-						JSON_BUILD_OBJECT(
-							'id', t.id,
-							'title', t.title,
-							'description', t.description,
-							'start_date', t.start_date,
-							'deadline', t.deadline,
-							'start_time', t.start_time,
-							'end_time', t.end_time,
-							'list_id', t.list_id,
-							'user_id', t.user_id,
-							'tags', tags,
-							'updated_at', t.updated_at,
-							'deleted_at', t.deleted_at
-						)
-					)
-				) AS tasks
-			FROM (
-				SELECT
-					t.id,
-					t.title,
-					t.description,
-					t.start_date,
-					t.deadline,
-					t.start_time,
-					t.end_time,
-					t.list_id,
-					t.user_id,
-					ARRAY_AGG(tg.title) AS tags,
-					t.updated_at,
-					t.deleted_at
-				FROM tasks t
-				LEFT JOIN tasks_tags tt ON t.id = tt.task_id
-				LEFT JOIN tags tg ON tt.tag_id = tg.id
-				WHERE t.user_id = $1
-				  AND t.status_id = (
-						SELECT id
-				    	FROM statuses
-				    	WHERE status_name = $2
-				  )
-				  AND (t.deleted_at IS NULL 
-						OR (DATE_TRUNC('month', t.updated_at) > $3 AND t.deleted_at IS NULL)
-				  )
-				GROUP BY 
-					t.id,
-					t.title,
-					t.description,
-					t.start_date,
-					t.deadline,
-					t.start_time,
-					t.end_time,
-					t.list_id,
-					t.user_id,
-					t.updated_at,
-					t.deleted_at
-			) t
-			GROUP BY month
-			ORDER BY month
-			LIMIT $4`
-	)
+	var afterMonth time.Time
 
-	queryParams := []interface{}{userID, model.StatusCompleted}
-
-	if pgn.AfterID != "" {
-		queryParams = append(queryParams, pgn.AfterDate)
+	if pgn.AfterDate.IsZero() {
+		afterMonth = time.Now().Truncate(24 * time.Hour)
 	} else {
-		queryParams = append(queryParams, nil)
+		afterMonth = pgn.AfterDate
 	}
 
-	queryParams = append(queryParams, pgn.Limit)
-
-	rows, err := s.Query(ctx, query, queryParams...)
+	groups, err := s.Queries.GetArchivedTasks(ctx, GetArchivedTasksParams{
+		UserID:      userID,
+		Limit:       pgn.Limit,
+		StatusTitle: model.StatusArchived.String(),
+		AfterMonth: pgtype.Timestamptz{
+			Valid: true,
+			Time:  afterMonth,
+		},
+	})
 	if err != nil {
 		return nil, fmt.Errorf("%s: failed to get tasks groups: %w", op, err)
 	}
-	defer rows.Close()
-
-	var taskGroups []model.TaskGroup
-
-	for rows.Next() {
-		var taskGroup model.TaskGroup
-		var tasksJSON []byte
-
-		err = rows.Scan(&taskGroup.Month, &tasksJSON)
-		if err != nil {
-			return nil, fmt.Errorf("%s: failed to scan task: %w", op, err)
-		}
-
-		var tasks []model.TaskResponseData
-
-		err = json.Unmarshal(tasksJSON, &tasks)
-		if err != nil {
-			return nil, fmt.Errorf("%s: failed to unmarshal tasks: %w", op, err)
-		}
-
-		taskGroup.Tasks = tasks
-		taskGroups = append(taskGroups, taskGroup)
-	}
-	if rows.Err() != nil {
-		return nil, fmt.Errorf("%s: failed to iterate rows: %w", op, err)
-	}
-
-	if len(taskGroups) == 0 {
+	if len(groups) == 0 {
 		return nil, le.ErrNoTasksFound
 	}
 
+	var taskGroups []model.TaskGroup
+
+	for _, group := range groups {
+		var taskGroup model.TaskGroup
+		var tasks []model.TaskResponseData
+
+		err = json.Unmarshal(group.Tasks, &tasks)
+		if err != nil {
+			return nil, fmt.Errorf("%s: failed to unmarshal tasks from postgres json object: %w", op, err)
+		}
+
+		// TODO: check the response for this field
+		if group.Month.Valid {
+			taskGroup.Month = group.Month.Months
+		}
+		taskGroup.Tasks = tasks
+
+		taskGroups = append(taskGroups, taskGroup)
+	}
 	return taskGroups, nil
 }
 
@@ -1188,7 +610,7 @@ func (s *TaskStorage) UpdateTask(ctx context.Context, task model.Task) error {
 	queryParams = append(queryParams, task.UserID)
 
 	// Execute the update query
-	result, err := s.ExecSQL(ctx, queryUpdate, queryParams...)
+	result, err := s.Exec(ctx, queryUpdate, queryParams...)
 	if err != nil {
 		return fmt.Errorf("%s: failed to update task: %w", op, err)
 	}
@@ -1245,97 +667,47 @@ func (s *TaskStorage) UpdateTaskTime(ctx context.Context, task model.Task) error
 }
 
 func (s *TaskStorage) MoveTaskToAnotherList(ctx context.Context, task model.Task) error {
-	const (
-		op = "task.storage.MoveTaskToAnotherList"
+	const op = "task.storage.MoveTaskToAnotherList"
 
-		query = `
-			UPDATE tasks
-			SET	list_id = $1,
-				heading_id = $2,
-				updated_at = $3
-			WHERE id = $4
-			  AND user_id = $5
-			  AND deleted_at IS NULL`
-	)
-
-	result, err := s.Exec(
-		ctx,
-		query,
-		task.ListID,
-		task.HeadingID,
-		task.UpdatedAt,
-		task.ID,
-		task.UserID,
-	)
-	if err != nil {
+	if err := s.Queries.MoveTaskToAnotherList(ctx, MoveTaskToAnotherListParams{
+		ListID:    task.ListID,
+		HeadingID: task.HeadingID,
+		UpdatedAt: task.UpdatedAt,
+		ID:        task.ID,
+		UserID:    task.UserID,
+	}); err != nil {
 		return fmt.Errorf("%s: failed to move task: %w", op, err)
 	}
-
-	if result.RowsAffected() == 0 {
-		return le.ErrTaskNotFound
-	}
-
 	return nil
 }
 
 func (s *TaskStorage) MarkAsCompleted(ctx context.Context, task model.Task) error {
-	const (
-		op = "task.storage.MarkAsCompleted"
+	const op = "task.storage.MarkAsCompleted"
 
-		query = `
-			UPDATE tasks
-			SET	status_id = $1, updated_at = $2
-			WHERE id = $3
-			  AND user_id = $4
-			  AND deleted_at IS NULL`
-	)
-
-	result, err := s.Exec(
-		ctx,
-		query,
-		task.StatusID,
-		task.UpdatedAt,
-		task.ID,
-		task.UserID,
-	)
-	if err != nil {
+	if err := s.Queries.MarkTaskAsCompleted(ctx, MarkTaskAsCompletedParams{
+		StatusID:  int32(task.StatusID),
+		UpdatedAt: task.UpdatedAt,
+		ID:        task.ID,
+		UserID:    task.UserID,
+	}); err != nil {
 		return fmt.Errorf("%s: failed to update task: %w", op, err)
 	}
-
-	if result.RowsAffected() == 0 {
-		return le.ErrTaskNotFound
-	}
-
 	return nil
 }
 
 func (s *TaskStorage) MarkAsArchived(ctx context.Context, task model.Task) error {
-	const (
-		op = "task.storage.MarkAsArchived"
+	const op = "task.storage.MarkAsArchived"
 
-		query = `
-			UPDATE tasks
-			SET status_id = $1, deleted_at = $2
-			WHERE id = $3
-			  AND user_id = $4
-			  AND deleted_at IS NULL`
-	)
-
-	result, err := s.Exec(
-		ctx,
-		query,
-		task.StatusID,
-		task.UpdatedAt,
-		task.ID,
-		task.UserID,
-	)
-	if err != nil {
-		return fmt.Errorf("%s: failed to delete task: %w", op, err)
+	if err := s.Queries.MarkTaskAsArchived(ctx, MarkTaskAsArchivedParams{
+		StatusID: int32(task.StatusID),
+		DeletedAt: pgtype.Timestamptz{
+			Valid: true,
+			Time:  task.DeletedAt,
+		},
+		ID:     task.ID,
+		UserID: task.UserID,
+	}); err != nil {
+		return fmt.Errorf("%s: failed to update task: %w", op, err)
 	}
-
-	if result.RowsAffected() == 0 {
-		return le.ErrTaskNotFound
-	}
-
 	return nil
 }

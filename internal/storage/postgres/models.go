@@ -6,6 +6,7 @@ package postgres
 
 import (
 	"database/sql"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -16,7 +17,7 @@ type Heading struct {
 	ListID    string             `db:"list_id"`
 	UserID    string             `db:"user_id"`
 	IsDefault bool               `db:"is_default"`
-	UpdatedAt pgtype.Timestamptz `db:"updated_at"`
+	UpdatedAt time.Time          `db:"updated_at"`
 	DeletedAt pgtype.Timestamptz `db:"deleted_at"`
 }
 
@@ -24,17 +25,17 @@ type List struct {
 	ID        string             `db:"id"`
 	Title     string             `db:"title"`
 	UserID    string             `db:"user_id"`
-	UpdatedAt pgtype.Timestamptz `db:"updated_at"`
+	UpdatedAt time.Time          `db:"updated_at"`
 	DeletedAt pgtype.Timestamptz `db:"deleted_at"`
 }
 
 type RefreshSession struct {
-	ID           int32              `db:"id"`
-	UserID       pgtype.Text        `db:"user_id"`
-	DeviceID     string             `db:"device_id"`
-	RefreshToken string             `db:"refresh_token"`
-	LastVisitAt  pgtype.Timestamptz `db:"last_visit_at"`
-	ExpiresAt    pgtype.Timestamptz `db:"expires_at"`
+	ID           int32     `db:"id"`
+	UserID       string    `db:"user_id"`
+	DeviceID     string    `db:"device_id"`
+	RefreshToken string    `db:"refresh_token"`
+	LastVisitAt  time.Time `db:"last_visit_at"`
+	ExpiresAt    time.Time `db:"expires_at"`
 }
 
 type Reminder struct {
@@ -43,7 +44,7 @@ type Reminder struct {
 	Read      bool               `db:"read"`
 	TaskID    string             `db:"task_id"`
 	UserID    string             `db:"user_id"`
-	UpdatedAt pgtype.Timestamptz `db:"updated_at"`
+	UpdatedAt time.Time          `db:"updated_at"`
 	DeletedAt pgtype.Timestamptz `db:"deleted_at"`
 }
 
@@ -61,7 +62,7 @@ type Tag struct {
 	ID        string             `db:"id"`
 	Title     string             `db:"title"`
 	UserID    string             `db:"user_id"`
-	UpdatedAt pgtype.Timestamptz `db:"updated_at"`
+	UpdatedAt time.Time          `db:"updated_at"`
 	DeletedAt pgtype.Timestamptz `db:"deleted_at"`
 }
 
@@ -75,10 +76,15 @@ type Task struct {
 	EndTime     sql.NullTime       `db:"end_time"`
 	StatusID    int32              `db:"status_id"`
 	ListID      string             `db:"list_id"`
-	HeadingID   pgtype.Text        `db:"heading_id"`
+	HeadingID   string             `db:"heading_id"`
 	UserID      string             `db:"user_id"`
-	UpdatedAt   pgtype.Timestamptz `db:"updated_at"`
+	UpdatedAt   time.Time          `db:"updated_at"`
 	DeletedAt   pgtype.Timestamptz `db:"deleted_at"`
+}
+
+type TaskTagsView struct {
+	TaskID string      `db:"task_id"`
+	Tags   interface{} `db:"tags"`
 }
 
 type TasksTag struct {
@@ -90,7 +96,7 @@ type User struct {
 	ID           string             `db:"id"`
 	Email        string             `db:"email"`
 	PasswordHash string             `db:"password_hash"`
-	UpdatedAt    pgtype.Timestamptz `db:"updated_at"`
+	UpdatedAt    time.Time          `db:"updated_at"`
 	DeletedAt    pgtype.Timestamptz `db:"deleted_at"`
 }
 
@@ -100,6 +106,6 @@ type UserDevice struct {
 	UserAgent     string             `db:"user_agent"`
 	Ip            string             `db:"ip"`
 	Detached      bool               `db:"detached"`
-	LatestLoginAt pgtype.Timestamptz `db:"latest_login_at"`
+	LatestLoginAt time.Time          `db:"latest_login_at"`
 	DetachedAt    pgtype.Timestamptz `db:"detached_at"`
 }

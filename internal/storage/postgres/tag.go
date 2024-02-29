@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rshelekhov/reframed/internal/model"
 	"github.com/rshelekhov/reframed/internal/port"
@@ -28,12 +27,10 @@ func (s *TagStorage) CreateTag(ctx context.Context, tag model.Tag) error {
 	const op = "tag.storage.CreateTag"
 
 	if err := s.Queries.CreateTag(ctx, CreateTagParams{
-		ID:     tag.ID,
-		Title:  tag.Title,
-		UserID: tag.UserID,
-		UpdatedAt: pgtype.Timestamptz{
-			Time: tag.UpdatedAt,
-		},
+		ID:        tag.ID,
+		Title:     tag.Title,
+		UserID:    tag.UserID,
+		UpdatedAt: tag.UpdatedAt,
 	}); err != nil {
 		return fmt.Errorf("%s: failed to insert tag: %w", op, err)
 	}
@@ -102,7 +99,7 @@ func (s *TagStorage) GetTagsByUserID(ctx context.Context, userID string) ([]mode
 		tags = append(tags, model.Tag{
 			ID:        item.ID,
 			Title:     item.Title,
-			UpdatedAt: item.UpdatedAt.Time,
+			UpdatedAt: item.UpdatedAt,
 		})
 	}
 	return tags, nil
@@ -125,7 +122,7 @@ func (s *TagStorage) GetTagsByTaskID(ctx context.Context, taskID string) ([]mode
 		tagsTitles = append(tagsTitles, model.Tag{
 			ID:        tag.ID,
 			Title:     tag.Title,
-			UpdatedAt: tag.UpdatedAt.Time,
+			UpdatedAt: tag.UpdatedAt,
 		})
 	}
 	return tagsTitles, nil

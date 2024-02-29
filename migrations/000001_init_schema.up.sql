@@ -12,7 +12,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_active_users ON users (email) WHERE delete
 CREATE TABLE IF NOT EXISTS refresh_sessions
 (
     id            SERIAL PRIMARY KEY,
-    user_id       character varying,
+    user_id       character varying NOT NULL,
     device_id     character varying NOT NULL,
     refresh_token character varying NOT NULL,
     last_visit_at timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
@@ -56,14 +56,13 @@ CREATE TABLE IF NOT EXISTS tasks
     end_time    time WITH TIME ZONE,
     status_id   int NOT NULL,
     list_id     character varying NOT NULL,
-    heading_id  character varying,
+    heading_id  character varying NOT NULL,
     user_id     character varying NOT NULL,
     updated_at  timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
     deleted_at  timestamp WITH TIME ZONE DEFAULT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_task_user_id ON tasks(user_id);
-
 
 CREATE TABLE IF NOT EXISTS statuses
 (
@@ -81,7 +80,6 @@ CREATE TABLE IF NOT EXISTS headings
     updated_at timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
     deleted_at timestamp WITH TIME ZONE DEFAULT NULL
 );
-
 
 CREATE TABLE IF NOT EXISTS tags
 (

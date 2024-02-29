@@ -76,9 +76,7 @@ func (s *AuthStorage) replaceSoftDeletedUser(ctx context.Context, user model.Use
 		ID:           user.ID,
 		Email:        user.Email,
 		PasswordHash: user.PasswordHash,
-		UpdatedAt: pgtype.Timestamptz{
-			Time: user.UpdatedAt,
-		},
+		UpdatedAt:    user.UpdatedAt,
 	}); err != nil {
 		return fmt.Errorf("%s: failed to replace soft deleted user: %w", op, err)
 	}
@@ -93,9 +91,7 @@ func (s *AuthStorage) insertUser(ctx context.Context, user model.User) error {
 		ID:           user.ID,
 		Email:        user.Email,
 		PasswordHash: user.PasswordHash,
-		UpdatedAt: pgtype.Timestamptz{
-			Time: user.UpdatedAt,
-		},
+		UpdatedAt:    user.UpdatedAt,
 	}); err != nil {
 		return fmt.Errorf("%s: failed to insert new user: %w", op, err)
 	}
@@ -106,10 +102,8 @@ func (s *AuthStorage) UpdateLatestLoginAt(ctx context.Context, deviceID string, 
 	const op = "user.storage.UpdateLatestLoginAt"
 
 	if err := s.Queries.UpdateLatestLoginAt(ctx, UpdateLatestLoginAtParams{
-		ID: deviceID,
-		LatestLoginAt: pgtype.Timestamptz{
-			Time: latestLoginAt,
-		},
+		ID:            deviceID,
+		LatestLoginAt: latestLoginAt,
 	}); err != nil {
 		return fmt.Errorf("%s: failed to update latest login at: %w", op, err)
 	}
@@ -131,7 +125,7 @@ func (s *AuthStorage) GetUserByEmail(ctx context.Context, email string) (model.U
 	return model.User{
 		ID:        user.ID,
 		Email:     user.Email,
-		UpdatedAt: user.UpdatedAt.Time,
+		UpdatedAt: user.UpdatedAt,
 	}, nil
 }
 
@@ -151,7 +145,7 @@ func (s *AuthStorage) GetUserData(ctx context.Context, userID string) (model.Use
 		ID:           user.ID,
 		Email:        user.Email,
 		PasswordHash: user.PasswordHash,
-		UpdatedAt:    user.UpdatedAt.Time,
+		UpdatedAt:    user.UpdatedAt,
 	}, nil
 }
 
@@ -170,7 +164,7 @@ func (s *AuthStorage) GetUserByID(ctx context.Context, userID string) (model.Use
 	return model.User{
 		ID:        user.ID,
 		Email:     user.Email,
-		UpdatedAt: user.UpdatedAt.Time,
+		UpdatedAt: user.UpdatedAt,
 	}, nil
 }
 
@@ -250,14 +244,12 @@ func (s *AuthStorage) AddDevice(ctx context.Context, device model.UserDevice) er
 	const op = "user.storage.AddDevice"
 
 	if err := s.Queries.AddDevice(ctx, AddDeviceParams{
-		ID:        device.ID,
-		UserID:    device.UserID,
-		UserAgent: device.UserAgent,
-		Ip:        device.IP,
-		Detached:  device.Detached,
-		LatestLoginAt: pgtype.Timestamptz{
-			Time: device.LatestLoginAt,
-		},
+		ID:            device.ID,
+		UserID:        device.UserID,
+		UserAgent:     device.UserAgent,
+		Ip:            device.IP,
+		Detached:      device.Detached,
+		LatestLoginAt: device.LatestLoginAt,
 	}); err != nil {
 		return fmt.Errorf("%s: failed to add device: %w", op, err)
 	}
@@ -288,16 +280,10 @@ func (s *AuthStorage) SaveSession(ctx context.Context, session model.Session) er
 
 	if err := s.Queries.SaveSession(ctx, SaveSessionParams{
 		RefreshToken: session.RefreshToken,
-		UserID: pgtype.Text{
-			String: session.UserID,
-		},
-		DeviceID: session.DeviceID,
-		LastVisitAt: pgtype.Timestamptz{
-			Time: session.LastVisitAt,
-		},
-		ExpiresAt: pgtype.Timestamptz{
-			Time: session.ExpiresAt,
-		},
+		UserID:       session.UserID,
+		DeviceID:     session.DeviceID,
+		LastVisitAt:  session.LastVisitAt,
+		ExpiresAt:    session.ExpiresAt,
 	}); err != nil {
 		return fmt.Errorf("%s: failed to save session: %w", op, err)
 	}
@@ -317,11 +303,11 @@ func (s *AuthStorage) GetSessionByRefreshToken(ctx context.Context, refreshToken
 	}
 
 	return model.Session{
-		UserID:       session.UserID.String,
+		UserID:       session.UserID,
 		DeviceID:     session.DeviceID,
 		RefreshToken: refreshToken,
-		LastVisitAt:  session.LastVisitAt.Time,
-		ExpiresAt:    session.ExpiresAt.Time,
+		LastVisitAt:  session.LastVisitAt,
+		ExpiresAt:    session.ExpiresAt,
 	}, nil
 }
 
@@ -338,9 +324,7 @@ func (s *AuthStorage) DeleteSession(ctx context.Context, userID, deviceID string
 	const op = "user.storage.DeleteSession"
 
 	err := s.Queries.DeleteSession(ctx, DeleteSessionParams{
-		UserID: pgtype.Text{
-			String: userID,
-		},
+		UserID:   userID,
 		DeviceID: deviceID,
 	})
 

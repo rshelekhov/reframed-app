@@ -335,7 +335,7 @@ func (u *TaskUsecase) CompleteTask(ctx context.Context, data model.TaskRequestDa
 		ID:        data.ID,
 		StatusID:  data.StatusID,
 		UserID:    data.UserID,
-		UpdatedAt: time.Now(),
+		DeletedAt: time.Now(),
 	})
 }
 

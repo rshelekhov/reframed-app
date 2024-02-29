@@ -7,6 +7,7 @@ package postgres
 
 import (
 	"context"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -18,12 +19,12 @@ VALUES ($1, $2, $3, $4, $5, $6)
 `
 
 type AddDeviceParams struct {
-	ID            string             `db:"id"`
-	UserID        string             `db:"user_id"`
-	UserAgent     string             `db:"user_agent"`
-	Ip            string             `db:"ip"`
-	Detached      bool               `db:"detached"`
-	LatestLoginAt pgtype.Timestamptz `db:"latest_login_at"`
+	ID            string    `db:"id"`
+	UserID        string    `db:"user_id"`
+	UserAgent     string    `db:"user_agent"`
+	Ip            string    `db:"ip"`
+	Detached      bool      `db:"detached"`
+	LatestLoginAt time.Time `db:"latest_login_at"`
 }
 
 // SQL queries for user sessions
@@ -56,8 +57,8 @@ WHERE user_id = $1
 `
 
 type DeleteSessionParams struct {
-	UserID   pgtype.Text `db:"user_id"`
-	DeviceID string      `db:"device_id"`
+	UserID   string `db:"user_id"`
+	DeviceID string `db:"device_id"`
 }
 
 func (q *Queries) DeleteSession(ctx context.Context, arg DeleteSessionParams) error {
@@ -89,10 +90,10 @@ WHERE refresh_token = $1
 `
 
 type GetSessionByRefreshTokenRow struct {
-	UserID      pgtype.Text        `db:"user_id"`
-	DeviceID    string             `db:"device_id"`
-	LastVisitAt pgtype.Timestamptz `db:"last_visit_at"`
-	ExpiresAt   pgtype.Timestamptz `db:"expires_at"`
+	UserID      string    `db:"user_id"`
+	DeviceID    string    `db:"device_id"`
+	LastVisitAt time.Time `db:"last_visit_at"`
+	ExpiresAt   time.Time `db:"expires_at"`
 }
 
 func (q *Queries) GetSessionByRefreshToken(ctx context.Context, refreshToken string) (GetSessionByRefreshTokenRow, error) {
@@ -115,9 +116,9 @@ WHERE email = $1
 `
 
 type GetUserByEmailRow struct {
-	ID        string             `db:"id"`
-	Email     string             `db:"email"`
-	UpdatedAt pgtype.Timestamptz `db:"updated_at"`
+	ID        string    `db:"id"`
+	Email     string    `db:"email"`
+	UpdatedAt time.Time `db:"updated_at"`
 }
 
 func (q *Queries) GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error) {
@@ -135,9 +136,9 @@ WHERE id = $1
 `
 
 type GetUserByIDRow struct {
-	ID        string             `db:"id"`
-	Email     string             `db:"email"`
-	UpdatedAt pgtype.Timestamptz `db:"updated_at"`
+	ID        string    `db:"id"`
+	Email     string    `db:"email"`
+	UpdatedAt time.Time `db:"updated_at"`
 }
 
 func (q *Queries) GetUserByID(ctx context.Context, id string) (GetUserByIDRow, error) {
@@ -155,10 +156,10 @@ WHERE id = $1
 `
 
 type GetUserDataRow struct {
-	ID           string             `db:"id"`
-	Email        string             `db:"email"`
-	PasswordHash string             `db:"password_hash"`
-	UpdatedAt    pgtype.Timestamptz `db:"updated_at"`
+	ID           string    `db:"id"`
+	Email        string    `db:"email"`
+	PasswordHash string    `db:"password_hash"`
+	UpdatedAt    time.Time `db:"updated_at"`
 }
 
 func (q *Queries) GetUserData(ctx context.Context, id string) (GetUserDataRow, error) {
@@ -239,10 +240,10 @@ VALUES ($1, $2, $3, $4)
 `
 
 type InsertUserParams struct {
-	ID           string             `db:"id"`
-	Email        string             `db:"email"`
-	PasswordHash string             `db:"password_hash"`
-	UpdatedAt    pgtype.Timestamptz `db:"updated_at"`
+	ID           string    `db:"id"`
+	Email        string    `db:"email"`
+	PasswordHash string    `db:"password_hash"`
+	UpdatedAt    time.Time `db:"updated_at"`
 }
 
 func (q *Queries) InsertUser(ctx context.Context, arg InsertUserParams) error {
@@ -261,11 +262,11 @@ VALUES ($1, $2, $3, $4, $5)
 `
 
 type SaveSessionParams struct {
-	UserID       pgtype.Text        `db:"user_id"`
-	DeviceID     string             `db:"device_id"`
-	RefreshToken string             `db:"refresh_token"`
-	LastVisitAt  pgtype.Timestamptz `db:"last_visit_at"`
-	ExpiresAt    pgtype.Timestamptz `db:"expires_at"`
+	UserID       string    `db:"user_id"`
+	DeviceID     string    `db:"device_id"`
+	RefreshToken string    `db:"refresh_token"`
+	LastVisitAt  time.Time `db:"last_visit_at"`
+	ExpiresAt    time.Time `db:"expires_at"`
 }
 
 func (q *Queries) SaveSession(ctx context.Context, arg SaveSessionParams) error {
@@ -297,8 +298,8 @@ WHERE id = $2
 `
 
 type UpdateLatestLoginAtParams struct {
-	LatestLoginAt pgtype.Timestamptz `db:"latest_login_at"`
-	ID            string             `db:"id"`
+	LatestLoginAt time.Time `db:"latest_login_at"`
+	ID            string    `db:"id"`
 }
 
 func (q *Queries) UpdateLatestLoginAt(ctx context.Context, arg UpdateLatestLoginAtParams) error {

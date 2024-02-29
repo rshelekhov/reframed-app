@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rshelekhov/reframed/internal/model"
 	"github.com/rshelekhov/reframed/internal/port"
@@ -28,12 +27,10 @@ func (s *ListStorage) CreateList(ctx context.Context, list model.List) error {
 	const op = "list.storage.CreateList"
 
 	if err := s.Queries.CreateList(ctx, CreateListParams{
-		ID:     list.ID,
-		Title:  list.Title,
-		UserID: list.UserID,
-		UpdatedAt: pgtype.Timestamptz{
-			Time: list.UpdatedAt,
-		},
+		ID:        list.ID,
+		Title:     list.Title,
+		UserID:    list.UserID,
+		UpdatedAt: list.UpdatedAt,
 	}); err != nil {
 		return fmt.Errorf("%s: failed to create new list: %w", op, err)
 	}
@@ -58,7 +55,7 @@ func (s *ListStorage) GetListByID(ctx context.Context, listID, userID string) (m
 	return model.List{
 		ID:        list.ID,
 		Title:     list.Title,
-		UpdatedAt: list.UpdatedAt.Time,
+		UpdatedAt: list.UpdatedAt,
 	}, nil
 
 }
@@ -80,7 +77,7 @@ func (s *ListStorage) GetListsByUserID(ctx context.Context, userID string) ([]mo
 		lists = append(lists, model.List{
 			ID:        item.ID,
 			Title:     item.Title,
-			UpdatedAt: item.UpdatedAt.Time,
+			UpdatedAt: item.UpdatedAt,
 		})
 	}
 	return lists, nil
@@ -90,12 +87,10 @@ func (s *ListStorage) UpdateList(ctx context.Context, list model.List) error {
 	const op = "list.storage.UpdateList"
 
 	err := s.Queries.UpdateList(ctx, UpdateListParams{
-		Title: list.Title,
-		UpdatedAt: pgtype.Timestamptz{
-			Time: list.UpdatedAt,
-		},
-		ID:     list.ID,
-		UserID: list.UserID,
+		Title:     list.Title,
+		UpdatedAt: list.UpdatedAt,
+		ID:        list.ID,
+		UserID:    list.UserID,
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return le.ErrListNotFound

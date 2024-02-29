@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rshelekhov/reframed/internal/model"
 	"github.com/rshelekhov/reframed/internal/port"
@@ -33,9 +32,7 @@ func (s *HeadingStorage) CreateHeading(ctx context.Context, heading model.Headin
 		ListID:    heading.ListID,
 		UserID:    heading.UserID,
 		IsDefault: heading.IsDefault,
-		UpdatedAt: pgtype.Timestamptz{
-			Time: heading.UpdatedAt,
-		},
+		UpdatedAt: heading.UpdatedAt,
 	}); err != nil {
 		return fmt.Errorf("%s: failed to create heading: %w", op, err)
 	}
@@ -79,7 +76,7 @@ func (s *HeadingStorage) GetHeadingByID(ctx context.Context, headingID, userID s
 		Title:     heading.Title,
 		ListID:    heading.ListID,
 		UserID:    heading.UserID,
-		UpdatedAt: heading.UpdatedAt.Time,
+		UpdatedAt: heading.UpdatedAt,
 	}, nil
 }
 
@@ -105,7 +102,7 @@ func (s *HeadingStorage) GetHeadingsByListID(ctx context.Context, listID, userID
 			Title:     item.Title,
 			ListID:    item.ListID,
 			UserID:    item.UserID,
-			UpdatedAt: item.UpdatedAt.Time,
+			UpdatedAt: item.UpdatedAt,
 		})
 	}
 	return headings, nil
@@ -115,12 +112,10 @@ func (s *HeadingStorage) UpdateHeading(ctx context.Context, heading model.Headin
 	const op = "heading.storage.UpdateHeading"
 
 	err := s.Queries.UpdateHeading(ctx, UpdateHeadingParams{
-		Title: heading.Title,
-		UpdatedAt: pgtype.Timestamptz{
-			Time: heading.UpdatedAt,
-		},
-		ID:     heading.ID,
-		UserID: heading.UserID,
+		Title:     heading.Title,
+		UpdatedAt: heading.UpdatedAt,
+		ID:        heading.ID,
+		UserID:    heading.UserID,
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return le.ErrHeadingNotFound
@@ -136,12 +131,10 @@ func (s *HeadingStorage) MoveHeadingToAnotherList(ctx context.Context, heading m
 	const op = "heading.storage.MoveTaskToAnotherList"
 
 	err := s.Queries.MoveHeadingToAnotherList(ctx, MoveHeadingToAnotherListParams{
-		ListID: heading.ListID,
-		UpdatedAt: pgtype.Timestamptz{
-			Time: heading.UpdatedAt,
-		},
-		ID:     heading.ID,
-		UserID: heading.UserID,
+		ListID:    heading.ListID,
+		UpdatedAt: heading.UpdatedAt,
+		ID:        heading.ID,
+		UserID:    heading.UserID,
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return le.ErrHeadingNotFound
@@ -151,14 +144,10 @@ func (s *HeadingStorage) MoveHeadingToAnotherList(ctx context.Context, heading m
 	}
 
 	err = s.Queries.UpdateTasksListID(ctx, UpdateTasksListIDParams{
-		ListID: task.ListID,
-		UpdatedAt: pgtype.Timestamptz{
-			Time: task.UpdatedAt,
-		},
-		HeadingID: pgtype.Text{
-			String: task.HeadingID,
-		},
-		UserID: task.UserID,
+		ListID:    task.ListID,
+		UpdatedAt: task.UpdatedAt,
+		HeadingID: task.HeadingID,
+		UserID:    task.UserID,
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return le.ErrHeadingNotFound

@@ -29,6 +29,7 @@ type Querier interface {
 	GetHeadingsByListID(ctx context.Context, arg GetHeadingsByListIDParams) ([]GetHeadingsByListIDRow, error)
 	GetListByID(ctx context.Context, arg GetListByIDParams) (GetListByIDRow, error)
 	GetListsByUserID(ctx context.Context, userID string) ([]GetListsByUserIDRow, error)
+	GetOverdueTasks(ctx context.Context, arg GetOverdueTasksParams) ([]GetOverdueTasksRow, error)
 	GetSessionByRefreshToken(ctx context.Context, refreshToken string) (GetSessionByRefreshTokenRow, error)
 	GetTagIDByTitle(ctx context.Context, arg GetTagIDByTitleParams) (string, error)
 	GetTagsByTaskID(ctx context.Context, taskID string) ([]GetTagsByTaskIDRow, error)
@@ -52,6 +53,7 @@ type Querier interface {
 	GetUserStatus(ctx context.Context, email string) (string, error)
 	InsertUser(ctx context.Context, arg InsertUserParams) error
 	LinkTagToTask(ctx context.Context, arg LinkTagToTaskParams) error
+	MarkTaskAsArchived(ctx context.Context, arg MarkTaskAsArchivedParams) error
 	MarkTaskAsCompleted(ctx context.Context, arg MarkTaskAsCompletedParams) error
 	MoveHeadingToAnotherList(ctx context.Context, arg MoveHeadingToAnotherListParams) error
 	MoveTaskToAnotherList(ctx context.Context, arg MoveTaskToAnotherListParams) error

@@ -7,6 +7,7 @@ package postgres
 
 import (
 	"context"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -17,10 +18,10 @@ VALUES ($1, $2, $3, $4)
 `
 
 type CreateListParams struct {
-	ID        string             `db:"id"`
-	Title     string             `db:"title"`
-	UserID    string             `db:"user_id"`
-	UpdatedAt pgtype.Timestamptz `db:"updated_at"`
+	ID        string    `db:"id"`
+	Title     string    `db:"title"`
+	UserID    string    `db:"user_id"`
+	UpdatedAt time.Time `db:"updated_at"`
 }
 
 func (q *Queries) CreateList(ctx context.Context, arg CreateListParams) error {
@@ -65,10 +66,10 @@ type GetListByIDParams struct {
 }
 
 type GetListByIDRow struct {
-	ID        string             `db:"id"`
-	Title     string             `db:"title"`
-	UserID    string             `db:"user_id"`
-	UpdatedAt pgtype.Timestamptz `db:"updated_at"`
+	ID        string    `db:"id"`
+	Title     string    `db:"title"`
+	UserID    string    `db:"user_id"`
+	UpdatedAt time.Time `db:"updated_at"`
 }
 
 func (q *Queries) GetListByID(ctx context.Context, arg GetListByIDParams) (GetListByIDRow, error) {
@@ -92,9 +93,9 @@ ORDER BY id
 `
 
 type GetListsByUserIDRow struct {
-	ID        string             `db:"id"`
-	Title     string             `db:"title"`
-	UpdatedAt pgtype.Timestamptz `db:"updated_at"`
+	ID        string    `db:"id"`
+	Title     string    `db:"title"`
+	UpdatedAt time.Time `db:"updated_at"`
 }
 
 func (q *Queries) GetListsByUserID(ctx context.Context, userID string) ([]GetListsByUserIDRow, error) {
@@ -125,10 +126,10 @@ WHERE id = $3
 `
 
 type UpdateListParams struct {
-	Title     string             `db:"title"`
-	UpdatedAt pgtype.Timestamptz `db:"updated_at"`
-	ID        string             `db:"id"`
-	UserID    string             `db:"user_id"`
+	Title     string    `db:"title"`
+	UpdatedAt time.Time `db:"updated_at"`
+	ID        string    `db:"id"`
+	UserID    string    `db:"user_id"`
 }
 
 func (q *Queries) UpdateList(ctx context.Context, arg UpdateListParams) error {

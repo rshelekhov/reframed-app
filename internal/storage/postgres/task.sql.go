@@ -8,6 +8,7 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -41,9 +42,9 @@ type CreateTaskParams struct {
 	EndTime     sql.NullTime       `db:"end_time"`
 	StatusID    int32              `db:"status_id"`
 	ListID      string             `db:"list_id"`
-	HeadingID   pgtype.Text        `db:"heading_id"`
+	HeadingID   string             `db:"heading_id"`
 	UserID      string             `db:"user_id"`
-	UpdatedAt   pgtype.Timestamptz `db:"updated_at"`
+	UpdatedAt   time.Time          `db:"updated_at"`
 }
 
 func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) error {
@@ -96,22 +97,20 @@ FROM (
         t.end_time,
         t.list_id,
         t.user_id,
-        ARRAY_AGG(tg.title) AS tags,
+        ttv.tags as tags,
         t.updated_at,
         t.deleted_at
     FROM tasks t
-        LEFT JOIN tasks_tags tt
-            ON t.id = tt.task_id
-        LEFT JOIN tags tg
-            ON tt.tag_id = tg.id
+        LEFT JOIN task_tags_view ttv
+            ON t.id = ttv.task_id
     WHERE t.user_id = $1
       AND t.status_id = (
         SELECT id
         FROM statuses
-        WHERE statuses.title = $2
+        WHERE statuses.title = $3::varchar
         )
-      AND (t.deleted_at IS NULL
-               OR (DATE_TRUNC('month', t.updated_at) > $3 AND t.deleted_at IS NULL)
+      AND (t.deleted_at IS NOT NULL
+               OR (DATE_TRUNC('month', t.updated_at) > $4::timestamptz AND t.deleted_at IS NOT NULL)
           )
     GROUP BY
         t.id,
@@ -127,15 +126,15 @@ FROM (
         t.deleted_at
     ) t
 GROUP BY month
-ORDER BY month
-LIMIT $4
+ORDER BY month DESC
+LIMIT $2
 `
 
 type GetArchivedTasksParams struct {
-	UserID    string             `db:"user_id"`
-	Title     string             `db:"title"`
-	UpdatedAt pgtype.Timestamptz `db:"updated_at"`
-	Limit     int32              `db:"limit"`
+	UserID      string             `db:"user_id"`
+	Limit       int32              `db:"limit"`
+	StatusTitle string             `db:"status_title"`
+	AfterMonth  pgtype.Timestamptz `db:"after_month"`
 }
 
 type GetArchivedTasksRow struct {
@@ -146,9 +145,9 @@ type GetArchivedTasksRow struct {
 func (q *Queries) GetArchivedTasks(ctx context.Context, arg GetArchivedTasksParams) ([]GetArchivedTasksRow, error) {
 	rows, err := q.db.Query(ctx, getArchivedTasks,
 		arg.UserID,
-		arg.Title,
-		arg.UpdatedAt,
 		arg.Limit,
+		arg.StatusTitle,
+		arg.AfterMonth,
 	)
 	if err != nil {
 		return nil, err
@@ -184,8 +183,7 @@ SELECT
                             'list_id', t.list_id,
                             'user_id', t.user_id,
                             'tags', tags,
-                            'updated_at', t.updated_at,
-                            'deleted_at', t.deleted_at
+                            'updated_at', t.updated_at
                     )
             )
     ) AS tasks
@@ -200,23 +198,19 @@ FROM (
         t.end_time,
         t.list_id,
         t.user_id,
-        ARRAY_AGG(tg.title) AS tags,
-        t.updated_at,
-        t.deleted_at
+        ttv.tags as tags,
+        t.updated_at
     FROM tasks t
-        LEFT JOIN tasks_tags tt
-            ON t.id = tt.task_id
-        LEFT JOIN tags tg
-            ON tt.tag_id = tg.id
+        LEFT JOIN task_tags_view ttv
+            ON t.id = ttv.task_id
     WHERE t.user_id = $1
       AND t.status_id = (
-          SELECT id
-          FROM statuses
-          WHERE statuses.title = $2
+      SELECT id
+      FROM statuses
+      WHERE statuses.title = $3::varchar
       )
       AND (t.deleted_at IS NULL
-               OR (DATE_TRUNC('month', t.updated_at) > $3 AND t.deleted_at IS NULL)
-      )
+               OR (DATE_TRUNC('month', t.updated_at) > $4::timestamptz AND t.deleted_at IS NULL))
     GROUP BY
         t.id,
         t.title,
@@ -227,19 +221,18 @@ FROM (
         t.end_time,
         t.list_id,
         t.user_id,
-        t.updated_at,
-        t.deleted_at
+        t.updated_at
     ) t
 GROUP BY month
 ORDER BY month
-LIMIT $4
+LIMIT $2
 `
 
 type GetCompletedTasksParams struct {
-	UserID    string             `db:"user_id"`
-	Title     string             `db:"title"`
-	UpdatedAt pgtype.Timestamptz `db:"updated_at"`
-	Limit     int32              `db:"limit"`
+	UserID      string             `db:"user_id"`
+	Limit       int32              `db:"limit"`
+	StatusTitle string             `db:"status_title"`
+	AfterDate   pgtype.Timestamptz `db:"after_date"`
 }
 
 type GetCompletedTasksRow struct {
@@ -250,9 +243,9 @@ type GetCompletedTasksRow struct {
 func (q *Queries) GetCompletedTasks(ctx context.Context, arg GetCompletedTasksParams) ([]GetCompletedTasksRow, error) {
 	rows, err := q.db.Query(ctx, getCompletedTasks,
 		arg.UserID,
-		arg.Title,
-		arg.UpdatedAt,
 		arg.Limit,
+		arg.StatusTitle,
+		arg.AfterDate,
 	)
 	if err != nil {
 		return nil, err
@@ -262,6 +255,100 @@ func (q *Queries) GetCompletedTasks(ctx context.Context, arg GetCompletedTasksPa
 	for rows.Next() {
 		var i GetCompletedTasksRow
 		if err := rows.Scan(&i.Month, &i.Tasks); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getOverdueTasks = `-- name: GetOverdueTasks :many
+SELECT
+    l.id AS list_id,
+    ARRAY_TO_JSON(
+            ARRAY_AGG(
+                    JSON_BUILD_OBJECT(
+                            'id', t.id,
+                            'title', t.title,
+                            'description', t.description,
+                            'start_date', t.start_date,
+                            'deadline', t.deadline,
+                            'start_time', t.start_time,
+                            'end_time', t.end_time,
+                            'list_id', t.list_id,
+                            'user_id', t.user_id,
+                            'tags', tags,
+                            'overdue', overdue,
+                            'updated_at', t.updated_at
+                    )
+            )
+    ) AS tasks
+FROM lists l
+    LEFT JOIN (
+        SELECT
+            t.id,
+            t.title,
+            t.description,
+            t.start_date,
+            t.deadline,
+            t.start_time,
+            t.end_time,
+            t.list_id,
+            t.user_id,
+            ttv.tags as tags,
+            CASE
+                WHEN t.deadline <= CURRENT_DATE THEN TRUE
+                ELSE FALSE END
+                AS overdue,
+            t.updated_at
+        FROM tasks t
+            LEFT JOIN task_tags_view ttv
+                ON t.id = ttv.task_id
+        WHERE t.user_id = $1
+          AND t.deadline <= CURRENT_DATE
+          AND (t.deleted_at IS NULL OR l.id > $3::varchar)
+        GROUP BY
+            t.id,
+            t.title,
+            t.description,
+            t.start_date,
+            t.deadline,
+            t.start_time,
+            t.end_time,
+            t.list_id,
+            t.user_id,
+            t.updated_at
+        ) t ON l.id = t.list_id
+WHERE l.user_id = $1
+GROUP BY l.id
+ORDER BY l.id
+LIMIT $2
+`
+
+type GetOverdueTasksParams struct {
+	UserID  string `db:"user_id"`
+	Limit   int32  `db:"limit"`
+	AfterID string `db:"after_id"`
+}
+
+type GetOverdueTasksRow struct {
+	ListID string `db:"list_id"`
+	Tasks  []byte `db:"tasks"`
+}
+
+func (q *Queries) GetOverdueTasks(ctx context.Context, arg GetOverdueTasksParams) ([]GetOverdueTasksRow, error) {
+	rows, err := q.db.Query(ctx, getOverdueTasks, arg.UserID, arg.Limit, arg.AfterID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetOverdueTasksRow{}
+	for rows.Next() {
+		var i GetOverdueTasksRow
+		if err := rows.Scan(&i.ListID, &i.Tasks); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -284,29 +371,18 @@ SELECT
     t.status_id,
     t.list_id,
     t.heading_id,
-    ARRAY_AGG(tg.title) AS tags,
-    COALESCE(t.deadline <= CURRENT_DATE, FALSE) AS overdue,
-    t.updated_at
+    t.updated_at,
+    ttv.tags as tags,
+    CASE
+        WHEN t.deadline <= CURRENT_DATE THEN TRUE
+        ELSE FALSE END
+        AS overdue
 FROM tasks t
-    LEFT JOIN tasks_tags tt
-        ON t.id = tt.task_id
-    LEFT JOIN tags tg
-        ON tt.tag_id = tg.id
+    LEFT JOIN task_tags_view ttv
+        ON t.id = ttv.task_id
 WHERE t.id = $1
   AND t.user_id = $2
   AND t.deleted_at IS NULL
-GROUP BY
-    t.id,
-    t.title,
-    t.description,
-    t.start_date,
-    t.deadline,
-    t.start_time,
-    t.end_time,
-    t.status_id,
-    t.list_id,
-    t.heading_id,
-    t.updated_at
 `
 
 type GetTaskByIDParams struct {
@@ -324,10 +400,10 @@ type GetTaskByIDRow struct {
 	EndTime     sql.NullTime       `db:"end_time"`
 	StatusID    int32              `db:"status_id"`
 	ListID      string             `db:"list_id"`
-	HeadingID   pgtype.Text        `db:"heading_id"`
+	HeadingID   string             `db:"heading_id"`
+	UpdatedAt   time.Time          `db:"updated_at"`
 	Tags        interface{}        `db:"tags"`
-	Overdue     interface{}        `db:"overdue"`
-	UpdatedAt   pgtype.Timestamptz `db:"updated_at"`
+	Overdue     bool               `db:"overdue"`
 }
 
 func (q *Queries) GetTaskByID(ctx context.Context, arg GetTaskByIDParams) (GetTaskByIDRow, error) {
@@ -344,9 +420,9 @@ func (q *Queries) GetTaskByID(ctx context.Context, arg GetTaskByIDParams) (GetTa
 		&i.StatusID,
 		&i.ListID,
 		&i.HeadingID,
+		&i.UpdatedAt,
 		&i.Tags,
 		&i.Overdue,
-		&i.UpdatedAt,
 	)
 	return i, err
 }
@@ -377,14 +453,15 @@ SELECT
     t.list_id,
     t.heading_id,
     t.user_id,
-    ARRAY_AGG(tg.title) AS tags,
-    COALESCE(t.deadline <= CURRENT_DATE, FALSE) AS overdue,
-    t.updated_at
+    t.updated_at,
+    ttv.tags as tags,
+    CASE
+        WHEN t.deadline <= CURRENT_DATE THEN TRUE
+        ELSE FALSE END
+        AS overdue
 FROM tasks t
-    LEFT JOIN tasks_tags tt
-        ON t.id = tt.task_id
-    LEFT JOIN tags tg
-        ON tt.tag_id = tg.id
+    LEFT JOIN task_tags_view ttv
+        ON t.id = ttv.task_id
 WHERE t.list_id = $1
   AND t.user_id = $2
   AND t.deleted_at IS NULL
@@ -418,11 +495,11 @@ type GetTasksByListIDRow struct {
 	EndTime     sql.NullTime       `db:"end_time"`
 	StatusID    int32              `db:"status_id"`
 	ListID      string             `db:"list_id"`
-	HeadingID   pgtype.Text        `db:"heading_id"`
+	HeadingID   string             `db:"heading_id"`
 	UserID      string             `db:"user_id"`
+	UpdatedAt   time.Time          `db:"updated_at"`
 	Tags        interface{}        `db:"tags"`
-	Overdue     interface{}        `db:"overdue"`
-	UpdatedAt   pgtype.Timestamptz `db:"updated_at"`
+	Overdue     bool               `db:"overdue"`
 }
 
 func (q *Queries) GetTasksByListID(ctx context.Context, arg GetTasksByListIDParams) ([]GetTasksByListIDRow, error) {
@@ -446,9 +523,9 @@ func (q *Queries) GetTasksByListID(ctx context.Context, arg GetTasksByListIDPara
 			&i.ListID,
 			&i.HeadingID,
 			&i.UserID,
+			&i.UpdatedAt,
 			&i.Tags,
 			&i.Overdue,
-			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -472,19 +549,20 @@ SELECT
     t.status_id,
     t.list_id,
     t.heading_id,
-    ARRAY_AGG(tg.title) AS tags,
-    COALESCE(t.deadline <= CURRENT_DATE, FALSE) AS overdue,
-    t.updated_at
+    t.updated_at,
+    ttv.tags as tags,
+    CASE
+        WHEN t.deadline <= CURRENT_DATE THEN TRUE
+        ELSE FALSE END
+      AS overdue
 FROM tasks t
-    LEFT JOIN tasks_tags tt
-        ON t.id = tt.task_id
-    LEFT JOIN tags tg
-        ON tt.tag_id = tg.id
+    LEFT JOIN task_tags_view ttv
+        ON t.id = ttv.task_id
 WHERE t.user_id = $1
   AND t.deleted_at IS NULL
   AND (
-      ($2 IS NULL AND t.id > $2)
-          OR ($2 IS NOT NULL AND t.id > $2)
+      ($3::varchar IS NULL AND t.id > $3::varchar)
+          OR ($3::varchar IS NOT NULL AND t.id > $3::varchar)
       )
 GROUP BY
     t.id,
@@ -499,13 +577,13 @@ GROUP BY
     t.heading_id,
     t.updated_at
 ORDER BY t.id
-LIMIT $3
+LIMIT $2
 `
 
 type GetTasksByUserIDParams struct {
-	UserID  string      `db:"user_id"`
-	Column2 interface{} `db:"column_2"`
-	Limit   int32       `db:"limit"`
+	UserID  string `db:"user_id"`
+	Limit   int32  `db:"limit"`
+	AfterID string `db:"after_id"`
 }
 
 type GetTasksByUserIDRow struct {
@@ -518,14 +596,14 @@ type GetTasksByUserIDRow struct {
 	EndTime     sql.NullTime       `db:"end_time"`
 	StatusID    int32              `db:"status_id"`
 	ListID      string             `db:"list_id"`
-	HeadingID   pgtype.Text        `db:"heading_id"`
+	HeadingID   string             `db:"heading_id"`
+	UpdatedAt   time.Time          `db:"updated_at"`
 	Tags        interface{}        `db:"tags"`
-	Overdue     interface{}        `db:"overdue"`
-	UpdatedAt   pgtype.Timestamptz `db:"updated_at"`
+	Overdue     bool               `db:"overdue"`
 }
 
 func (q *Queries) GetTasksByUserID(ctx context.Context, arg GetTasksByUserIDParams) ([]GetTasksByUserIDRow, error) {
-	rows, err := q.db.Query(ctx, getTasksByUserID, arg.UserID, arg.Column2, arg.Limit)
+	rows, err := q.db.Query(ctx, getTasksByUserID, arg.UserID, arg.Limit, arg.AfterID)
 	if err != nil {
 		return nil, err
 	}
@@ -544,9 +622,9 @@ func (q *Queries) GetTasksByUserID(ctx context.Context, arg GetTasksByUserIDPara
 			&i.StatusID,
 			&i.ListID,
 			&i.HeadingID,
+			&i.UpdatedAt,
 			&i.Tags,
 			&i.Overdue,
-			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -573,9 +651,8 @@ SELECT
                             'list_id', t.list_id,
                             'user_id', t.user_id,
                             'tags', tags,
-                            'overdue', t.deadline <= CURRENT_DATE,
-                            'updated_at', t.updated_at,
-                            'deleted_at', t.deleted_at
+                            'overdue', overdue,
+                            'updated_at', t.updated_at
                     )
             )
     ) AS tasks
@@ -590,18 +667,19 @@ FROM lists l
             t.end_time,
             t.list_id,
             t.user_id,
-            ARRAY_AGG(tg.title) AS tags,
-            t.updated_at,
-            t.deleted_at
+            ttv.tags as tags,
+            CASE
+                WHEN t.deadline <= CURRENT_DATE THEN TRUE
+                ELSE FALSE END
+                AS overdue,
+            t.updated_at
         FROM tasks t
-            LEFT JOIN tasks_tags tt
-                ON t.id = tt.task_id
-            LEFT JOIN tags tg
-                ON tt.tag_id = tg.id
+            LEFT JOIN task_tags_view ttv
+                ON t.id = ttv.task_id
         WHERE t.user_id = $1
           AND t.start_date IS NULL
           AND t.deadline > CURRENT_DATE
-          AND (t.deleted_at IS NULL OR l.id > $2)
+          AND (t.deleted_at IS NULL OR l.id > $3::varchar)
         GROUP BY
             t.id,
             t.title,
@@ -611,20 +689,18 @@ FROM lists l
             t.end_time,
             t.list_id,
             t.user_id,
-            t.updated_at,
-            t.deleted_at
-    ) t
-        ON l.id = t.list_id
+            t.updated_at
+        ) t ON l.id = t.list_id
 WHERE l.user_id = $1
 GROUP BY l.id
 ORDER BY l.id
-LIMIT $3
+LIMIT $2
 `
 
 type GetTasksForSomedayParams struct {
-	UserID string `db:"user_id"`
-	ID     string `db:"id"`
-	Limit  int32  `db:"limit"`
+	UserID  string `db:"user_id"`
+	Limit   int32  `db:"limit"`
+	AfterID string `db:"after_id"`
 }
 
 type GetTasksForSomedayRow struct {
@@ -633,7 +709,7 @@ type GetTasksForSomedayRow struct {
 }
 
 func (q *Queries) GetTasksForSomeday(ctx context.Context, arg GetTasksForSomedayParams) ([]GetTasksForSomedayRow, error) {
-	rows, err := q.db.Query(ctx, getTasksForSomeday, arg.UserID, arg.ID, arg.Limit)
+	rows, err := q.db.Query(ctx, getTasksForSomeday, arg.UserID, arg.Limit, arg.AfterID)
 	if err != nil {
 		return nil, err
 	}
@@ -668,9 +744,8 @@ SELECT
                             'list_id', t.list_id,
                             'user_id', t.user_id,
                             'tags', tags,
-                            'overdue', t.deadline <= CURRENT_DATE,
-                            'updated_at', t.updated_at,
-                            'deleted_at', t.deleted_at
+                            'overdue', overdue,
+                            'updated_at', t.updated_at
                     )
             )
     ) AS tasks
@@ -686,14 +761,15 @@ FROM lists l
             t.end_time,
             t.list_id,
             t.user_id,
-            ARRAY_AGG(tg.title) AS tags,
-            t.updated_at,
-            t.deleted_at
+            ttv.tags as tags,
+            CASE
+                WHEN t.deadline <= CURRENT_DATE THEN TRUE
+                ELSE FALSE END
+                AS overdue,
+            t.updated_at
         FROM tasks t
-            LEFT JOIN tasks_tags tt
-                ON t.id = tt.task_id
-            LEFT JOIN tags tg
-                ON tt.tag_id = tg.id
+            LEFT JOIN task_tags_view ttv
+                ON t.id = ttv.task_id
         WHERE t.user_id = $1
           AND t.start_date = CURRENT_DATE
           AND t.deleted_at IS NULL
@@ -707,8 +783,7 @@ FROM lists l
             t.end_time,
             t.list_id,
             t.user_id,
-            t.updated_at,
-            t.deleted_at
+            t.updated_at
         ) t
         ON l.id = t.list_id
 WHERE l.user_id = $1
@@ -757,9 +832,8 @@ SELECT
                             'heading_id', t.heading_id,
                             'user_id', t.user_id,
                             'tags', tags,
-                            'overdue', t.deadline <= CURRENT_DATE,
-                            'updated_at', t.updated_at,
-                            'deleted_at', t.deleted_at
+                            'overdue', overdue,
+                            'updated_at', t.updated_at
                     )
             )
     ) AS tasks
@@ -775,14 +849,15 @@ FROM headings h
             t.end_time,
             t.heading_id,
             t.user_id,
-            ARRAY_AGG(tg.title) AS tags,
-            t.updated_at,
-            t.deleted_at
+            ttv.tags as tags,
+            CASE
+                WHEN t.deadline <= CURRENT_DATE THEN TRUE
+                ELSE FALSE END
+                AS overdue,
+            t.updated_at
         FROM tasks t
-            LEFT JOIN tasks_tags tt
-                ON t.id = tt.task_id
-            LEFT JOIN tags tg
-                ON tt.tag_id = tg.id
+            LEFT JOIN task_tags_view ttv
+                ON t.id = ttv.task_id
         WHERE t.list_id = $1
           AND t.user_id = $2
           AND t.deleted_at IS NULL
@@ -796,9 +871,8 @@ FROM headings h
             t.end_time,
             t.heading_id,
             t.user_id,
-            t.updated_at,
-            t.deleted_at
-        ) t
+            t.updated_at
+    ) t
         ON h.id = t.heading_id
 WHERE h.list_id = $1
   AND h.user_id = $2
@@ -852,8 +926,7 @@ SELECT
                             'list_id', t.list_id,
                             'user_id', t.user_id,
                             'tags', tags,
-                            'updated_at', t.updated_at,
-                            'deleted_at', t.deleted_at
+                            'updated_at', t.updated_at
                     )
             )
     ) AS tasks
@@ -868,19 +941,16 @@ FROM (
         t.end_time,
         t.list_id,
         t.user_id,
-        ARRAY_AGG(tg.title) AS tags,
-        t.updated_at,
-        t.deleted_at
+        ttv.tags as tags,
+        t.updated_at
     FROM tasks t
-        LEFT JOIN tasks_tags tt
-            ON t.id = tt.task_id
-        LEFT JOIN tags tg
-            ON tt.tag_id = tg.id
+        LEFT JOIN task_tags_view ttv
+            ON t.id = ttv.task_id
     WHERE t.user_id = $1
       AND (
-          (t.start_date >= COALESCE($2, CURRENT_DATE + interval '1 day'))
+          (t.start_date >= COALESCE($3::timestamptz, CURRENT_DATE + interval '1 day'))
               AND (t.deleted_at IS NULL)
-              AND (COALESCE(t.start_date, $2) > $2)
+              AND (COALESCE(t.start_date, $3::timestamptz) > $3::timestamptz)
           )
     GROUP BY
         t.id,
@@ -892,18 +962,17 @@ FROM (
         t.end_time,
         t.list_id,
         t.user_id,
-        t.updated_at,
-        t.deleted_at
+        t.updated_at
     ) t
 GROUP BY t.start_date
 ORDER BY t.start_date
-LIMIT $3
+LIMIT $2
 `
 
 type GetUpcomingTasksParams struct {
 	UserID    string             `db:"user_id"`
-	StartDate pgtype.Timestamptz `db:"start_date"`
 	Limit     int32              `db:"limit"`
+	AfterDate pgtype.Timestamptz `db:"after_date"`
 }
 
 type GetUpcomingTasksRow struct {
@@ -912,7 +981,7 @@ type GetUpcomingTasksRow struct {
 }
 
 func (q *Queries) GetUpcomingTasks(ctx context.Context, arg GetUpcomingTasksParams) ([]GetUpcomingTasksRow, error) {
-	rows, err := q.db.Query(ctx, getUpcomingTasks, arg.UserID, arg.StartDate, arg.Limit)
+	rows, err := q.db.Query(ctx, getUpcomingTasks, arg.UserID, arg.Limit, arg.AfterDate)
 	if err != nil {
 		return nil, err
 	}
@@ -931,6 +1000,31 @@ func (q *Queries) GetUpcomingTasks(ctx context.Context, arg GetUpcomingTasksPara
 	return items, nil
 }
 
+const markTaskAsArchived = `-- name: MarkTaskAsArchived :exec
+UPDATE tasks
+SET status_id = $1, deleted_at = $2
+WHERE id = $3
+  AND user_id = $4
+  AND deleted_at IS NULL
+`
+
+type MarkTaskAsArchivedParams struct {
+	StatusID  int32              `db:"status_id"`
+	DeletedAt pgtype.Timestamptz `db:"deleted_at"`
+	ID        string             `db:"id"`
+	UserID    string             `db:"user_id"`
+}
+
+func (q *Queries) MarkTaskAsArchived(ctx context.Context, arg MarkTaskAsArchivedParams) error {
+	_, err := q.db.Exec(ctx, markTaskAsArchived,
+		arg.StatusID,
+		arg.DeletedAt,
+		arg.ID,
+		arg.UserID,
+	)
+	return err
+}
+
 const markTaskAsCompleted = `-- name: MarkTaskAsCompleted :exec
 UPDATE tasks
 SET	status_id = $1,
@@ -941,10 +1035,10 @@ WHERE id = $3
 `
 
 type MarkTaskAsCompletedParams struct {
-	StatusID  int32              `db:"status_id"`
-	UpdatedAt pgtype.Timestamptz `db:"updated_at"`
-	ID        string             `db:"id"`
-	UserID    string             `db:"user_id"`
+	StatusID  int32     `db:"status_id"`
+	UpdatedAt time.Time `db:"updated_at"`
+	ID        string    `db:"id"`
+	UserID    string    `db:"user_id"`
 }
 
 func (q *Queries) MarkTaskAsCompleted(ctx context.Context, arg MarkTaskAsCompletedParams) error {
@@ -968,11 +1062,11 @@ WHERE id = $4
 `
 
 type MoveTaskToAnotherListParams struct {
-	ListID    string             `db:"list_id"`
-	HeadingID pgtype.Text        `db:"heading_id"`
-	UpdatedAt pgtype.Timestamptz `db:"updated_at"`
-	ID        string             `db:"id"`
-	UserID    string             `db:"user_id"`
+	ListID    string    `db:"list_id"`
+	HeadingID string    `db:"heading_id"`
+	UpdatedAt time.Time `db:"updated_at"`
+	ID        string    `db:"id"`
+	UserID    string    `db:"user_id"`
 }
 
 func (q *Queries) MoveTaskToAnotherList(ctx context.Context, arg MoveTaskToAnotherListParams) error {

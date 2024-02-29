@@ -7,8 +7,7 @@ package postgres
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgtype"
+	"time"
 )
 
 const createTag = `-- name: CreateTag :exec
@@ -17,10 +16,10 @@ VALUES ($1, $2, $3, $4)
 `
 
 type CreateTagParams struct {
-	ID        string             `db:"id"`
-	Title     string             `db:"title"`
-	UserID    string             `db:"user_id"`
-	UpdatedAt pgtype.Timestamptz `db:"updated_at"`
+	ID        string    `db:"id"`
+	Title     string    `db:"title"`
+	UserID    string    `db:"user_id"`
+	UpdatedAt time.Time `db:"updated_at"`
 }
 
 func (q *Queries) CreateTag(ctx context.Context, arg CreateTagParams) error {
@@ -63,9 +62,9 @@ WHERE tasks_tags.task_id = $1
 `
 
 type GetTagsByTaskIDRow struct {
-	ID        string             `db:"id"`
-	Title     string             `db:"title"`
-	UpdatedAt pgtype.Timestamptz `db:"updated_at"`
+	ID        string    `db:"id"`
+	Title     string    `db:"title"`
+	UpdatedAt time.Time `db:"updated_at"`
 }
 
 func (q *Queries) GetTagsByTaskID(ctx context.Context, taskID string) ([]GetTagsByTaskIDRow, error) {
@@ -96,9 +95,9 @@ WHERE user_id = $1
 `
 
 type GetTagsByUserIDRow struct {
-	ID        string             `db:"id"`
-	Title     string             `db:"title"`
-	UpdatedAt pgtype.Timestamptz `db:"updated_at"`
+	ID        string    `db:"id"`
+	Title     string    `db:"title"`
+	UpdatedAt time.Time `db:"updated_at"`
 }
 
 func (q *Queries) GetTagsByUserID(ctx context.Context, userID string) ([]GetTagsByUserIDRow, error) {

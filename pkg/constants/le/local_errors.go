@@ -87,6 +87,7 @@ const (
 
 	ErrNoTasksFound         LocalError = "no tasks found"
 	ErrTaskNotFound         LocalError = "task not found"
+	ErrTaskStatusNotFound   LocalError = "task status not found"
 	ErrFailedToCreateTask   LocalError = "failed to create task"
 	ErrFailedToUpdateTask   LocalError = "failed to update task"
 	ErrFailedToCompleteTask LocalError = "failed to complete task"

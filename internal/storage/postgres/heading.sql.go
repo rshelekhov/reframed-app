@@ -7,6 +7,7 @@ package postgres
 
 import (
 	"context"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -17,12 +18,12 @@ VALUES($1, $2, $3, $4, $5, $6)
 `
 
 type CreateHeadingParams struct {
-	ID        string             `db:"id"`
-	Title     string             `db:"title"`
-	ListID    string             `db:"list_id"`
-	UserID    string             `db:"user_id"`
-	IsDefault bool               `db:"is_default"`
-	UpdatedAt pgtype.Timestamptz `db:"updated_at"`
+	ID        string    `db:"id"`
+	Title     string    `db:"title"`
+	ListID    string    `db:"list_id"`
+	UserID    string    `db:"user_id"`
+	IsDefault bool      `db:"is_default"`
+	UpdatedAt time.Time `db:"updated_at"`
 }
 
 func (q *Queries) CreateHeading(ctx context.Context, arg CreateHeadingParams) error {
@@ -91,11 +92,11 @@ type GetHeadingByIDParams struct {
 }
 
 type GetHeadingByIDRow struct {
-	ID        string             `db:"id"`
-	Title     string             `db:"title"`
-	ListID    string             `db:"list_id"`
-	UserID    string             `db:"user_id"`
-	UpdatedAt pgtype.Timestamptz `db:"updated_at"`
+	ID        string    `db:"id"`
+	Title     string    `db:"title"`
+	ListID    string    `db:"list_id"`
+	UserID    string    `db:"user_id"`
+	UpdatedAt time.Time `db:"updated_at"`
 }
 
 func (q *Queries) GetHeadingByID(ctx context.Context, arg GetHeadingByIDParams) (GetHeadingByIDRow, error) {
@@ -125,11 +126,11 @@ type GetHeadingsByListIDParams struct {
 }
 
 type GetHeadingsByListIDRow struct {
-	ID        string             `db:"id"`
-	Title     string             `db:"title"`
-	ListID    string             `db:"list_id"`
-	UserID    string             `db:"user_id"`
-	UpdatedAt pgtype.Timestamptz `db:"updated_at"`
+	ID        string    `db:"id"`
+	Title     string    `db:"title"`
+	ListID    string    `db:"list_id"`
+	UserID    string    `db:"user_id"`
+	UpdatedAt time.Time `db:"updated_at"`
 }
 
 func (q *Queries) GetHeadingsByListID(ctx context.Context, arg GetHeadingsByListIDParams) ([]GetHeadingsByListIDRow, error) {
@@ -166,10 +167,10 @@ WHERE id = $3
 `
 
 type MoveHeadingToAnotherListParams struct {
-	ListID    string             `db:"list_id"`
-	UpdatedAt pgtype.Timestamptz `db:"updated_at"`
-	ID        string             `db:"id"`
-	UserID    string             `db:"user_id"`
+	ListID    string    `db:"list_id"`
+	UpdatedAt time.Time `db:"updated_at"`
+	ID        string    `db:"id"`
+	UserID    string    `db:"user_id"`
 }
 
 func (q *Queries) MoveHeadingToAnotherList(ctx context.Context, arg MoveHeadingToAnotherListParams) error {
@@ -190,10 +191,10 @@ WHERE id = $3
 `
 
 type UpdateHeadingParams struct {
-	Title     string             `db:"title"`
-	UpdatedAt pgtype.Timestamptz `db:"updated_at"`
-	ID        string             `db:"id"`
-	UserID    string             `db:"user_id"`
+	Title     string    `db:"title"`
+	UpdatedAt time.Time `db:"updated_at"`
+	ID        string    `db:"id"`
+	UserID    string    `db:"user_id"`
 }
 
 func (q *Queries) UpdateHeading(ctx context.Context, arg UpdateHeadingParams) error {
@@ -214,10 +215,10 @@ WHERE heading_id = $3
 `
 
 type UpdateTasksListIDParams struct {
-	ListID    string             `db:"list_id"`
-	UpdatedAt pgtype.Timestamptz `db:"updated_at"`
-	HeadingID pgtype.Text        `db:"heading_id"`
-	UserID    string             `db:"user_id"`
+	ListID    string    `db:"list_id"`
+	UpdatedAt time.Time `db:"updated_at"`
+	HeadingID string    `db:"heading_id"`
+	UserID    string    `db:"user_id"`
 }
 
 func (q *Queries) UpdateTasksListID(ctx context.Context, arg UpdateTasksListIDParams) error {
