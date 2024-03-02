@@ -1,7 +1,3 @@
---
--- SQL queries for user management
---
-
 -- name: GetUserStatus :one
 SELECT CASE
 WHEN EXISTS(
@@ -61,10 +57,6 @@ UPDATE users
 SET deleted_at = $1
 WHERE id = $2
   AND deleted_at IS NULL;
-
---
--- SQL queries for user sessions
---
 
 -- name: AddDevice :exec
 INSERT INTO user_devices (id, user_id, user_agent, ip, detached, latest_login_at)

@@ -13,7 +13,6 @@ import (
 )
 
 const addDevice = `-- name: AddDevice :exec
-
 INSERT INTO user_devices (id, user_id, user_agent, ip, detached, latest_login_at)
 VALUES ($1, $2, $3, $4, $5, $6)
 `
@@ -27,7 +26,6 @@ type AddDeviceParams struct {
 	LatestLoginAt time.Time `db:"latest_login_at"`
 }
 
-// SQL queries for user sessions
 func (q *Queries) AddDevice(ctx context.Context, arg AddDeviceParams) error {
 	_, err := q.db.Exec(ctx, addDevice,
 		arg.ID,
@@ -209,7 +207,6 @@ func (q *Queries) GetUserID(ctx context.Context, email string) (string, error) {
 }
 
 const getUserStatus = `-- name: GetUserStatus :one
-
 SELECT CASE
 WHEN EXISTS(
     SELECT 1
@@ -226,7 +223,6 @@ WHEN EXISTS(
 ELSE 'not_found' END AS status
 `
 
-// SQL queries for user management
 func (q *Queries) GetUserStatus(ctx context.Context, email string) (string, error) {
 	row := q.db.QueryRow(ctx, getUserStatus, email)
 	var status string

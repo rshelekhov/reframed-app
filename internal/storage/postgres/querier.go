@@ -9,9 +9,6 @@ import (
 )
 
 type Querier interface {
-	//
-	// SQL queries for user sessions
-	//
 	AddDevice(ctx context.Context, arg AddDeviceParams) error
 	CreateHeading(ctx context.Context, arg CreateHeadingParams) error
 	CreateList(ctx context.Context, arg CreateListParams) error
@@ -47,9 +44,6 @@ type Querier interface {
 	GetUserData(ctx context.Context, id string) (GetUserDataRow, error)
 	GetUserDeviceID(ctx context.Context, arg GetUserDeviceIDParams) (string, error)
 	GetUserID(ctx context.Context, email string) (string, error)
-	//
-	// SQL queries for user management
-	//
 	GetUserStatus(ctx context.Context, email string) (string, error)
 	InsertUser(ctx context.Context, arg InsertUserParams) error
 	LinkTagToTask(ctx context.Context, arg LinkTagToTaskParams) error
