@@ -62,26 +62,23 @@ func (u *TaskUsecase) CreateTask(ctx context.Context, data *model.TaskRequestDat
 		UpdatedAt:   time.Now(),
 	}
 
-	// TODO: add transaction here
-
-	for _, tag := range newTask.Tags {
-		if err = u.tagUsecase.CreateTagIfNotExists(ctx, model.TagRequestData{
-			Title:  tag,
-			UserID: newTask.UserID,
-		}); err != nil {
-			return "", err
+	err = u.taskStorage.Transaction(ctx, func(s port.TaskStorage) error {
+		for _, tag := range newTask.Tags {
+			if err = u.tagUsecase.CreateTagIfNotExists(ctx, model.TagRequestData{
+				Title:  tag,
+				UserID: newTask.UserID,
+			}); err != nil {
+				return err
+			}
 		}
-	}
-
-	if err = u.taskStorage.CreateTask(ctx, newTask); err != nil {
-		return "", err
-	}
-
-	if err = u.tagUsecase.LinkTagsToTask(ctx, newTask.ID, newTask.Tags); err != nil {
-		return "", err
-	}
-
-	// TODO: finish transaction here
+		if err = u.taskStorage.CreateTask(ctx, newTask); err != nil {
+			return err
+		}
+		if err = u.tagUsecase.LinkTagsToTask(ctx, newTask.ID, newTask.Tags); err != nil {
+			return err
+		}
+		return nil
+	})
 
 	return newTask.ID, nil
 }

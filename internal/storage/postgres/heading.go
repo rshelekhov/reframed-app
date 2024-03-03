@@ -7,7 +7,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rshelekhov/reframed/internal/model"
-	"github.com/rshelekhov/reframed/internal/port"
 	"github.com/rshelekhov/reframed/pkg/constants/le"
 )
 
@@ -16,7 +15,7 @@ type HeadingStorage struct {
 	*Queries
 }
 
-func NewHeadingStorage(pool *pgxpool.Pool) port.HeadingStorage {
+func NewHeadingStorage(pool *pgxpool.Pool) *HeadingStorage {
 	return &HeadingStorage{
 		Pool:    pool,
 		Queries: New(pool),

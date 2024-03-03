@@ -26,6 +26,7 @@ type (
 	}
 
 	TaskStorage interface {
+		Transaction(ctx context.Context, fn func(storage TaskStorage) error) error
 		CreateTask(ctx context.Context, task model.Task) error
 		GetTaskStatusID(ctx context.Context, status model.StatusName) (int, error)
 		GetTaskByID(ctx context.Context, taskID, userID string) (model.Task, error)

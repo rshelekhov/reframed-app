@@ -27,6 +27,25 @@ func NewTaskStorage(pool *pgxpool.Pool) port.TaskStorage {
 	}
 }
 
+func (s *TaskStorage) Transaction(ctx context.Context, fn func(storage port.TaskStorage) error) error {
+	tx, err := s.Pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err != nil {
+			if rbErr := tx.Rollback(ctx); rbErr != nil {
+				err = fmt.Errorf("tx err: %v, rb err: %v", err, rbErr)
+			}
+		} else {
+			err = tx.Commit(ctx)
+		}
+	}()
+
+	return fn(s)
+}
+
 // TODO: make all storage methods with custom struct instead of default types like this
 func (s *TaskStorage) CreateTask(ctx context.Context, task model.Task) error {
 	const op = "task.storage.CreateTask"

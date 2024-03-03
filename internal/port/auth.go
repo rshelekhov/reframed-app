@@ -21,6 +21,7 @@ type (
 	}
 
 	AuthStorage interface {
+		Transaction(ctx context.Context, fn func(storage AuthStorage) error) error
 		CreateUser(ctx context.Context, user model.User) error
 		AddDevice(ctx context.Context, device model.UserDevice) error
 		SaveSession(ctx context.Context, session model.Session) error

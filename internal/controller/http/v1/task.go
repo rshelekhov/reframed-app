@@ -35,6 +35,8 @@ func NewTaskRoutes(
 		r.Use(jwtoken.Verifier(jwt))
 		r.Use(jwtoken.Authenticator())
 
+		// Add handler for creating task in the inbox list
+
 		r.Route("/user/lists/{list_id}", func(r chi.Router) {
 			r.Get("/tasks", c.GetTasksByListID())
 			r.Post("/tasks", c.CreateTask())
@@ -72,7 +74,13 @@ func (c *taskController) CreateTask() http.HandlerFunc {
 
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
-		userID := jwtoken.GetUserID(ctx).(string)
+
+		claims, err := jwtoken.GetClaimsFromToken(ctx)
+		if err != nil {
+			handleInternalServerError(w, r, log, le.ErrFailedToGetAccessToken, err)
+			return
+		}
+		userID := claims[key.UserID].(string)
 
 		listID := chi.URLParam(r, key.ListID)
 		if listID == "" {

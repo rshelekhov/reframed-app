@@ -26,6 +26,26 @@ func NewAuthStorage(pool *pgxpool.Pool) port.AuthStorage {
 	}
 }
 
+func (s *AuthStorage) Transaction(ctx context.Context, fn func(storage port.AuthStorage) error) error {
+	tx, err := s.Pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err != nil {
+			if rbErr := tx.Rollback(ctx); rbErr != nil {
+				err = fmt.Errorf("tx err: %v, rb err: %v", err, rbErr)
+			}
+		} else {
+			err = tx.Commit(ctx)
+		}
+	}()
+
+	err = fn(s)
+	return err
+}
+
 // CreateUser creates a new user
 func (s *AuthStorage) CreateUser(ctx context.Context, user model.User) error {
 	const op = "user.storage.CreateUser"

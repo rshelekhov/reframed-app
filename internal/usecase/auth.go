@@ -47,24 +47,25 @@ func (u *AuthUsecase) CreateUser(ctx context.Context, jwt *jwtoken.TokenService,
 		UpdatedAt:    time.Now(),
 	}
 
-	// TODO: Add transaction here
-	// Create the user
-	if err = u.authStorage.CreateUser(ctx, user); err != nil {
+	err = u.authStorage.Transaction(ctx, func(s port.AuthStorage) error {
+		if err = u.authStorage.CreateUser(ctx, user); err != nil {
+			return err
+		}
+		defaultList := model.List{
+			ID:        ksuid.New().String(),
+			Title:     model.DefaultInboxList.String(),
+			UserID:    user.ID,
+			UpdatedAt: time.Now(),
+		}
+
+		if err = u.listUsecase.CreateDefaultList(ctx, defaultList); err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
 		return "", err
 	}
-
-	defaultList := model.List{
-		ID:        ksuid.New().String(),
-		Title:     model.DefaultInboxList.String(),
-		UserID:    user.ID,
-		UpdatedAt: time.Now(),
-	}
-
-	if err = u.listUsecase.CreateDefaultList(ctx, defaultList); err != nil {
-		return "", err
-	}
-
-	// TODO: finish transaction here
 
 	return user.ID, nil
 }

@@ -7,7 +7,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rshelekhov/reframed/internal/model"
-	"github.com/rshelekhov/reframed/internal/port"
 	"github.com/rshelekhov/reframed/pkg/constants/le"
 )
 
@@ -16,7 +15,7 @@ type ListStorage struct {
 	*Queries
 }
 
-func NewListStorage(pool *pgxpool.Pool) port.ListStorage {
+func NewListStorage(pool *pgxpool.Pool) *ListStorage {
 	return &ListStorage{
 		Pool:    pool,
 		Queries: New(pool),
