@@ -264,21 +264,22 @@ func GetClaimsFromToken(ctx context.Context) (map[string]interface{}, error) {
 	return claims, nil
 }
 
-func GetUserID(ctx context.Context) any {
-	//claims, err := GetClaimsFromToken(ctx)
-	//if err != nil {
-	//	return "", err
-	//}
-	//userID, ok := claims[ContextUserID]
-	//if !ok {
-	//	return "", ErrUserIDNotFoundInCtx
-	//}
-
-	value := ctx.Value(ContextUserID)
-	if value == nil {
-		return nil
+func GetUserID(ctx context.Context) (string, error) {
+	claims, err := GetClaimsFromToken(ctx)
+	if err != nil {
+		return "", err
 	}
-	return value
+	userID, ok := claims[ContextUserID]
+	if !ok {
+		return "", ErrUserIDNotFoundInCtx
+	}
+	return userID.(string), nil
+
+	//	value := ctx.Value(ContextUserID)
+	//	if value == nil {
+	//		return nil
+	//	}
+	//	return value
 }
 
 func SetTokenCookie(w http.ResponseWriter, name, value, domain, path string, expiresAt time.Time, httpOnly bool) {
@@ -297,6 +298,7 @@ func SetRefreshTokenCookie(w http.ResponseWriter, refreshToken, domain, path str
 }
 
 func SendTokensToWeb(w http.ResponseWriter, data TokenData, httpStatus int) {
+	SetRefreshTokenCookie(w, data.RefreshToken, data.Domain, data.Path, data.ExpiresAt, data.HttpOnly)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(httpStatus)
 
@@ -310,8 +312,6 @@ func SendTokensToWeb(w http.ResponseWriter, data TokenData, httpStatus int) {
 	if err := json.NewEncoder(w).Encode(responseBody); err != nil {
 		return
 	}
-
-	SetRefreshTokenCookie(w, data.RefreshToken, data.Domain, data.Path, data.ExpiresAt, data.HttpOnly)
 }
 
 func SendTokensToMobileApp(w http.ResponseWriter, data TokenData, httpStatus int) {
