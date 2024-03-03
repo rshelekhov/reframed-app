@@ -1,0 +1,1 @@
+DROP VIEW IF EXISTS task_tags_view;

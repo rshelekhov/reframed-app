@@ -8,3 +8,7 @@ const (
 	StatusCompleted  StatusName = "StatusCompleted"
 	StatusArchived   StatusName = "StatusArchived"
 )
+
+func (s StatusName) String() string {
+	return string(s)
+}

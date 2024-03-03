@@ -18,7 +18,10 @@ type AuthUsecase struct {
 	listUsecase port.ListUsecase
 }
 
-func NewAuthUsecase(storage port.AuthStorage, listUsecase port.ListUsecase) *AuthUsecase {
+func NewAuthUsecase(
+	storage port.AuthStorage,
+	listUsecase port.ListUsecase,
+) *AuthUsecase {
 	return &AuthUsecase{
 		authStorage: storage,
 		listUsecase: listUsecase,
@@ -44,20 +47,22 @@ func (u *AuthUsecase) CreateUser(ctx context.Context, jwt *jwtoken.TokenService,
 		UpdatedAt:    time.Now(),
 	}
 
-	// Create the user
-	err = u.authStorage.CreateUser(ctx, user)
-	if err != nil {
-		return "", err
-	}
+	err = u.authStorage.Transaction(ctx, func(s port.AuthStorage) error {
+		if err = u.authStorage.CreateUser(ctx, user); err != nil {
+			return err
+		}
+		defaultList := model.List{
+			ID:        ksuid.New().String(),
+			Title:     model.DefaultInboxList.String(),
+			UserID:    user.ID,
+			UpdatedAt: time.Now(),
+		}
 
-	defaultList := model.List{
-		ID:        ksuid.New().String(),
-		Title:     model.DefaultInboxList.String(),
-		UserID:    user.ID,
-		UpdatedAt: time.Now(),
-	}
-
-	err = u.listUsecase.CreateDefaultList(ctx, defaultList)
+		if err = u.listUsecase.CreateDefaultList(ctx, defaultList); err != nil {
+			return err
+		}
+		return nil
+	})
 	if err != nil {
 		return "", err
 	}
@@ -213,13 +218,17 @@ func (u *AuthUsecase) CheckSessionAndDevice(ctx context.Context, refreshToken st
 	return session, nil
 }
 
+func (u *AuthUsecase) DeleteRefreshToken(ctx context.Context, refreshToken string) error {
+	return u.authStorage.DeleteRefreshToken(ctx, refreshToken)
+}
+
 func (u *AuthUsecase) LogoutUser(ctx context.Context, userID string, data model.UserDeviceRequestData) error {
 	// Check if the device exists
 	deviceID, err := u.authStorage.GetUserDeviceID(ctx, userID, data.UserAgent)
 	if err != nil {
 		return err
 	}
-	return u.authStorage.RemoveSession(ctx, userID, deviceID)
+	return u.authStorage.DeleteSession(ctx, userID, deviceID)
 }
 
 func (u *AuthUsecase) GetUserByID(ctx context.Context, id string) (model.UserResponseData, error) {
@@ -238,20 +247,42 @@ func (u *AuthUsecase) GetUserByID(ctx context.Context, id string) (model.UserRes
 }
 
 func (u *AuthUsecase) UpdateUser(ctx context.Context, jwt *jwtoken.TokenService, data *model.UserRequestData, userID string) error {
+	const op = "usecase.UserUsecase.UpdateUser"
 
-	user, err := u.authStorage.GetUserData(ctx, userID)
+	currentUser, err := u.authStorage.GetUserData(ctx, userID)
 	if err != nil {
 		return err
 	}
 
+	hash, err := jwtoken.PasswordHashBcrypt(
+		data.Password,
+		jwt.PasswordHashCost,
+		[]byte(jwt.PasswordHashSalt),
+	)
+	if err != nil {
+		return fmt.Errorf("%s: failed to generate password hash: %w", op, err)
+	}
+
 	updatedUser := model.User{
-		ID:        user.ID,
-		Email:     data.Email,
-		UpdatedAt: time.Now(),
+		ID:           userID,
+		Email:        data.Email,
+		PasswordHash: hash,
+		UpdatedAt:    time.Now(),
+	}
+
+	emailChanged := updatedUser.Email != "" && updatedUser.Email != currentUser.Email
+	passwordChanged := updatedUser.PasswordHash != ""
+
+	if !emailChanged && !passwordChanged {
+		return le.ErrNoChangesDetected
+	}
+
+	if err = u.authStorage.CheckEmailUniqueness(ctx, updatedUser); err != nil {
+		return err
 	}
 
 	if data.Password != "" {
-		if err = u.checkPassword(jwt, user.PasswordHash, data.Password); err != nil {
+		if err = u.checkPassword(jwt, currentUser.PasswordHash, data.Password); err != nil {
 			return err
 		}
 	}
@@ -294,7 +325,7 @@ func (u *AuthUsecase) DeleteUser(ctx context.Context, userID string, data model.
 		return err
 	}
 
-	err = u.authStorage.RemoveSession(ctx, userID, deviceID)
+	err = u.authStorage.DeleteSession(ctx, userID, deviceID)
 	if err != nil {
 		return err
 	}

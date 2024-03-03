@@ -5,12 +5,11 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/rshelekhov/reframed/config"
 	"github.com/rshelekhov/reframed/internal/controller/http/v1"
-	"github.com/rshelekhov/reframed/internal/storage"
+	"github.com/rshelekhov/reframed/internal/storage/postgres"
 	"github.com/rshelekhov/reframed/internal/usecase"
 	"github.com/rshelekhov/reframed/pkg/httpserver"
 	"github.com/rshelekhov/reframed/pkg/httpserver/middleware/jwtoken"
 	"github.com/rshelekhov/reframed/pkg/logger"
-	"github.com/rshelekhov/reframed/pkg/postgres"
 	"log/slog"
 )
 
@@ -46,12 +45,18 @@ func main() {
 	}
 	log.Debug("storage initiated")
 
+	headingStorage := postgres.NewHeadingStorage(pg)
+	listStorage := postgres.NewListStorage(pg)
+	authStorage := postgres.NewAuthStorage(pg)
+	taskStorage := postgres.NewTaskStorage(pg)
+	tagStorage := postgres.NewTagStorage(pg)
+
 	// Usecases
-	headingUsecase := usecase.NewHeadingUsecase(storage.NewHeadingStorage(pg))
-	listUsecase := usecase.NewListUsecase(storage.NewListStorage(pg), headingUsecase)
-	authUsecase := usecase.NewAuthUsecase(storage.NewAuthStorage(pg), listUsecase)
-	tagUsecase := usecase.NewTagUsecase(storage.NewTagStorage(pg))
-	taskUsecase := usecase.NewTaskUsecase(storage.NewTaskStorage(pg), headingUsecase, tagUsecase)
+	headingUsecase := usecase.NewHeadingUsecase(headingStorage)
+	listUsecase := usecase.NewListUsecase(listStorage, headingUsecase)
+	authUsecase := usecase.NewAuthUsecase(authStorage, listUsecase)
+	tagUsecase := usecase.NewTagUsecase(tagStorage)
+	taskUsecase := usecase.NewTaskUsecase(taskStorage, headingUsecase, tagUsecase)
 
 	// HTTP Server
 	log.Info("starting httpserver", slog.String("address", cfg.HTTPServer.Address))

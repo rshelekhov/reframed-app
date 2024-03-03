@@ -58,7 +58,7 @@ type (
 
 	TaskGroup struct {
 		StartDate time.Time          `json:"start_date,omitempty"`
-		Month     time.Time          `json:"month,omitempty"`
+		Month     int32              `json:"month,omitempty"`
 		ListID    string             `json:"list_id,omitempty"`
 		HeadingID string             `json:"heading_id,omitempty"`
 		Tasks     []TaskResponseData `json:"tasks"`

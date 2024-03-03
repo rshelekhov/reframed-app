@@ -26,6 +26,7 @@ type (
 	}
 
 	TaskStorage interface {
+		Transaction(ctx context.Context, fn func(storage TaskStorage) error) error
 		CreateTask(ctx context.Context, task model.Task) error
 		GetTaskStatusID(ctx context.Context, status model.StatusName) (int, error)
 		GetTaskByID(ctx context.Context, taskID, userID string) (model.Task, error)
@@ -41,7 +42,7 @@ type (
 		UpdateTask(ctx context.Context, task model.Task) error
 		UpdateTaskTime(ctx context.Context, task model.Task) error
 		MoveTaskToAnotherList(ctx context.Context, task model.Task) error
-		CompleteTask(ctx context.Context, task model.Task) error
-		ArchiveTask(ctx context.Context, task model.Task) error
+		MarkAsCompleted(ctx context.Context, task model.Task) error
+		MarkAsArchived(ctx context.Context, task model.Task) error
 	}
 )

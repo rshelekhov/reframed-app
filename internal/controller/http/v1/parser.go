@@ -21,7 +21,7 @@ func ParseLimitAndAfterID(r *http.Request) model.Pagination {
 	afterID := r.URL.Query().Get(c.AfterID)
 
 	return model.Pagination{
-		Limit:   limit,
+		Limit:   int32(limit),
 		AfterID: afterID,
 	}
 }
@@ -38,7 +38,7 @@ func ParseLimitAndAfterDate(r *http.Request) (model.Pagination, error) {
 	}
 
 	return model.Pagination{
-		Limit:     limit,
+		Limit:     int32(limit),
 		AfterDate: afterDate,
 	}, nil
 }

@@ -187,6 +187,12 @@ func (c *authController) RefreshJWTokens() http.HandlerFunc {
 			return
 		}
 
+		err = c.usecase.DeleteRefreshToken(ctx, refreshToken)
+		if err != nil {
+			handleInternalServerError(w, r, log, le.ErrFailedToDeleteRefreshToken, err)
+			return
+		}
+
 		tokenData, err := c.usecase.CreateUserSession(ctx, c.jwt, session.UserID, userDevice)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToCreateSession, err)

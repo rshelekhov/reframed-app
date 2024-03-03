@@ -21,6 +21,7 @@ const (
 	ErrFailedToCreateUser         LocalError = "failed to create user"
 	ErrFailedToRegisterDevice     LocalError = "failed to register device"
 	ErrFailedToCheckDevice        LocalError = "failed to check device"
+	ErrFailedToDeleteRefreshToken LocalError = "failed to delete refresh token"
 	ErrFailedToCreateSession      LocalError = "failed to create session"
 	ErrFailedToRemoveSession      LocalError = "failed to remove session"
 	ErrFailedToGetUserIDFromToken LocalError = "failed to get user id from token"
@@ -86,6 +87,7 @@ const (
 
 	ErrNoTasksFound         LocalError = "no tasks found"
 	ErrTaskNotFound         LocalError = "task not found"
+	ErrTaskStatusNotFound   LocalError = "task status not found"
 	ErrFailedToCreateTask   LocalError = "failed to create task"
 	ErrFailedToUpdateTask   LocalError = "failed to update task"
 	ErrFailedToCompleteTask LocalError = "failed to complete task"
