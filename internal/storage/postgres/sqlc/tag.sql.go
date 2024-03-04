@@ -3,7 +3,7 @@
 //   sqlc v1.25.0
 // source: tag.sql
 
-package postgres
+package sqlc
 
 import (
 	"context"

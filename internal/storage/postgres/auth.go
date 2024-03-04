@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rshelekhov/reframed/internal/model"
 	"github.com/rshelekhov/reframed/internal/port"
+	"github.com/rshelekhov/reframed/internal/storage/postgres/sqlc"
 	"github.com/rshelekhov/reframed/pkg/constants/le"
 	"strconv"
 	"time"
@@ -16,13 +17,13 @@ import (
 
 type AuthStorage struct {
 	*pgxpool.Pool
-	*Queries
+	*sqlc.Queries
 }
 
 func NewAuthStorage(pool *pgxpool.Pool) port.AuthStorage {
 	return &AuthStorage{
 		Pool:    pool,
-		Queries: New(pool),
+		Queries: sqlc.New(pool),
 	}
 }
 
@@ -92,7 +93,7 @@ func (s *AuthStorage) replaceSoftDeletedUser(ctx context.Context, user model.Use
 		return fmt.Errorf("%s: failed to set deleted_at to NULL: %w", op, err)
 	}
 
-	if err := s.Queries.InsertUser(ctx, InsertUserParams{
+	if err := s.Queries.InsertUser(ctx, sqlc.InsertUserParams{
 		ID:           user.ID,
 		Email:        user.Email,
 		PasswordHash: user.PasswordHash,
@@ -107,7 +108,7 @@ func (s *AuthStorage) replaceSoftDeletedUser(ctx context.Context, user model.Use
 func (s *AuthStorage) insertUser(ctx context.Context, user model.User) error {
 	const op = "user.storage.insertNewUser"
 
-	if err := s.Queries.InsertUser(ctx, InsertUserParams{
+	if err := s.Queries.InsertUser(ctx, sqlc.InsertUserParams{
 		ID:           user.ID,
 		Email:        user.Email,
 		PasswordHash: user.PasswordHash,
@@ -121,7 +122,7 @@ func (s *AuthStorage) insertUser(ctx context.Context, user model.User) error {
 func (s *AuthStorage) UpdateLatestLoginAt(ctx context.Context, deviceID string, latestLoginAt time.Time) error {
 	const op = "user.storage.UpdateLatestLoginAt"
 
-	if err := s.Queries.UpdateLatestLoginAt(ctx, UpdateLatestLoginAtParams{
+	if err := s.Queries.UpdateLatestLoginAt(ctx, sqlc.UpdateLatestLoginAtParams{
 		ID:            deviceID,
 		LatestLoginAt: latestLoginAt,
 	}); err != nil {
@@ -240,7 +241,7 @@ func (s *AuthStorage) CheckEmailUniqueness(ctx context.Context, user model.User)
 func (s *AuthStorage) DeleteUser(ctx context.Context, user model.User) error {
 	const op = "user.storage.DeleteUser"
 
-	err := s.Queries.DeleteUser(ctx, DeleteUserParams{
+	err := s.Queries.DeleteUser(ctx, sqlc.DeleteUserParams{
 		ID: user.ID,
 		DeletedAt: pgtype.Timestamptz{
 			Time: user.DeletedAt,
@@ -263,7 +264,7 @@ func (s *AuthStorage) DeleteUser(ctx context.Context, user model.User) error {
 func (s *AuthStorage) AddDevice(ctx context.Context, device model.UserDevice) error {
 	const op = "user.storage.AddDevice"
 
-	if err := s.Queries.AddDevice(ctx, AddDeviceParams{
+	if err := s.Queries.AddDevice(ctx, sqlc.AddDeviceParams{
 		ID:            device.ID,
 		UserID:        device.UserID,
 		UserAgent:     device.UserAgent,
@@ -279,7 +280,7 @@ func (s *AuthStorage) AddDevice(ctx context.Context, device model.UserDevice) er
 func (s *AuthStorage) GetUserDeviceID(ctx context.Context, userID, userAgent string) (string, error) {
 	const op = "user.storage.GetUserDeviceID"
 
-	deviceID, err := s.Queries.GetUserDeviceID(ctx, GetUserDeviceIDParams{
+	deviceID, err := s.Queries.GetUserDeviceID(ctx, sqlc.GetUserDeviceIDParams{
 		UserID:    userID,
 		UserAgent: userAgent,
 	})
@@ -298,7 +299,7 @@ func (s *AuthStorage) SaveSession(ctx context.Context, session model.Session) er
 	// TODO: add constraint that user can have only active sessions for 5 devices
 	const op = "user.storage.SaveSession"
 
-	if err := s.Queries.SaveSession(ctx, SaveSessionParams{
+	if err := s.Queries.SaveSession(ctx, sqlc.SaveSessionParams{
 		RefreshToken: session.RefreshToken,
 		UserID:       session.UserID,
 		DeviceID:     session.DeviceID,
@@ -343,7 +344,7 @@ func (s *AuthStorage) DeleteRefreshToken(ctx context.Context, refreshToken strin
 func (s *AuthStorage) DeleteSession(ctx context.Context, userID, deviceID string) error {
 	const op = "user.storage.DeleteSession"
 
-	err := s.Queries.DeleteSession(ctx, DeleteSessionParams{
+	err := s.Queries.DeleteSession(ctx, sqlc.DeleteSessionParams{
 		UserID:   userID,
 		DeviceID: deviceID,
 	})

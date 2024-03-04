@@ -54,9 +54,9 @@ func main() {
 	// Usecases
 	headingUsecase := usecase.NewHeadingUsecase(headingStorage)
 	listUsecase := usecase.NewListUsecase(listStorage, headingUsecase)
-	authUsecase := usecase.NewAuthUsecase(authStorage, listUsecase)
+	authUsecase := usecase.NewAuthUsecase(authStorage, listUsecase, headingUsecase)
 	tagUsecase := usecase.NewTagUsecase(tagStorage)
-	taskUsecase := usecase.NewTaskUsecase(taskStorage, headingUsecase, tagUsecase)
+	taskUsecase := usecase.NewTaskUsecase(taskStorage, headingUsecase, tagUsecase, listUsecase)
 
 	// HTTP Server
 	log.Info("starting httpserver", slog.String("address", cfg.HTTPServer.Address))

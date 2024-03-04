@@ -7,25 +7,26 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rshelekhov/reframed/internal/model"
+	"github.com/rshelekhov/reframed/internal/storage/postgres/sqlc"
 	"github.com/rshelekhov/reframed/pkg/constants/le"
 )
 
 type HeadingStorage struct {
 	*pgxpool.Pool
-	*Queries
+	*sqlc.Queries
 }
 
 func NewHeadingStorage(pool *pgxpool.Pool) *HeadingStorage {
 	return &HeadingStorage{
 		Pool:    pool,
-		Queries: New(pool),
+		Queries: sqlc.New(pool),
 	}
 }
 
 func (s *HeadingStorage) CreateHeading(ctx context.Context, heading model.Heading) error {
 	const op = "heading.storage.CreateHeading"
 
-	if err := s.Queries.CreateHeading(ctx, CreateHeadingParams{
+	if err := s.Queries.CreateHeading(ctx, sqlc.CreateHeadingParams{
 		ID:        heading.ID,
 		Title:     heading.Title,
 		ListID:    heading.ListID,
@@ -41,7 +42,7 @@ func (s *HeadingStorage) CreateHeading(ctx context.Context, heading model.Headin
 func (s *HeadingStorage) GetDefaultHeadingID(ctx context.Context, listID, userID string) (string, error) {
 	const op = "heading.storage.GetDefaultHeadingID"
 
-	headingID, err := s.Queries.GetDefaultHeadingID(ctx, GetDefaultHeadingIDParams{
+	headingID, err := s.Queries.GetDefaultHeadingID(ctx, sqlc.GetDefaultHeadingIDParams{
 		ListID: listID,
 		UserID: userID,
 	})
@@ -58,7 +59,7 @@ func (s *HeadingStorage) GetDefaultHeadingID(ctx context.Context, listID, userID
 func (s *HeadingStorage) GetHeadingByID(ctx context.Context, headingID, userID string) (model.Heading, error) {
 	const op = "heading.storage.GetHeadingByID"
 
-	heading, err := s.Queries.GetHeadingByID(ctx, GetHeadingByIDParams{
+	heading, err := s.Queries.GetHeadingByID(ctx, sqlc.GetHeadingByIDParams{
 		ID:     headingID,
 		UserID: userID,
 	})
@@ -82,7 +83,7 @@ func (s *HeadingStorage) GetHeadingByID(ctx context.Context, headingID, userID s
 func (s *HeadingStorage) GetHeadingsByListID(ctx context.Context, listID, userID string) ([]model.Heading, error) {
 	const op = "heading.storage.GetHeadingsByListID"
 
-	items, err := s.Queries.GetHeadingsByListID(ctx, GetHeadingsByListIDParams{
+	items, err := s.Queries.GetHeadingsByListID(ctx, sqlc.GetHeadingsByListIDParams{
 		ListID: listID,
 		UserID: userID,
 	})
@@ -110,7 +111,7 @@ func (s *HeadingStorage) GetHeadingsByListID(ctx context.Context, listID, userID
 func (s *HeadingStorage) UpdateHeading(ctx context.Context, heading model.Heading) error {
 	const op = "heading.storage.UpdateHeading"
 
-	err := s.Queries.UpdateHeading(ctx, UpdateHeadingParams{
+	err := s.Queries.UpdateHeading(ctx, sqlc.UpdateHeadingParams{
 		Title:     heading.Title,
 		UpdatedAt: heading.UpdatedAt,
 		ID:        heading.ID,
@@ -129,7 +130,7 @@ func (s *HeadingStorage) UpdateHeading(ctx context.Context, heading model.Headin
 func (s *HeadingStorage) MoveHeadingToAnotherList(ctx context.Context, heading model.Heading, task model.Task) error {
 	const op = "heading.storage.MoveTaskToAnotherList"
 
-	err := s.Queries.MoveHeadingToAnotherList(ctx, MoveHeadingToAnotherListParams{
+	err := s.Queries.MoveHeadingToAnotherList(ctx, sqlc.MoveHeadingToAnotherListParams{
 		ListID:    heading.ListID,
 		UpdatedAt: heading.UpdatedAt,
 		ID:        heading.ID,
@@ -142,7 +143,7 @@ func (s *HeadingStorage) MoveHeadingToAnotherList(ctx context.Context, heading m
 		return fmt.Errorf("%s: failed to update heading: %w", op, err)
 	}
 
-	err = s.Queries.UpdateTasksListID(ctx, UpdateTasksListIDParams{
+	err = s.Queries.UpdateTasksListID(ctx, sqlc.UpdateTasksListIDParams{
 		ListID:    task.ListID,
 		UpdatedAt: task.UpdatedAt,
 		HeadingID: task.HeadingID,
@@ -161,7 +162,7 @@ func (s *HeadingStorage) MoveHeadingToAnotherList(ctx context.Context, heading m
 func (s *HeadingStorage) DeleteHeading(ctx context.Context, heading model.Heading) error {
 	const op = "heading.storage.DeleteHeading"
 
-	err := s.Queries.DeleteHeading(ctx, DeleteHeadingParams{
+	err := s.Queries.DeleteHeading(ctx, sqlc.DeleteHeadingParams{
 		ID:     heading.ID,
 		UserID: heading.UserID,
 	})

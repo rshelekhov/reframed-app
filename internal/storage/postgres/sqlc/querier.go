@@ -2,7 +2,7 @@
 // versions:
 //   sqlc v1.25.0
 
-package postgres
+package sqlc
 
 import (
 	"context"
@@ -22,6 +22,7 @@ type Querier interface {
 	GetArchivedTasks(ctx context.Context, arg GetArchivedTasksParams) ([]GetArchivedTasksRow, error)
 	GetCompletedTasks(ctx context.Context, arg GetCompletedTasksParams) ([]GetCompletedTasksRow, error)
 	GetDefaultHeadingID(ctx context.Context, arg GetDefaultHeadingIDParams) (string, error)
+	GetDefaultListID(ctx context.Context, userID string) (string, error)
 	GetHeadingByID(ctx context.Context, arg GetHeadingByIDParams) (GetHeadingByIDRow, error)
 	GetHeadingsByListID(ctx context.Context, arg GetHeadingsByListIDParams) ([]GetHeadingsByListIDRow, error)
 	GetListByID(ctx context.Context, arg GetListByIDParams) (GetListByIDRow, error)

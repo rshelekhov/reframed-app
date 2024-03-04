@@ -3,7 +3,7 @@
 //   sqlc v1.25.0
 // source: list.sql
 
-package postgres
+package sqlc
 
 import (
 	"context"
@@ -13,14 +13,15 @@ import (
 )
 
 const createList = `-- name: CreateList :exec
-INSERT INTO lists (id, title, user_id, updated_at)
-VALUES ($1, $2, $3, $4)
+INSERT INTO lists (id, title, user_id, is_default, updated_at)
+VALUES ($1, $2, $3, $4, $5)
 `
 
 type CreateListParams struct {
 	ID        string    `db:"id"`
 	Title     string    `db:"title"`
 	UserID    string    `db:"user_id"`
+	IsDefault bool      `db:"is_default"`
 	UpdatedAt time.Time `db:"updated_at"`
 }
 
@@ -29,6 +30,7 @@ func (q *Queries) CreateList(ctx context.Context, arg CreateListParams) error {
 		arg.ID,
 		arg.Title,
 		arg.UserID,
+		arg.IsDefault,
 		arg.UpdatedAt,
 	)
 	return err
@@ -50,6 +52,21 @@ type DeleteListParams struct {
 func (q *Queries) DeleteList(ctx context.Context, arg DeleteListParams) error {
 	_, err := q.db.Exec(ctx, deleteList, arg.DeletedAt, arg.ID, arg.UserID)
 	return err
+}
+
+const getDefaultListID = `-- name: GetDefaultListID :one
+SELECT id
+FROM lists
+WHERE user_id = $1
+  AND is_default = TRUE
+  AND deleted_at IS NULL
+`
+
+func (q *Queries) GetDefaultListID(ctx context.Context, userID string) (string, error) {
+	row := q.db.QueryRow(ctx, getDefaultListID, userID)
+	var id string
+	err := row.Scan(&id)
+	return id, err
 }
 
 const getListByID = `-- name: GetListByID :one

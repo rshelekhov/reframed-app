@@ -6,6 +6,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/rshelekhov/reframed/config"
+	"github.com/rshelekhov/reframed/internal/storage/postgres/sqlc"
 	"net"
 )
 
@@ -34,5 +35,5 @@ func NewStorage(cfg *config.ServerSettings) (*pgxpool.Pool, error) {
 }
 
 type Store interface {
-	Querier
+	sqlc.Querier
 }

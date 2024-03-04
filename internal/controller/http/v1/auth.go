@@ -213,13 +213,18 @@ func (c *authController) Logout() http.HandlerFunc {
 
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
-		userID := jwtoken.GetUserID(ctx).(string)
+
+		userID, err := jwtoken.GetUserID(ctx)
+		if err != nil {
+			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+			return
+		}
 
 		userDevice := model.UserDeviceRequestData{
 			UserAgent: r.UserAgent(),
 		}
 
-		err := c.usecase.LogoutUser(ctx, userID, userDevice)
+		err = c.usecase.LogoutUser(ctx, userID, userDevice)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToLogout, err)
 			return
@@ -250,7 +255,12 @@ func (c *authController) GetUserProfile() http.HandlerFunc {
 
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
-		userID := jwtoken.GetUserID(ctx).(string)
+
+		userID, err := jwtoken.GetUserID(ctx)
+		if err != nil {
+			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+			return
+		}
 
 		user, err := c.usecase.GetUserByID(ctx, userID)
 		switch {
@@ -273,14 +283,19 @@ func (c *authController) UpdateUser() http.HandlerFunc {
 
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
-		userID := jwtoken.GetUserID(ctx).(string)
+
+		userID, err := jwtoken.GetUserID(ctx)
+		if err != nil {
+			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+			return
+		}
 
 		userInput := &model.UserRequestData{}
 		if err := decodeAndValidateJSON(w, r, log, userInput); err != nil {
 			return
 		}
 
-		err := c.usecase.UpdateUser(ctx, c.jwt, userInput, userID)
+		err = c.usecase.UpdateUser(ctx, c.jwt, userInput, userID)
 		switch {
 		case errors.Is(err, le.ErrUserNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrUserNotFound,
@@ -326,13 +341,18 @@ func (c *authController) DeleteUser() http.HandlerFunc {
 
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
-		userID := jwtoken.GetUserID(ctx).(string)
+
+		userID, err := jwtoken.GetUserID(ctx)
+		if err != nil {
+			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+			return
+		}
 
 		userDevice := model.UserDeviceRequestData{
 			UserAgent: r.UserAgent(),
 		}
 
-		err := c.usecase.DeleteUser(r.Context(), userID, userDevice)
+		err = c.usecase.DeleteUser(r.Context(), userID, userDevice)
 		switch {
 		case errors.Is(err, le.ErrUserNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound,

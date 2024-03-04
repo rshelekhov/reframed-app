@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rshelekhov/reframed/internal/model"
 	"github.com/rshelekhov/reframed/internal/port"
+	"github.com/rshelekhov/reframed/internal/storage/postgres/sqlc"
 	"github.com/rshelekhov/reframed/pkg/constants/le"
 	"strconv"
 	"time"
@@ -17,13 +18,13 @@ import (
 
 type TaskStorage struct {
 	*pgxpool.Pool
-	*Queries
+	*sqlc.Queries
 }
 
 func NewTaskStorage(pool *pgxpool.Pool) port.TaskStorage {
 	return &TaskStorage{
 		Pool:    pool,
-		Queries: New(pool),
+		Queries: sqlc.New(pool),
 	}
 }
 
@@ -50,7 +51,7 @@ func (s *TaskStorage) Transaction(ctx context.Context, fn func(storage port.Task
 func (s *TaskStorage) CreateTask(ctx context.Context, task model.Task) error {
 	const op = "task.storage.CreateTask"
 
-	taskParams := CreateTaskParams{
+	taskParams := sqlc.CreateTaskParams{
 		ID:        task.ID,
 		Title:     task.Title,
 		StatusID:  int32(task.StatusID),
@@ -102,7 +103,7 @@ func (s *TaskStorage) GetTaskStatusID(ctx context.Context, status model.StatusNa
 func (s *TaskStorage) GetTaskByID(ctx context.Context, taskID, userID string) (model.Task, error) {
 	const op = "task.storage.GetTaskByID"
 
-	task, err := s.Queries.GetTaskByID(ctx, GetTaskByIDParams{
+	task, err := s.Queries.GetTaskByID(ctx, sqlc.GetTaskByIDParams{
 		ID:     taskID,
 		UserID: userID,
 	})
@@ -162,7 +163,7 @@ func (s *TaskStorage) GetTasksByUserID(ctx context.Context, userID string, pgn m
 		afterID = pgn.AfterID
 	}
 
-	tasks, err := s.Queries.GetTasksByUserID(ctx, GetTasksByUserIDParams{
+	tasks, err := s.Queries.GetTasksByUserID(ctx, sqlc.GetTasksByUserIDParams{
 		UserID:  userID,
 		AfterID: afterID,
 		Limit:   pgn.Limit,
@@ -225,7 +226,7 @@ func (s *TaskStorage) GetTasksByUserID(ctx context.Context, userID string, pgn m
 func (s *TaskStorage) GetTasksByListID(ctx context.Context, listID, userID string) ([]model.Task, error) {
 	const op = "task.storage.GetTasksByListID"
 
-	tasks, err := s.Queries.GetTasksByListID(ctx, GetTasksByListIDParams{
+	tasks, err := s.Queries.GetTasksByListID(ctx, sqlc.GetTasksByListIDParams{
 		ListID: listID,
 		UserID: userID,
 	})
@@ -287,7 +288,7 @@ func (s *TaskStorage) GetTasksByListID(ctx context.Context, listID, userID strin
 func (s *TaskStorage) GetTasksGroupedByHeadings(ctx context.Context, listID, userID string) ([]model.TaskGroup, error) {
 	const op = "task.storage.GetTasksGroupedByHeadings"
 
-	groups, err := s.Queries.GetTasksGroupedByHeadings(ctx, GetTasksGroupedByHeadingsParams{
+	groups, err := s.Queries.GetTasksGroupedByHeadings(ctx, sqlc.GetTasksGroupedByHeadingsParams{
 		ListID: listID,
 		UserID: userID,
 	})
@@ -360,7 +361,7 @@ func (s *TaskStorage) GetUpcomingTasks(ctx context.Context, userID string, pgn m
 		afterDate = pgn.AfterDate
 	}
 
-	groups, err := s.Queries.GetUpcomingTasks(ctx, GetUpcomingTasksParams{
+	groups, err := s.Queries.GetUpcomingTasks(ctx, sqlc.GetUpcomingTasksParams{
 		UserID: userID,
 		AfterDate: pgtype.Timestamptz{
 			Valid: true,
@@ -398,7 +399,7 @@ func (s *TaskStorage) GetUpcomingTasks(ctx context.Context, userID string, pgn m
 func (s *TaskStorage) GetOverdueTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error) {
 	const op = "task.storage.GetOverdueTasks"
 
-	groups, err := s.Queries.GetOverdueTasks(ctx, GetOverdueTasksParams{
+	groups, err := s.Queries.GetOverdueTasks(ctx, sqlc.GetOverdueTasksParams{
 		UserID:  userID,
 		Limit:   pgn.Limit,
 		AfterID: pgn.AfterID,
@@ -441,7 +442,7 @@ func (s *TaskStorage) GetTasksForSomeday(ctx context.Context, userID string, pgn
 		afterDate = pgn.AfterDate
 	}
 
-	groups, err := s.Queries.GetUpcomingTasks(ctx, GetUpcomingTasksParams{
+	groups, err := s.Queries.GetUpcomingTasks(ctx, sqlc.GetUpcomingTasksParams{
 		UserID: userID,
 		AfterDate: pgtype.Timestamptz{
 			Valid: true,
@@ -489,7 +490,7 @@ func (s *TaskStorage) GetCompletedTasks(ctx context.Context, userID string, pgn 
 		afterDate = pgn.AfterDate
 	}
 
-	groups, err := s.Queries.GetCompletedTasks(ctx, GetCompletedTasksParams{
+	groups, err := s.Queries.GetCompletedTasks(ctx, sqlc.GetCompletedTasksParams{
 		UserID:      userID,
 		Limit:       pgn.Limit,
 		StatusTitle: model.StatusCompleted.String(),
@@ -539,7 +540,7 @@ func (s *TaskStorage) GetArchivedTasks(ctx context.Context, userID string, pgn m
 		afterMonth = pgn.AfterDate
 	}
 
-	groups, err := s.Queries.GetArchivedTasks(ctx, GetArchivedTasksParams{
+	groups, err := s.Queries.GetArchivedTasks(ctx, sqlc.GetArchivedTasksParams{
 		UserID:      userID,
 		Limit:       pgn.Limit,
 		StatusTitle: model.StatusArchived.String(),
@@ -688,7 +689,7 @@ func (s *TaskStorage) UpdateTaskTime(ctx context.Context, task model.Task) error
 func (s *TaskStorage) MoveTaskToAnotherList(ctx context.Context, task model.Task) error {
 	const op = "task.storage.MoveTaskToAnotherList"
 
-	if err := s.Queries.MoveTaskToAnotherList(ctx, MoveTaskToAnotherListParams{
+	if err := s.Queries.MoveTaskToAnotherList(ctx, sqlc.MoveTaskToAnotherListParams{
 		ListID:    task.ListID,
 		HeadingID: task.HeadingID,
 		UpdatedAt: task.UpdatedAt,
@@ -703,7 +704,7 @@ func (s *TaskStorage) MoveTaskToAnotherList(ctx context.Context, task model.Task
 func (s *TaskStorage) MarkAsCompleted(ctx context.Context, task model.Task) error {
 	const op = "task.storage.MarkAsCompleted"
 
-	if err := s.Queries.MarkTaskAsCompleted(ctx, MarkTaskAsCompletedParams{
+	if err := s.Queries.MarkTaskAsCompleted(ctx, sqlc.MarkTaskAsCompletedParams{
 		StatusID:  int32(task.StatusID),
 		UpdatedAt: task.UpdatedAt,
 		ID:        task.ID,
@@ -717,7 +718,7 @@ func (s *TaskStorage) MarkAsCompleted(ctx context.Context, task model.Task) erro
 func (s *TaskStorage) MarkAsArchived(ctx context.Context, task model.Task) error {
 	const op = "task.storage.MarkAsArchived"
 
-	if err := s.Queries.MarkTaskAsArchived(ctx, MarkTaskAsArchivedParams{
+	if err := s.Queries.MarkTaskAsArchived(ctx, sqlc.MarkTaskAsArchivedParams{
 		StatusID: int32(task.StatusID),
 		DeletedAt: pgtype.Timestamptz{
 			Valid: true,

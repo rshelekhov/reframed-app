@@ -1,6 +1,6 @@
 -- name: CreateList :exec
-INSERT INTO lists (id, title, user_id, updated_at)
-VALUES ($1, $2, $3, $4);
+INSERT INTO lists (id, title, user_id, is_default, updated_at)
+VALUES ($1, $2, $3, $4, $5);
 
 -- name: GetListByID :one
 SELECT id, title, user_id, updated_at
@@ -15,6 +15,13 @@ FROM lists
 WHERE user_id = $1
   AND deleted_at IS NULL
 ORDER BY id;
+
+-- name: GetDefaultListID :one
+SELECT id
+FROM lists
+WHERE user_id = $1
+  AND is_default = TRUE
+  AND deleted_at IS NULL;
 
 -- name: UpdateList :exec
 UPDATE lists

@@ -10,6 +10,7 @@ type (
 		ID        string    `db:"id"`
 		Title     string    `db:"headingTitle"`
 		UserID    string    `db:"user_id"`
+		IsDefault bool      `db:"is_default"`
 		UpdatedAt time.Time `db:"updated_at"`
 		DeletedAt time.Time `db:"deleted_at"`
 	}

@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS lists
     id         character varying PRIMARY KEY,
     title      character varying NOT NULL,
     user_id    character varying NOT NULL,
+    is_default boolean NOT NULL DEFAULT false,
     updated_at timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
     deleted_at timestamp WITH TIME ZONE DEFAULT NULL
 );

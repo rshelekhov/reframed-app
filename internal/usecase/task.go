@@ -13,22 +13,33 @@ type TaskUsecase struct {
 	taskStorage    port.TaskStorage
 	headingUsecase port.HeadingUsecase
 	tagUsecase     port.TagUsecase
+	listUsecase    port.ListUsecase
 }
 
 func NewTaskUsecase(
 	storage port.TaskStorage,
 	headingUsecase port.HeadingUsecase,
 	tagUsecase port.TagUsecase,
+	listUsecase port.ListUsecase,
 ) *TaskUsecase {
 	return &TaskUsecase{
 		taskStorage:    storage,
 		headingUsecase: headingUsecase,
 		tagUsecase:     tagUsecase,
+		listUsecase:    listUsecase,
 	}
 }
 
 func (u *TaskUsecase) CreateTask(ctx context.Context, data *model.TaskRequestData) (string, error) {
 	const op = "task.usecase.CreateTask"
+
+	if data.ListID == "" {
+		defaultListID, err := u.listUsecase.GetDefaultListID(ctx, data.UserID)
+		if err != nil {
+			return "", err
+		}
+		data.ListID = defaultListID
+	}
 
 	if data.HeadingID == "" {
 		defaultHeadingID, err := u.headingUsecase.GetDefaultHeadingID(ctx, model.HeadingRequestData{
@@ -55,14 +66,14 @@ func (u *TaskUsecase) CreateTask(ctx context.Context, data *model.TaskRequestDat
 		Deadline:    data.Deadline,
 		StartTime:   data.StartTime,
 		EndTime:     data.EndTime,
-		StatusID:    statusNotStarted,
+		StatusID:    data.StatusID,
 		ListID:      data.ListID,
 		HeadingID:   data.HeadingID,
 		UserID:      data.UserID,
 		UpdatedAt:   time.Now(),
 	}
 
-	err = u.taskStorage.Transaction(ctx, func(s port.TaskStorage) error {
+	if err = u.taskStorage.Transaction(ctx, func(s port.TaskStorage) error {
 		for _, tag := range newTask.Tags {
 			if err = u.tagUsecase.CreateTagIfNotExists(ctx, model.TagRequestData{
 				Title:  tag,
@@ -78,7 +89,9 @@ func (u *TaskUsecase) CreateTask(ctx context.Context, data *model.TaskRequestDat
 			return err
 		}
 		return nil
-	})
+	}); err != nil {
+		return "", err
+	}
 
 	return newTask.ID, nil
 }

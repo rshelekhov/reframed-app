@@ -20,16 +20,17 @@ func NewListUsecase(listStorage port.ListStorage, headingUsecase port.HeadingUse
 	}
 }
 
-func (u *ListUsecase) CreateList(ctx context.Context, data *model.ListRequestData) (string, error) {
+func (u *ListUsecase) CreateList(ctx context.Context, data *model.ListRequestData) (model.ListResponseData, error) {
 	newList := model.List{
 		ID:        ksuid.New().String(),
 		Title:     data.Title,
+		IsDefault: false,
 		UserID:    data.UserID,
 		UpdatedAt: time.Now(),
 	}
 
 	if err := u.listStorage.CreateList(ctx, newList); err != nil {
-		return "", err
+		return model.ListResponseData{}, err
 	}
 
 	defaultHeading := model.Heading{
@@ -42,14 +43,44 @@ func (u *ListUsecase) CreateList(ctx context.Context, data *model.ListRequestDat
 	}
 
 	if err := u.headingUsecase.CreateDefaultHeading(ctx, defaultHeading); err != nil {
-		return "", err
+		return model.ListResponseData{}, err
 	}
 
-	return newList.ID, nil
+	return model.ListResponseData{
+		ID:        newList.ID,
+		Title:     newList.Title,
+		UserID:    newList.UserID,
+		UpdatedAt: newList.UpdatedAt,
+	}, nil
 }
 
-func (u *ListUsecase) CreateDefaultList(ctx context.Context, list model.List) error {
-	return u.listStorage.CreateList(ctx, list)
+func (u *ListUsecase) CreateDefaultList(ctx context.Context, userID string) error {
+	defaultList := model.List{
+		ID:        ksuid.New().String(),
+		Title:     model.DefaultInboxList.String(),
+		IsDefault: true,
+		UserID:    userID,
+		UpdatedAt: time.Now(),
+	}
+
+	if err := u.listStorage.CreateList(ctx, defaultList); err != nil {
+		return err
+	}
+
+	defaultHeading := model.Heading{
+		ID:        ksuid.New().String(),
+		Title:     model.DefaultHeading.String(),
+		ListID:    defaultList.ID,
+		UserID:    userID,
+		IsDefault: true,
+		UpdatedAt: time.Now(),
+	}
+
+	if err := u.headingUsecase.CreateDefaultHeading(ctx, defaultHeading); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (u *ListUsecase) GetListByID(ctx context.Context, data model.ListRequestData) (model.ListResponseData, error) {
@@ -79,6 +110,14 @@ func (u *ListUsecase) GetListsByUserID(ctx context.Context, userID string) ([]mo
 	}
 
 	return listResp, nil
+}
+
+func (u *ListUsecase) GetDefaultListID(ctx context.Context, userID string) (string, error) {
+	listID, err := u.listStorage.GetDefaultListID(ctx, userID)
+	if err != nil {
+		return "", err
+	}
+	return listID, nil
 }
 
 func mapListToResponseData(list model.List) model.ListResponseData {

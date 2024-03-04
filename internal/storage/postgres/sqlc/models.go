@@ -2,7 +2,7 @@
 // versions:
 //   sqlc v1.25.0
 
-package postgres
+package sqlc
 
 import (
 	"database/sql"
@@ -25,6 +25,7 @@ type List struct {
 	ID        string             `db:"id"`
 	Title     string             `db:"title"`
 	UserID    string             `db:"user_id"`
+	IsDefault bool               `db:"is_default"`
 	UpdatedAt time.Time          `db:"updated_at"`
 	DeletedAt pgtype.Timestamptz `db:"deleted_at"`
 }

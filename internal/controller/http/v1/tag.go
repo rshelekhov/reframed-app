@@ -45,7 +45,12 @@ func (c *tagController) GetTagsByUserID() http.HandlerFunc {
 
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
-		userID := jwtoken.GetUserID(ctx).(string)
+
+		userID, err := jwtoken.GetUserID(ctx)
+		if err != nil {
+			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+			return
+		}
 
 		tagsResp, err := c.usecase.GetTagsByUserID(ctx, userID)
 		switch {

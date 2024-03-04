@@ -3,7 +3,7 @@
 //   sqlc v1.25.0
 // source: heading.sql
 
-package postgres
+package sqlc
 
 import (
 	"context"

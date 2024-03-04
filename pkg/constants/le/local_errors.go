@@ -60,13 +60,14 @@ const (
 	//  list errors
 	//===========================================================================
 
-	ErrNoListsFound       LocalError = "no lists found"
-	ErrListNotFound       LocalError = "list not found"
-	ErrFailedToCreateList LocalError = "failed to create list"
-	ErrFailedToGetLists   LocalError = "failed to get lists"
-	ErrFailedToUpdateList LocalError = "failed to update list"
-	ErrFailedToDeleteList LocalError = "failed to delete list"
-	ErrEmptyQueryListID   LocalError = "list ID is empty in query"
+	ErrNoListsFound             LocalError = "no lists found"
+	ErrListNotFound             LocalError = "list not found"
+	ErrFailedToCreateList       LocalError = "failed to create list"
+	ErrFailedToGetLists         LocalError = "failed to get lists"
+	ErrFailedToGetDefaultListID LocalError = "failed to get default list ID"
+	ErrFailedToUpdateList       LocalError = "failed to update list"
+	ErrFailedToDeleteList       LocalError = "failed to delete list"
+	ErrEmptyQueryListID         LocalError = "list ID is empty in query"
 
 	//===========================================================================
 	//  heading errors

@@ -7,25 +7,26 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rshelekhov/reframed/internal/model"
+	"github.com/rshelekhov/reframed/internal/storage/postgres/sqlc"
 	"github.com/rshelekhov/reframed/pkg/constants/le"
 )
 
 type TagStorage struct {
 	*pgxpool.Pool
-	*Queries
+	*sqlc.Queries
 }
 
 func NewTagStorage(pool *pgxpool.Pool) *TagStorage {
 	return &TagStorage{
 		Pool:    pool,
-		Queries: New(pool),
+		Queries: sqlc.New(pool),
 	}
 }
 
 func (s *TagStorage) CreateTag(ctx context.Context, tag model.Tag) error {
 	const op = "tag.storage.CreateTag"
 
-	if err := s.Queries.CreateTag(ctx, CreateTagParams{
+	if err := s.Queries.CreateTag(ctx, sqlc.CreateTagParams{
 		ID:        tag.ID,
 		Title:     tag.Title,
 		UserID:    tag.UserID,
@@ -40,7 +41,7 @@ func (s *TagStorage) LinkTagsToTask(ctx context.Context, taskID string, tags []s
 	const op = "tag.storage.LinkTagsToTask"
 
 	for _, tag := range tags {
-		if err := s.Queries.LinkTagToTask(ctx, LinkTagToTaskParams{
+		if err := s.Queries.LinkTagToTask(ctx, sqlc.LinkTagToTaskParams{
 			TaskID: taskID,
 			Title:  tag,
 		}); err != nil {
@@ -54,7 +55,7 @@ func (s *TagStorage) UnlinkTagsFromTask(ctx context.Context, taskID string, tags
 	const op = "tag.storage.UnlinkTagsFromTask"
 
 	for _, tag := range tags {
-		if err := s.Queries.UnlinkTagFromTask(ctx, UnlinkTagFromTaskParams{
+		if err := s.Queries.UnlinkTagFromTask(ctx, sqlc.UnlinkTagFromTaskParams{
 			TaskID: taskID,
 			Title:  tag,
 		}); err != nil {
@@ -67,7 +68,7 @@ func (s *TagStorage) UnlinkTagsFromTask(ctx context.Context, taskID string, tags
 func (s *TagStorage) GetTagIDByTitle(ctx context.Context, title, userID string) (string, error) {
 	const op = "tag.storage.GetTagByTitle"
 
-	tagID, err := s.Queries.GetTagIDByTitle(ctx, GetTagIDByTitleParams{
+	tagID, err := s.Queries.GetTagIDByTitle(ctx, sqlc.GetTagIDByTitleParams{
 		Title:  title,
 		UserID: userID,
 	})

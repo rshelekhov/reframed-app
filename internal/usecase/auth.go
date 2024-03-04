@@ -14,17 +14,20 @@ import (
 )
 
 type AuthUsecase struct {
-	authStorage port.AuthStorage
-	listUsecase port.ListUsecase
+	authStorage    port.AuthStorage
+	listUsecase    port.ListUsecase
+	headingUsecase port.HeadingUsecase
 }
 
 func NewAuthUsecase(
 	storage port.AuthStorage,
 	listUsecase port.ListUsecase,
+	headingUsecase port.HeadingUsecase,
 ) *AuthUsecase {
 	return &AuthUsecase{
-		authStorage: storage,
-		listUsecase: listUsecase,
+		authStorage:    storage,
+		listUsecase:    listUsecase,
+		headingUsecase: headingUsecase,
 	}
 }
 
@@ -47,23 +50,17 @@ func (u *AuthUsecase) CreateUser(ctx context.Context, jwt *jwtoken.TokenService,
 		UpdatedAt:    time.Now(),
 	}
 
-	err = u.authStorage.Transaction(ctx, func(s port.AuthStorage) error {
+	if err = u.authStorage.Transaction(ctx, func(s port.AuthStorage) error {
 		if err = u.authStorage.CreateUser(ctx, user); err != nil {
 			return err
 		}
-		defaultList := model.List{
-			ID:        ksuid.New().String(),
-			Title:     model.DefaultInboxList.String(),
-			UserID:    user.ID,
-			UpdatedAt: time.Now(),
-		}
 
-		if err = u.listUsecase.CreateDefaultList(ctx, defaultList); err != nil {
+		if err = u.listUsecase.CreateDefaultList(ctx, user.ID); err != nil {
 			return err
 		}
+
 		return nil
-	})
-	if err != nil {
+	}); err != nil {
 		return "", err
 	}
 
