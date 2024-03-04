@@ -29,6 +29,7 @@ func (s *ListStorage) CreateList(ctx context.Context, list model.List) error {
 	if err := s.Queries.CreateList(ctx, sqlc.CreateListParams{
 		ID:        list.ID,
 		Title:     list.Title,
+		IsDefault: list.IsDefault,
 		UserID:    list.UserID,
 		UpdatedAt: list.UpdatedAt,
 	}); err != nil {
