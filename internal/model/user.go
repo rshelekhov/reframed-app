@@ -22,6 +22,6 @@ type (
 	UserResponseData struct {
 		ID        string    `json:"id,omitempty"`
 		Email     string    `json:"email,omitempty"`
-		UpdatedAt time.Time `json:"updated_at,omitempty"`
+		UpdatedAt time.Time `json:"updated_at"`
 	}
 )

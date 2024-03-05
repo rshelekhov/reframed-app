@@ -28,7 +28,7 @@ type (
 		Title     string    `json:"title,omitempty"`
 		ListID    string    `json:"list_id,omitempty"`
 		UserID    string    `json:"user_id,omitempty"`
-		UpdatedAt time.Time `json:"updated_at,omitempty"`
+		UpdatedAt time.Time `json:"updated_at"`
 	}
 )
 

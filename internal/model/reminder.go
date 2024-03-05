@@ -9,6 +9,6 @@ type Reminder struct {
 	Read      bool      `db:"read" json:"read,omitempty"`
 	TaskID    string    `db:"task_id" json:"task_id,omitempty"`
 	UserID    string    `db:"user_id" json:"user_id,omitempty"`
-	UpdatedAt time.Time `db:"updated_at" json:"updated_at,omitempty"`
-	DeletedAt time.Time `db:"deleted_at" json:"deleted_at,omitempty"`
+	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
+	DeletedAt time.Time `db:"deleted_at" json:"deleted_at"`
 }
