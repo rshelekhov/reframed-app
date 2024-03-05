@@ -30,13 +30,13 @@ func NewTaskUsecase(
 	}
 }
 
-func (u *TaskUsecase) CreateTask(ctx context.Context, data *model.TaskRequestData) (string, error) {
+func (u *TaskUsecase) CreateTask(ctx context.Context, data *model.TaskRequestData) (model.TaskResponseData, error) {
 	const op = "task.usecase.CreateTask"
 
 	if data.ListID == "" {
 		defaultListID, err := u.listUsecase.GetDefaultListID(ctx, data.UserID)
 		if err != nil {
-			return "", err
+			return model.TaskResponseData{}, err
 		}
 		data.ListID = defaultListID
 	}
@@ -47,14 +47,14 @@ func (u *TaskUsecase) CreateTask(ctx context.Context, data *model.TaskRequestDat
 			UserID: data.UserID,
 		})
 		if err != nil {
-			return "", err
+			return model.TaskResponseData{}, err
 		}
 		data.HeadingID = defaultHeadingID
 	}
 
 	statusNotStarted, err := u.taskStorage.GetTaskStatusID(ctx, model.StatusNotStarted)
 	if err != nil {
-		return "", err
+		return model.TaskResponseData{}, err
 	}
 	data.StatusID = statusNotStarted
 
@@ -90,10 +90,23 @@ func (u *TaskUsecase) CreateTask(ctx context.Context, data *model.TaskRequestDat
 		}
 		return nil
 	}); err != nil {
-		return "", err
+		return model.TaskResponseData{}, err
 	}
 
-	return newTask.ID, nil
+	return model.TaskResponseData{
+		ID:          newTask.ID,
+		Title:       newTask.Title,
+		Description: newTask.Description,
+		StartDate:   newTask.StartDate,
+		Deadline:    newTask.Deadline,
+		StartTime:   newTask.StartTime,
+		EndTime:     newTask.EndTime,
+		StatusID:    newTask.StatusID,
+		ListID:      newTask.ListID,
+		HeadingID:   newTask.HeadingID,
+		UserID:      newTask.UserID,
+		UpdatedAt:   newTask.UpdatedAt,
+	}, nil
 }
 
 func (u *TaskUsecase) GetTaskByID(ctx context.Context, data model.TaskRequestData) (model.TaskResponseData, error) {
@@ -288,19 +301,21 @@ func findTagsToAddAndRemove(currentTags []model.TagResponseData, updatedTags []s
 	return tagsToAdd, tagsToRemove
 }
 
-func (u *TaskUsecase) UpdateTaskTime(ctx context.Context, data *model.TaskRequestData) error {
+func (u *TaskUsecase) UpdateTaskTime(ctx context.Context, data *model.TaskRequestTimeData) error {
+	var statusID int
+
 	if !data.StartTime.IsZero() && !data.EndTime.IsZero() {
 		taskStatusID, err := u.taskStorage.GetTaskStatusID(ctx, model.StatusPlanned)
 		if err != nil {
 			return err
 		}
-		data.StatusID = taskStatusID
+		statusID = taskStatusID
 	} else if data.StartTime.IsZero() && data.EndTime.IsZero() {
 		taskStatusID, err := u.taskStorage.GetTaskStatusID(ctx, model.StatusNotStarted)
 		if err != nil {
 			return err
 		}
-		data.StatusID = taskStatusID
+		statusID = taskStatusID
 	} else {
 		return le.ErrInvalidTaskTimeRange
 	}
@@ -309,7 +324,7 @@ func (u *TaskUsecase) UpdateTaskTime(ctx context.Context, data *model.TaskReques
 		ID:        data.ID,
 		StartTime: data.StartTime,
 		EndTime:   data.EndTime,
-		StatusID:  data.StatusID,
+		StatusID:  statusID,
 		UserID:    data.UserID,
 		UpdatedAt: time.Now(),
 	})

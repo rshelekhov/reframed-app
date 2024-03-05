@@ -7,7 +7,7 @@ import (
 
 type (
 	TaskUsecase interface {
-		CreateTask(ctx context.Context, data *model.TaskRequestData) (string, error)
+		CreateTask(ctx context.Context, data *model.TaskRequestData) (model.TaskResponseData, error)
 		GetTaskByID(ctx context.Context, data model.TaskRequestData) (model.TaskResponseData, error)
 		GetTasksByUserID(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskResponseData, error)
 		GetTasksByListID(ctx context.Context, data model.TaskRequestData) ([]model.TaskResponseData, error)
@@ -19,7 +19,7 @@ type (
 		GetCompletedTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error)
 		GetArchivedTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error)
 		UpdateTask(ctx context.Context, data *model.TaskRequestData) error
-		UpdateTaskTime(ctx context.Context, data *model.TaskRequestData) error
+		UpdateTaskTime(ctx context.Context, data *model.TaskRequestTimeData) error
 		MoveTaskToAnotherList(ctx context.Context, data model.TaskRequestData) error
 		CompleteTask(ctx context.Context, data model.TaskRequestData) error
 		ArchiveTask(ctx context.Context, data model.TaskRequestData) error

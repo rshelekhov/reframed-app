@@ -39,25 +39,32 @@ type (
 		Tags        []string  `json:"tags"`
 	}
 
+	TaskRequestTimeData struct {
+		ID        string    `json:"id"`
+		StartTime time.Time `json:"start_time"`
+		EndTime   time.Time `json:"end_time"`
+		UserID    string    `json:"user_id"`
+	}
+
 	TaskResponseData struct {
 		ID          string    `json:"id,omitempty"`
 		Title       string    `json:"title,omitempty"`
 		Description string    `json:"description,omitempty"`
-		StartDate   time.Time `json:"start_date,omitempty"`
-		Deadline    time.Time `json:"deadline,omitempty"`
-		StartTime   time.Time `json:"start_time,omitempty"`
-		EndTime     time.Time `json:"end_time,omitempty"`
+		StartDate   time.Time `json:"start_date"`
+		Deadline    time.Time `json:"deadline"`
+		StartTime   time.Time `json:"start_time"`
+		EndTime     time.Time `json:"end_time"`
 		StatusID    int       `json:"status_id,omitempty"`
 		ListID      string    `json:"list_id,omitempty"`
 		HeadingID   string    `json:"heading_id,omitempty"`
 		UserID      string    `json:"user_id,omitempty"`
 		Tags        []string  `json:"tags,omitempty"`
 		Overdue     bool      `json:"overdue,omitempty"`
-		UpdatedAt   time.Time `json:"updated_at,omitempty"`
+		UpdatedAt   time.Time `json:"updated_at"`
 	}
 
 	TaskGroup struct {
-		StartDate time.Time          `json:"start_date,omitempty"`
+		StartDate time.Time          `json:"start_date"`
 		Month     int32              `json:"month,omitempty"`
 		ListID    string             `json:"list_id,omitempty"`
 		HeadingID string             `json:"heading_id,omitempty"`

@@ -99,7 +99,7 @@ func (c *taskController) CreateTask() http.HandlerFunc {
 		taskInput.ListID = listID
 		taskInput.UserID = userID
 
-		taskID, err := c.usecase.CreateTask(ctx, taskInput)
+		taskResponse, err := c.usecase.CreateTask(ctx, taskInput)
 		switch {
 		case errors.Is(err, le.ErrHeadingNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrHeadingNotFound)
@@ -108,7 +108,7 @@ func (c *taskController) CreateTask() http.HandlerFunc {
 			handleInternalServerError(w, r, log, le.ErrFailedToCreateTask, err)
 			return
 		default:
-			handleResponseCreated(w, r, log, "task created", model.TaskResponseData{ID: taskID}, slog.String(key.TaskID, taskID))
+			handleResponseCreated(w, r, log, "task created", taskResponse, slog.String(key.TaskID, taskResponse.ID))
 		}
 	}
 }
@@ -133,7 +133,8 @@ func (c *taskController) CreateTaskInDefaultList() http.HandlerFunc {
 
 		taskInput.UserID = userID
 
-		taskID, err := c.usecase.CreateTask(ctx, taskInput)
+		// TODO: update this and similar methods — need to return all data, not only ID
+		taskResponse, err := c.usecase.CreateTask(ctx, taskInput)
 		switch {
 		case errors.Is(err, le.ErrHeadingNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrHeadingNotFound)
@@ -142,7 +143,7 @@ func (c *taskController) CreateTaskInDefaultList() http.HandlerFunc {
 			handleInternalServerError(w, r, log, le.ErrFailedToCreateTask, err)
 			return
 		default:
-			handleResponseCreated(w, r, log, "task created", model.TaskResponseData{ID: taskID}, slog.String(key.TaskID, taskID))
+			handleResponseCreated(w, r, log, "task created", taskResponse, slog.String(key.TaskID, taskResponse.ID))
 		}
 	}
 }
@@ -498,7 +499,7 @@ func (c *taskController) UpdateTask() http.HandlerFunc {
 		}
 
 		taskInput := &model.TaskRequestData{}
-		if err := decodeAndValidateJSON(w, r, log, taskInput); err != nil {
+		if err = decodeAndValidateJSON(w, r, log, taskInput); err != nil {
 			return
 		}
 
@@ -514,7 +515,7 @@ func (c *taskController) UpdateTask() http.HandlerFunc {
 			handleInternalServerError(w, r, log, le.ErrFailedToUpdateTask, err)
 			return
 		default:
-			handleResponseSuccess(w, r, log, "task updated", taskID, slog.String(key.TaskID, taskID))
+			handleResponseSuccess(w, r, log, "task updated", taskInput, slog.String(key.TaskID, taskID))
 		}
 
 	}
@@ -539,8 +540,8 @@ func (c *taskController) UpdateTaskTime() http.HandlerFunc {
 			return
 		}
 
-		taskInput := &model.TaskRequestData{}
-		if err := decodeAndValidateJSON(w, r, log, taskInput); err != nil {
+		taskInput := &model.TaskRequestTimeData{}
+		if err = decodeAndValidateJSON(w, r, log, taskInput); err != nil {
 			return
 		}
 
@@ -556,7 +557,7 @@ func (c *taskController) UpdateTaskTime() http.HandlerFunc {
 			handleInternalServerError(w, r, log, le.ErrFailedToUpdateTask, err)
 			return
 		default:
-			handleResponseSuccess(w, r, log, "task updated", taskID, slog.String(key.TaskID, taskID))
+			handleResponseSuccess(w, r, log, "task updated", taskInput, slog.String(key.TaskID, taskID))
 		}
 	}
 }
@@ -601,7 +602,7 @@ func (c *taskController) MoveTaskToAnotherList() http.HandlerFunc {
 			handleInternalServerError(w, r, log, le.ErrFailedToMoveTask, err)
 			return
 		default:
-			handleResponseSuccess(w, r, log, "task moved to another list", taskID, slog.String(key.TaskID, taskID))
+			handleResponseSuccess(w, r, log, "task moved to another list", taskInput, slog.String(key.TaskID, taskID))
 		}
 	}
 }
@@ -677,7 +678,7 @@ func (c *taskController) ArchiveTask() http.HandlerFunc {
 			handleInternalServerError(w, r, log, le.ErrFailedToDeleteTask, err)
 			return
 		default:
-			handleResponseSuccess(w, r, log, "task deleted", model.Task{ID: taskID}, slog.String(key.TaskID, taskID))
+			handleResponseSuccess(w, r, log, "task deleted", taskID, slog.String(key.TaskID, taskID))
 		}
 	}
 }
