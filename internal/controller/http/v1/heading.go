@@ -70,14 +70,14 @@ func (c *headingController) CreateHeading() http.HandlerFunc {
 		}
 
 		headingInput := &model.HeadingRequestData{}
-		if err := decodeAndValidateJSON(w, r, log, headingInput); err != nil {
+		if err = decodeAndValidateJSON(w, r, log, headingInput); err != nil {
 			return
 		}
 
 		headingInput.ListID = listID
 		headingInput.UserID = userID
 
-		headingID, err := c.usecase.CreateHeading(ctx, headingInput)
+		headingResponse, err := c.usecase.CreateHeading(ctx, headingInput)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToCreateHeading, err)
 			return
@@ -85,8 +85,8 @@ func (c *headingController) CreateHeading() http.HandlerFunc {
 
 		handleResponseCreated(
 			w, r, log, "heading created",
-			model.HeadingResponseData{ID: headingID},
-			slog.String(key.HeadingID, headingID),
+			headingResponse,
+			slog.String(key.HeadingID, headingResponse.ID),
 		)
 	}
 }
@@ -187,14 +187,14 @@ func (c *headingController) UpdateHeading() http.HandlerFunc {
 		}
 
 		headingInput := &model.HeadingRequestData{}
-		if err := decodeAndValidateJSON(w, r, log, headingInput); err != nil {
+		if err = decodeAndValidateJSON(w, r, log, headingInput); err != nil {
 			return
 		}
 
 		headingInput.ID = headingID
 		headingInput.UserID = userID
 
-		err = c.usecase.UpdateHeading(ctx, headingInput)
+		headingResponse, err := c.usecase.UpdateHeading(ctx, headingInput)
 		switch {
 		case errors.Is(err, le.ErrHeadingNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrHeadingNotFound)
@@ -203,7 +203,7 @@ func (c *headingController) UpdateHeading() http.HandlerFunc {
 			handleInternalServerError(w, r, log, le.ErrFailedToUpdateHeading, err)
 			return
 		default:
-			handleResponseSuccess(w, r, log, "heading updated", headingID, slog.String(key.HeadingID, headingID))
+			handleResponseSuccess(w, r, log, "heading updated", headingResponse, slog.String(key.HeadingID, headingResponse.ID))
 		}
 	}
 }
@@ -239,7 +239,7 @@ func (c *headingController) MoveHeadingToAnotherList() http.HandlerFunc {
 			UserID: userID,
 		}
 
-		err = c.usecase.MoveHeadingToAnotherList(ctx, headingInput)
+		headingResponse, err := c.usecase.MoveHeadingToAnotherList(ctx, headingInput)
 		switch {
 		case errors.Is(err, le.ErrHeadingNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrHeadingNotFound)
@@ -248,7 +248,7 @@ func (c *headingController) MoveHeadingToAnotherList() http.HandlerFunc {
 			handleInternalServerError(w, r, log, le.ErrFailedToMoveHeading, err)
 			return
 		default:
-			handleResponseSuccess(w, r, log, "heading moved to another list", headingID, slog.String(key.HeadingID, headingID))
+			handleResponseSuccess(w, r, log, "heading moved to another list", headingResponse, slog.String(key.HeadingID, headingResponse.ID))
 		}
 	}
 }
@@ -286,7 +286,7 @@ func (c *headingController) DeleteHeading() http.HandlerFunc {
 			handleInternalServerError(w, r, log, le.ErrFailedToDeleteHeading, err)
 			return
 		default:
-			handleResponseSuccess(w, r, log, "heading deleted", model.ListResponseData{ID: headingID}, slog.String(key.HeadingID, headingID))
+			handleResponseSuccess(w, r, log, "heading deleted", headingID, slog.String(key.HeadingID, headingID))
 		}
 	}
 }

@@ -7,13 +7,13 @@ import (
 
 type (
 	HeadingUsecase interface {
-		CreateHeading(ctx context.Context, data *model.HeadingRequestData) (string, error)
+		CreateHeading(ctx context.Context, data *model.HeadingRequestData) (model.HeadingResponseData, error)
 		CreateDefaultHeading(ctx context.Context, heading model.Heading) error
 		GetHeadingByID(ctx context.Context, data model.HeadingRequestData) (model.HeadingResponseData, error)
 		GetDefaultHeadingID(ctx context.Context, data model.HeadingRequestData) (string, error)
 		GetHeadingsByListID(ctx context.Context, data model.HeadingRequestData) ([]model.HeadingResponseData, error)
-		UpdateHeading(ctx context.Context, data *model.HeadingRequestData) error
-		MoveHeadingToAnotherList(ctx context.Context, data model.HeadingRequestData) error
+		UpdateHeading(ctx context.Context, data *model.HeadingRequestData) (model.HeadingResponseData, error)
+		MoveHeadingToAnotherList(ctx context.Context, data model.HeadingRequestData) (model.HeadingResponseData, error)
 		DeleteHeading(ctx context.Context, data model.HeadingRequestData) error
 	}
 

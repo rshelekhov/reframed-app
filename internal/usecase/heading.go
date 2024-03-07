@@ -18,7 +18,7 @@ func NewHeadingUsecase(storage port.HeadingStorage) *HeadingUsecase {
 	}
 }
 
-func (u *HeadingUsecase) CreateHeading(ctx context.Context, data *model.HeadingRequestData) (string, error) {
+func (u *HeadingUsecase) CreateHeading(ctx context.Context, data *model.HeadingRequestData) (model.HeadingResponseData, error) {
 	newHeading := model.Heading{
 		ID:        ksuid.New().String(),
 		Title:     data.Title,
@@ -29,10 +29,16 @@ func (u *HeadingUsecase) CreateHeading(ctx context.Context, data *model.HeadingR
 	}
 
 	if err := u.headingStorage.CreateHeading(ctx, newHeading); err != nil {
-		return "", err
+		return model.HeadingResponseData{}, err
 	}
 
-	return newHeading.ID, nil
+	return model.HeadingResponseData{
+		ID:        newHeading.ID,
+		Title:     newHeading.Title,
+		ListID:    newHeading.ListID,
+		UserID:    newHeading.UserID,
+		UpdatedAt: newHeading.UpdatedAt,
+	}, nil
 }
 
 func (u *HeadingUsecase) CreateDefaultHeading(ctx context.Context, heading model.Heading) error {
@@ -83,7 +89,7 @@ func mapHeadingToResponseData(heading model.Heading) model.HeadingResponseData {
 	}
 }
 
-func (u *HeadingUsecase) UpdateHeading(ctx context.Context, data *model.HeadingRequestData) error {
+func (u *HeadingUsecase) UpdateHeading(ctx context.Context, data *model.HeadingRequestData) (model.HeadingResponseData, error) {
 	updatedHeading := model.Heading{
 		ID:        data.ID,
 		Title:     data.Title,
@@ -92,10 +98,20 @@ func (u *HeadingUsecase) UpdateHeading(ctx context.Context, data *model.HeadingR
 		UpdatedAt: time.Now(),
 	}
 
-	return u.headingStorage.UpdateHeading(ctx, updatedHeading)
+	if err := u.headingStorage.UpdateHeading(ctx, updatedHeading); err != nil {
+		return model.HeadingResponseData{}, err
+	}
+
+	return model.HeadingResponseData{
+		ID:        updatedHeading.ID,
+		Title:     updatedHeading.Title,
+		ListID:    updatedHeading.ListID,
+		UserID:    updatedHeading.UserID,
+		UpdatedAt: updatedHeading.UpdatedAt,
+	}, nil
 }
 
-func (u *HeadingUsecase) MoveHeadingToAnotherList(ctx context.Context, data model.HeadingRequestData) error {
+func (u *HeadingUsecase) MoveHeadingToAnotherList(ctx context.Context, data model.HeadingRequestData) (model.HeadingResponseData, error) {
 	updatedHeading := model.Heading{
 		ID:        data.ID,
 		ListID:    data.ListID,
@@ -103,14 +119,24 @@ func (u *HeadingUsecase) MoveHeadingToAnotherList(ctx context.Context, data mode
 		UpdatedAt: time.Now(),
 	}
 
-	updatedTask := model.Task{
+	updatedTasks := model.Task{
 		HeadingID: data.ID,
 		ListID:    data.ListID,
 		UserID:    data.UserID,
 		UpdatedAt: time.Now(),
 	}
 
-	return u.headingStorage.MoveHeadingToAnotherList(ctx, updatedHeading, updatedTask)
+	if err := u.headingStorage.MoveHeadingToAnotherList(ctx, updatedHeading, updatedTasks); err != nil {
+		return model.HeadingResponseData{}, err
+	}
+
+	return model.HeadingResponseData{
+		ID:        updatedHeading.ID,
+		Title:     updatedHeading.Title,
+		ListID:    updatedHeading.ListID,
+		UserID:    updatedHeading.UserID,
+		UpdatedAt: updatedHeading.UpdatedAt,
+	}, nil
 }
 
 func (u *HeadingUsecase) DeleteHeading(ctx context.Context, data model.HeadingRequestData) error {
