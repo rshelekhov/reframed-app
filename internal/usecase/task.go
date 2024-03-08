@@ -243,38 +243,36 @@ func (u *TaskUsecase) UpdateTask(ctx context.Context, data *model.TaskRequestDat
 		UpdatedAt: time.Now(),
 	}
 
-	// TODO: add transaction here
-
-	currentTags, err := u.tagUsecase.GetTagsByTaskID(ctx, updatedTask.ID)
-	if err != nil {
-		return model.TaskResponseData{}, err
-	}
-
-	// Use transactions in these methods
-	tagsToAdd, tagsToRemove := findTagsToAddAndRemove(currentTags, updatedTask.Tags)
-
-	for _, tag := range updatedTask.Tags {
-		if err = u.tagUsecase.CreateTagIfNotExists(ctx, model.TagRequestData{
-			Title:  tag,
-			UserID: updatedTask.UserID,
-		}); err != nil {
-			return model.TaskResponseData{}, err
+	if err := u.taskStorage.Transaction(ctx, func(s port.TaskStorage) error {
+		currentTags, err := u.tagUsecase.GetTagsByTaskID(ctx, updatedTask.ID)
+		if err != nil {
+			return err
 		}
-	}
 
-	if err = u.taskStorage.UpdateTask(ctx, updatedTask); err != nil {
+		tagsToAdd, tagsToRemove := findTagsToAddAndRemove(currentTags, updatedTask.Tags)
+
+		for _, tag := range updatedTask.Tags {
+			if err = u.tagUsecase.CreateTagIfNotExists(ctx, model.TagRequestData{
+				Title:  tag,
+				UserID: updatedTask.UserID,
+			}); err != nil {
+				return err
+			}
+		}
+
+		if err = u.taskStorage.UpdateTask(ctx, updatedTask); err != nil {
+			return err
+		}
+		if err = u.tagUsecase.UnlinkTagsFromTask(ctx, updatedTask.ID, tagsToRemove); err != nil {
+			return err
+		}
+		if err = u.tagUsecase.LinkTagsToTask(ctx, updatedTask.ID, tagsToAdd); err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
 		return model.TaskResponseData{}, err
 	}
-
-	if err = u.tagUsecase.UnlinkTagsFromTask(ctx, updatedTask.ID, tagsToRemove); err != nil {
-		return model.TaskResponseData{}, err
-	}
-
-	if err = u.tagUsecase.LinkTagsToTask(ctx, updatedTask.ID, tagsToAdd); err != nil {
-		return model.TaskResponseData{}, err
-	}
-
-	// TODO: finish transaction here
 
 	return model.TaskResponseData{
 		ID:        updatedTask.ID,
