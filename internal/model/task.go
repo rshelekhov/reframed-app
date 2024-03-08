@@ -39,13 +39,6 @@ type (
 		Tags        []string  `json:"tags"`
 	}
 
-	TaskRequestTimeData struct {
-		ID        string    `json:"id"`
-		StartTime time.Time `json:"start_time"`
-		EndTime   time.Time `json:"end_time"`
-		UserID    string    `json:"user_id"`
-	}
-
 	TaskResponseData struct {
 		ID          string    `json:"id,omitempty"`
 		Title       string    `json:"title,omitempty"`
@@ -61,6 +54,21 @@ type (
 		Tags        []string  `json:"tags,omitempty"`
 		Overdue     bool      `json:"overdue,omitempty"`
 		UpdatedAt   time.Time `json:"updated_at"`
+	}
+
+	TaskRequestTimeData struct {
+		ID        string    `json:"id"`
+		StartTime time.Time `json:"start_time"`
+		EndTime   time.Time `json:"end_time"`
+		UserID    string    `json:"user_id"`
+	}
+
+	TaskResponseTimeData struct {
+		ID        string    `json:"id"`
+		StartTime time.Time `json:"start_time"`
+		EndTime   time.Time `json:"end_time"`
+		UserID    string    `json:"user_id"`
+		UpdatedAt time.Time `json:"updated_at"`
 	}
 
 	TaskGroup struct {

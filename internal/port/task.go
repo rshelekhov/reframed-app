@@ -18,8 +18,8 @@ type (
 		GetTasksForSomeday(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error)
 		GetCompletedTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error)
 		GetArchivedTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error)
-		UpdateTask(ctx context.Context, data *model.TaskRequestData) error
-		UpdateTaskTime(ctx context.Context, data *model.TaskRequestTimeData) error
+		UpdateTask(ctx context.Context, data *model.TaskRequestData) (model.TaskResponseData, error)
+		UpdateTaskTime(ctx context.Context, data *model.TaskRequestTimeData) (model.TaskResponseTimeData, error)
 		MoveTaskToAnotherList(ctx context.Context, data model.TaskRequestData) error
 		CompleteTask(ctx context.Context, data model.TaskRequestData) error
 		ArchiveTask(ctx context.Context, data model.TaskRequestData) error

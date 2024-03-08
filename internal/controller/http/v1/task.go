@@ -506,7 +506,7 @@ func (c *taskController) UpdateTask() http.HandlerFunc {
 		taskInput.ID = taskID
 		taskInput.UserID = userID
 
-		err = c.usecase.UpdateTask(ctx, taskInput)
+		taskResponse, err := c.usecase.UpdateTask(ctx, taskInput)
 		switch {
 		case errors.Is(err, le.ErrTaskNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrTaskNotFound)
@@ -515,9 +515,8 @@ func (c *taskController) UpdateTask() http.HandlerFunc {
 			handleInternalServerError(w, r, log, le.ErrFailedToUpdateTask, err)
 			return
 		default:
-			handleResponseSuccess(w, r, log, "task updated", taskInput, slog.String(key.TaskID, taskID))
+			handleResponseSuccess(w, r, log, "task updated", taskResponse, slog.String(key.TaskID, taskResponse.ID))
 		}
-
 	}
 }
 
@@ -548,7 +547,7 @@ func (c *taskController) UpdateTaskTime() http.HandlerFunc {
 		taskInput.ID = taskID
 		taskInput.UserID = userID
 
-		err = c.usecase.UpdateTaskTime(ctx, taskInput)
+		taskResponse, err := c.usecase.UpdateTaskTime(ctx, taskInput)
 		switch {
 		case errors.Is(err, le.ErrTaskNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrTaskNotFound)
@@ -557,7 +556,7 @@ func (c *taskController) UpdateTaskTime() http.HandlerFunc {
 			handleInternalServerError(w, r, log, le.ErrFailedToUpdateTask, err)
 			return
 		default:
-			handleResponseSuccess(w, r, log, "task updated", taskInput, slog.String(key.TaskID, taskID))
+			handleResponseSuccess(w, r, log, "task updated", taskResponse, slog.String(key.TaskID, taskResponse.ID))
 		}
 	}
 }
@@ -602,7 +601,7 @@ func (c *taskController) MoveTaskToAnotherList() http.HandlerFunc {
 			handleInternalServerError(w, r, log, le.ErrFailedToMoveTask, err)
 			return
 		default:
-			handleResponseSuccess(w, r, log, "task moved to another list", taskInput, slog.String(key.TaskID, taskID))
+			handleResponseSuccess(w, r, log, "task moved to another list", taskInput, slog.String(key.TaskID, taskInput.ID))
 		}
 	}
 }
