@@ -129,7 +129,7 @@ func mapListToResponseData(list model.List) model.ListResponseData {
 	}
 }
 
-func (u *ListUsecase) UpdateList(ctx context.Context, data *model.ListRequestData) error {
+func (u *ListUsecase) UpdateList(ctx context.Context, data *model.ListRequestData) (model.ListResponseData, error) {
 	updatedList := model.List{
 		ID:        data.ID,
 		Title:     data.Title,
@@ -137,7 +137,16 @@ func (u *ListUsecase) UpdateList(ctx context.Context, data *model.ListRequestDat
 		UpdatedAt: time.Now(),
 	}
 
-	return u.listStorage.UpdateList(ctx, updatedList)
+	if err := u.listStorage.UpdateList(ctx, updatedList); err != nil {
+		return model.ListResponseData{}, err
+	}
+
+	return model.ListResponseData{
+		ID:        updatedList.ID,
+		Title:     updatedList.Title,
+		UserID:    updatedList.UserID,
+		UpdatedAt: updatedList.UpdatedAt,
+	}, nil
 }
 
 func (u *ListUsecase) DeleteList(ctx context.Context, data model.ListRequestData) error {

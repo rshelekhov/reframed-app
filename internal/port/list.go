@@ -12,7 +12,7 @@ type (
 		GetListByID(ctx context.Context, data model.ListRequestData) (model.ListResponseData, error)
 		GetListsByUserID(ctx context.Context, userID string) ([]model.ListResponseData, error)
 		GetDefaultListID(ctx context.Context, userID string) (string, error)
-		UpdateList(ctx context.Context, data *model.ListRequestData) error
+		UpdateList(ctx context.Context, data *model.ListRequestData) (model.ListResponseData, error)
 		DeleteList(ctx context.Context, data model.ListRequestData) error
 	}
 

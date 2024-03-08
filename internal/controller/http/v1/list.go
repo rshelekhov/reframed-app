@@ -168,14 +168,14 @@ func (c *listController) UpdateList() http.HandlerFunc {
 		}
 
 		listInput := &model.ListRequestData{}
-		if err := decodeAndValidateJSON(w, r, log, listInput); err != nil {
+		if err = decodeAndValidateJSON(w, r, log, listInput); err != nil {
 			return
 		}
 
 		listInput.ID = listID
 		listInput.UserID = userID
 
-		err = c.usecase.UpdateList(ctx, listInput)
+		listResponse, err := c.usecase.UpdateList(ctx, listInput)
 		switch {
 		case errors.Is(err, le.ErrListNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrListNotFound)
@@ -184,7 +184,7 @@ func (c *listController) UpdateList() http.HandlerFunc {
 			handleInternalServerError(w, r, log, le.ErrFailedToUpdateList, err)
 			return
 		default:
-			handleResponseSuccess(w, r, log, "list updated", listID, slog.String(key.ListID, listID))
+			handleResponseSuccess(w, r, log, "list updated", listResponse, slog.String(key.ListID, listResponse.ID))
 		}
 	}
 }
@@ -222,7 +222,7 @@ func (c *listController) DeleteList() http.HandlerFunc {
 			handleInternalServerError(w, r, log, le.ErrFailedToDeleteList, err)
 			return
 		default:
-			handleResponseSuccess(w, r, log, "list deleted", model.ListResponseData{ID: listID}, slog.String(key.ListID, listID))
+			handleResponseSuccess(w, r, log, "list deleted", listID, slog.String(key.ListID, listID))
 		}
 	}
 }
