@@ -2,15 +2,17 @@ package v1
 
 import (
 	"errors"
+	"log/slog"
+	"net/http"
+
 	"github.com/go-chi/chi/v5"
+
 	"github.com/rshelekhov/reframed/internal/model"
 	"github.com/rshelekhov/reframed/internal/port"
 	"github.com/rshelekhov/reframed/pkg/constants/key"
 	"github.com/rshelekhov/reframed/pkg/constants/le"
 	"github.com/rshelekhov/reframed/pkg/httpserver/middleware/jwtoken"
 	"github.com/rshelekhov/reframed/pkg/logger"
-	"log/slog"
-	"net/http"
 )
 
 type listController struct {
@@ -106,6 +108,7 @@ func (c *listController) GetListByID() http.HandlerFunc {
 		}
 
 		listResp, err := c.usecase.GetListByID(ctx, listInput)
+
 		switch {
 		case errors.Is(err, le.ErrListNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrListNotFound)
@@ -133,6 +136,7 @@ func (c *listController) GetListsByUserID() http.HandlerFunc {
 		}
 
 		listsResp, err := c.usecase.GetListsByUserID(ctx, userID)
+
 		switch {
 		case errors.Is(err, le.ErrNoListsFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrNoListsFound)
@@ -176,6 +180,7 @@ func (c *listController) UpdateList() http.HandlerFunc {
 		listInput.UserID = userID
 
 		listResponse, err := c.usecase.UpdateList(ctx, listInput)
+
 		switch {
 		case errors.Is(err, le.ErrListNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrListNotFound)
@@ -214,6 +219,7 @@ func (c *listController) DeleteList() http.HandlerFunc {
 		}
 
 		err = c.usecase.DeleteList(ctx, listInput)
+
 		switch {
 		case errors.Is(err, le.ErrListNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrListNotFound)

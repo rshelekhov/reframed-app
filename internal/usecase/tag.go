@@ -3,11 +3,13 @@ package usecase
 import (
 	"context"
 	"errors"
+	"time"
+
+	"github.com/segmentio/ksuid"
+
 	"github.com/rshelekhov/reframed/internal/model"
 	"github.com/rshelekhov/reframed/internal/port"
 	"github.com/rshelekhov/reframed/pkg/constants/le"
-	"github.com/segmentio/ksuid"
-	"time"
 )
 
 type TagUsecase struct {
@@ -29,6 +31,7 @@ func (u *TagUsecase) CreateTagIfNotExists(ctx context.Context, data model.TagReq
 			UserID:    data.UserID,
 			UpdatedAt: time.Now(),
 		}
+
 		return u.tagStorage.CreateTag(ctx, newTag)
 	}
 	if err != nil {

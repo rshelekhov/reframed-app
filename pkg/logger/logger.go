@@ -1,10 +1,11 @@
 package logger
 
 import (
-	"github.com/go-chi/chi/middleware"
 	"log/slog"
 	"net/http"
 	"os"
+
+	"github.com/go-chi/chi/middleware"
 )
 
 const (
@@ -53,6 +54,7 @@ func LogWithRequest(log Interface, op string, r *http.Request) Interface {
 		slog.String("op", op),
 		slog.String("request_id", middleware.GetReqID(r.Context())),
 	)
+
 	return log
 }
 

@@ -4,15 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
+	"time"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/rshelekhov/reframed/internal/model"
 	"github.com/rshelekhov/reframed/internal/port"
 	"github.com/rshelekhov/reframed/internal/storage/postgres/sqlc"
 	"github.com/rshelekhov/reframed/pkg/constants/le"
-	"strconv"
-	"time"
 )
 
 type AuthStorage struct {
@@ -44,6 +46,7 @@ func (s *AuthStorage) Transaction(ctx context.Context, fn func(storage port.Auth
 	}()
 
 	err = fn(s)
+
 	return err
 }
 
@@ -82,6 +85,7 @@ func (s *AuthStorage) getUserStatus(ctx context.Context, email string) (string, 
 	if err != nil {
 		return "", fmt.Errorf("%s: failed to check if user exists: %w", op, err)
 	}
+
 	return status, nil
 }
 
@@ -135,7 +139,6 @@ func (s *AuthStorage) GetUserByEmail(ctx context.Context, email string) (model.U
 	const op = "user.storage.GetUserCredentials"
 
 	user, err := s.Queries.GetUserByEmail(ctx, email)
-
 	if errors.Is(err, pgx.ErrNoRows) {
 		return model.User{}, le.ErrUserNotFound
 	}
@@ -154,7 +157,6 @@ func (s *AuthStorage) GetUserData(ctx context.Context, userID string) (model.Use
 	const op = "user.storage.GetUserData"
 
 	user, err := s.Queries.GetUserData(ctx, userID)
-
 	if errors.Is(err, pgx.ErrNoRows) {
 		return model.User{}, le.ErrUserNotFound
 	}
@@ -174,7 +176,6 @@ func (s *AuthStorage) GetUserByID(ctx context.Context, userID string) (model.Use
 	const op = "user.storage.GetUserData"
 
 	user, err := s.Queries.GetUserByID(ctx, userID)
-
 	if errors.Is(err, pgx.ErrNoRows) {
 		return model.User{}, le.ErrUserNotFound
 	}
@@ -201,6 +202,7 @@ func (s *AuthStorage) UpdateUser(ctx context.Context, user model.User) error {
 		queryUpdate += ", email = $" + strconv.Itoa(len(queryParams)+1)
 		queryParams = append(queryParams, user.Email)
 	}
+
 	if user.PasswordHash != "" {
 		queryUpdate += ", password_hash = $" + strconv.Itoa(len(queryParams)+1)
 		queryParams = append(queryParams, user.PasswordHash)
@@ -212,13 +214,13 @@ func (s *AuthStorage) UpdateUser(ctx context.Context, user model.User) error {
 
 	// Execute the update query
 	_, err := s.Exec(ctx, queryUpdate, queryParams...)
-
 	if errors.Is(err, pgx.ErrNoRows) {
 		return le.ErrUserNotFound
 	}
 	if err != nil {
 		return fmt.Errorf("%s: failed to execute update query: %w", op, err)
 	}
+
 	return nil
 }
 
@@ -227,7 +229,6 @@ func (s *AuthStorage) CheckEmailUniqueness(ctx context.Context, user model.User)
 	const op = "user.storage.checkEmailUniqueness"
 
 	existingUserID, err := s.Queries.GetUserID(ctx, user.Email)
-
 	if !errors.Is(err, pgx.ErrNoRows) && existingUserID != user.ID {
 		return le.ErrEmailAlreadyTaken
 	} else if err != nil && !errors.Is(err, pgx.ErrNoRows) {
@@ -308,6 +309,7 @@ func (s *AuthStorage) SaveSession(ctx context.Context, session model.Session) er
 	}); err != nil {
 		return fmt.Errorf("%s: failed to save session: %w", op, err)
 	}
+
 	return nil
 }
 
@@ -315,7 +317,6 @@ func (s *AuthStorage) GetSessionByRefreshToken(ctx context.Context, refreshToken
 	const op = "user.storage.GetSessionByRefreshToken"
 
 	session, err := s.Queries.GetSessionByRefreshToken(ctx, refreshToken)
-
 	if errors.Is(err, pgx.ErrNoRows) {
 		return model.Session{}, le.ErrSessionNotFound
 	}
@@ -338,6 +339,7 @@ func (s *AuthStorage) DeleteRefreshToken(ctx context.Context, refreshToken strin
 	if err := s.Queries.DeleteRefreshTokenFromSession(ctx, refreshToken); err != nil {
 		return fmt.Errorf("%s: failed to delete expired session: %w", op, err)
 	}
+
 	return nil
 }
 
@@ -355,5 +357,6 @@ func (s *AuthStorage) DeleteSession(ctx context.Context, userID, deviceID string
 	if err != nil {
 		return fmt.Errorf("%s: failed to remove session: %w", op, err)
 	}
+
 	return nil
 }

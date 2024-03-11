@@ -3,14 +3,15 @@ package v1
 import (
 	"errors"
 	"fmt"
-	"github.com/go-chi/render"
-	"github.com/go-playground/validator"
-	"github.com/rshelekhov/reframed/pkg/constants/le"
-	"github.com/rshelekhov/reframed/pkg/logger"
 	"io"
 	"log/slog"
 	"net/http"
 	"reflect"
+
+	"github.com/go-chi/render"
+	"github.com/go-playground/validator/v10"
+	"github.com/rshelekhov/reframed/pkg/constants/le"
+	"github.com/rshelekhov/reframed/pkg/logger"
 )
 
 // validateData validates the request
@@ -21,6 +22,7 @@ func validateData(w http.ResponseWriter, r *http.Request, log logger.Interface, 
 	}
 
 	v := validator.New()
+
 	var ve validator.ValidationErrors
 
 	err := v.Struct(data)

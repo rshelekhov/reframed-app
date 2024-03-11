@@ -2,15 +2,17 @@
 package main
 
 import (
+	"log/slog"
+
 	"github.com/golang-jwt/jwt/v5"
+
 	"github.com/rshelekhov/reframed/config"
-	"github.com/rshelekhov/reframed/internal/controller/http/v1"
+	v1 "github.com/rshelekhov/reframed/internal/controller/http/v1"
 	"github.com/rshelekhov/reframed/internal/storage/postgres"
 	"github.com/rshelekhov/reframed/internal/usecase"
 	"github.com/rshelekhov/reframed/pkg/httpserver"
 	"github.com/rshelekhov/reframed/pkg/httpserver/middleware/jwtoken"
 	"github.com/rshelekhov/reframed/pkg/logger"
-	"log/slog"
 )
 
 func main() {
@@ -43,6 +45,7 @@ func main() {
 	if err != nil {
 		log.Error("failed to init storage", logger.Err(err))
 	}
+
 	log.Debug("storage initiated")
 
 	headingStorage := postgres.NewHeadingStorage(pg)

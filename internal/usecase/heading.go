@@ -2,10 +2,12 @@ package usecase
 
 import (
 	"context"
+	"time"
+
+	"github.com/segmentio/ksuid"
+
 	"github.com/rshelekhov/reframed/internal/model"
 	"github.com/rshelekhov/reframed/internal/port"
-	"github.com/segmentio/ksuid"
-	"time"
 )
 
 type HeadingUsecase struct {

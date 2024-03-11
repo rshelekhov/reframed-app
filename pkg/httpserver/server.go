@@ -3,15 +3,17 @@ package httpserver
 import (
 	"context"
 	"errors"
-	"github.com/go-chi/chi/v5"
-	"github.com/rshelekhov/reframed/config"
-	"github.com/rshelekhov/reframed/pkg/httpserver/middleware/jwtoken"
-	"github.com/rshelekhov/reframed/pkg/logger"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/go-chi/chi/v5"
+
+	"github.com/rshelekhov/reframed/config"
+	"github.com/rshelekhov/reframed/pkg/httpserver/middleware/jwtoken"
+	"github.com/rshelekhov/reframed/pkg/logger"
 )
 
 type Server struct {

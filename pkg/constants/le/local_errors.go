@@ -7,9 +7,9 @@ func (l LocalError) Error() string {
 }
 
 const (
-	//===========================================================================
-	//  auth errors
-	//===========================================================================
+	// ===========================================================================
+	//   auth errors
+	// ===========================================================================
 
 	ErrUserNotFound               LocalError = "user not found"
 	ErrInvalidCredentials         LocalError = "invalid credentials"
@@ -31,9 +31,9 @@ const (
 	ErrFailedToLogout             LocalError = "failed to logout"
 	ErrSessionExpired             LocalError = "session expired"
 
-	//===========================================================================
-	//  controller errors
-	//===========================================================================
+	// ===========================================================================
+	//   controller errors
+	// ===========================================================================
 
 	ErrEmptyRequestBody         LocalError = "request body is empty"
 	ErrInvalidJSON              LocalError = "failed to decode request body"
@@ -43,9 +43,9 @@ const (
 	ErrFailedToValidateData     LocalError = "failed to validate data"
 	ErrFailedToParseQueryParams LocalError = "failed to parse query params"
 
-	//===========================================================================
-	//  user errors
-	//===========================================================================
+	// ===========================================================================
+	//   user errors
+	// ===========================================================================
 
 	ErrNoUsersFound              LocalError = "no users found"
 	ErrFailedToGetUsers          LocalError = "failed to get users"
@@ -56,9 +56,9 @@ const (
 	ErrFailedToUpdateUser        LocalError = "failed to update user"
 	ErrFailedToDeleteUser        LocalError = "failed to delete user"
 
-	//===========================================================================
-	//  list errors
-	//===========================================================================
+	// ===========================================================================
+	//   list errors
+	// ===========================================================================
 
 	ErrNoListsFound             LocalError = "no lists found"
 	ErrListNotFound             LocalError = "list not found"
@@ -69,9 +69,9 @@ const (
 	ErrFailedToDeleteList       LocalError = "failed to delete list"
 	ErrEmptyQueryListID         LocalError = "list ID is empty in query"
 
-	//===========================================================================
-	//  heading errors
-	//===========================================================================
+	// ===========================================================================
+	//   heading errors
+	// ===========================================================================
 
 	ErrNoHeadingsFound             LocalError = "no headings found"
 	ErrHeadingNotFound             LocalError = "heading not found"
@@ -82,9 +82,9 @@ const (
 	ErrFailedToDeleteHeading       LocalError = "failed to delete heading"
 	ErrEmptyQueryHeadingID         LocalError = "heading ID is empty in query"
 
-	//===========================================================================
-	//  task errors
-	//===========================================================================
+	// ===========================================================================
+	//   task errors
+	// ===========================================================================
 
 	ErrNoTasksFound         LocalError = "no tasks found"
 	ErrTaskNotFound         LocalError = "task not found"
@@ -97,9 +97,9 @@ const (
 	ErrEmptyQueryTaskID     LocalError = "task ID is empty in query"
 	ErrInvalidTaskTimeRange LocalError = "invalid task time range"
 
-	//===========================================================================
-	//  tag errors
-	//===========================================================================
+	// ===========================================================================
+	//   tag errors
+	// ===========================================================================
 
 	ErrTagNotFound            LocalError = "tag not found"
 	ErrNoTagsFound            LocalError = "no tags found"
@@ -107,9 +107,9 @@ const (
 	ErrFailedToDeleteTag      LocalError = "failed to delete tag"
 	ErrFailedToLinkTagsToTask LocalError = "failed to link tags to task"
 
-	//===========================================================================
-	//  other errors
-	//===========================================================================
+	// ===========================================================================
+	//   other errors
+	// ===========================================================================
 
 	ErrFailedToWriteResponse LocalError = "failed to write response"
 )

@@ -2,10 +2,12 @@ package usecase
 
 import (
 	"context"
+	"time"
+
+	"github.com/segmentio/ksuid"
+
 	"github.com/rshelekhov/reframed/internal/model"
 	"github.com/rshelekhov/reframed/internal/port"
-	"github.com/segmentio/ksuid"
-	"time"
 )
 
 type ListUsecase struct {
@@ -117,6 +119,7 @@ func (u *ListUsecase) GetDefaultListID(ctx context.Context, userID string) (stri
 	if err != nil {
 		return "", err
 	}
+
 	return listID, nil
 }
 
