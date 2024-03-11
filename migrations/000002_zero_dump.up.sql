@@ -1,5 +1,5 @@
 INSERT INTO statuses
-    (id, status_name)
+    (id, title)
 VALUES
     (1, 'Not started'),
     (2, 'Planned'),

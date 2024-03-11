@@ -1,13 +1,13 @@
 package config
 
 import (
-	"github.com/rshelekhov/reframed/src/models"
-	"github.com/spf13/viper"
 	"log"
+
+	"github.com/spf13/viper"
 )
 
-func MustLoad() *models.ServerSettings {
-	cfg := models.ServerSettings{}
+func MustLoad() *ServerSettings {
+	cfg := ServerSettings{}
 
 	viper.SetConfigFile(".env")
 
