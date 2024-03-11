@@ -2,15 +2,17 @@ package v1
 
 import (
 	"errors"
+	"log/slog"
+	"net/http"
+
 	"github.com/go-chi/chi/v5"
+
 	"github.com/rshelekhov/reframed/internal/model"
 	"github.com/rshelekhov/reframed/internal/port"
 	"github.com/rshelekhov/reframed/pkg/constants/key"
 	"github.com/rshelekhov/reframed/pkg/constants/le"
 	"github.com/rshelekhov/reframed/pkg/httpserver/middleware/jwtoken"
 	"github.com/rshelekhov/reframed/pkg/logger"
-	"log/slog"
-	"net/http"
 )
 
 type headingController struct {
@@ -44,7 +46,6 @@ func NewHeadingRoutes(
 				r.Put("/", c.UpdateHeading())
 				r.Put("/move/", c.MoveHeadingToAnotherList())
 				r.Delete("/", c.DeleteHeading())
-
 			})
 		})
 	})
@@ -116,6 +117,7 @@ func (c *headingController) GetHeadingByID() http.HandlerFunc {
 		}
 
 		headingResp, err := c.usecase.GetHeadingByID(ctx, headingInput)
+
 		switch {
 		case errors.Is(err, le.ErrHeadingNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrHeadingNotFound)
@@ -154,6 +156,7 @@ func (c *headingController) GetHeadingsByListID() http.HandlerFunc {
 		}
 
 		headingsResp, err := c.usecase.GetHeadingsByListID(ctx, headingsInput)
+
 		switch {
 		case errors.Is(err, le.ErrNoHeadingsFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrNoHeadingsFound)
@@ -195,6 +198,7 @@ func (c *headingController) UpdateHeading() http.HandlerFunc {
 		headingInput.UserID = userID
 
 		headingResponse, err := c.usecase.UpdateHeading(ctx, headingInput)
+
 		switch {
 		case errors.Is(err, le.ErrHeadingNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrHeadingNotFound)
@@ -240,6 +244,7 @@ func (c *headingController) MoveHeadingToAnotherList() http.HandlerFunc {
 		}
 
 		headingResponse, err := c.usecase.MoveHeadingToAnotherList(ctx, headingInput)
+
 		switch {
 		case errors.Is(err, le.ErrHeadingNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrHeadingNotFound)
@@ -278,6 +283,7 @@ func (c *headingController) DeleteHeading() http.HandlerFunc {
 		}
 
 		err = c.usecase.DeleteHeading(ctx, headingInput)
+
 		switch {
 		case errors.Is(err, le.ErrHeadingNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrHeadingNotFound)

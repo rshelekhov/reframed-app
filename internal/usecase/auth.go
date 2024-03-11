@@ -4,13 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
+
+	"github.com/segmentio/ksuid"
+
 	"github.com/rshelekhov/reframed/internal/model"
 	"github.com/rshelekhov/reframed/internal/port"
 	"github.com/rshelekhov/reframed/pkg/constants/key"
 	"github.com/rshelekhov/reframed/pkg/constants/le"
 	"github.com/rshelekhov/reframed/pkg/httpserver/middleware/jwtoken"
-	"github.com/segmentio/ksuid"
-	"time"
 )
 
 type AuthUsecase struct {
@@ -50,7 +52,7 @@ func (u *AuthUsecase) CreateUser(ctx context.Context, jwt *jwtoken.TokenService,
 		UpdatedAt:    time.Now(),
 	}
 
-	if err = u.authStorage.Transaction(ctx, func(s port.AuthStorage) error {
+	if err = u.authStorage.Transaction(ctx, func(_ port.AuthStorage) error {
 		if err = u.authStorage.CreateUser(ctx, user); err != nil {
 			return err
 		}
@@ -68,7 +70,15 @@ func (u *AuthUsecase) CreateUser(ctx context.Context, jwt *jwtoken.TokenService,
 }
 
 // TODO: Move sessions from Postgres to Redis
-func (u *AuthUsecase) CreateUserSession(ctx context.Context, jwt *jwtoken.TokenService, userID string, data model.UserDeviceRequestData) (jwtoken.TokenData, error) {
+func (u *AuthUsecase) CreateUserSession(
+	ctx context.Context,
+	jwt *jwtoken.TokenService,
+	userID string,
+	data model.UserDeviceRequestData,
+) (
+	jwtoken.TokenData,
+	error,
+) {
 	additionalClaims := map[string]interface{}{
 		jwtoken.ContextUserID: userID,
 	}
@@ -109,7 +119,7 @@ func (u *AuthUsecase) CreateUserSession(ctx context.Context, jwt *jwtoken.TokenS
 		Domain:           jwt.RefreshTokenCookieDomain,
 		Path:             jwt.RefreshTokenCookiePath,
 		ExpiresAt:        expiresAt,
-		HttpOnly:         true,
+		HTTPOnly:         true,
 		AdditionalFields: additionalFields,
 	}
 
@@ -175,6 +185,7 @@ func (u *AuthUsecase) VerifyPassword(ctx context.Context, jwt *jwtoken.TokenServ
 	if err != nil {
 		return err
 	}
+
 	if len(user.PasswordHash) == 0 {
 		return le.ErrUserHasNoPassword
 	}
@@ -183,9 +194,11 @@ func (u *AuthUsecase) VerifyPassword(ctx context.Context, jwt *jwtoken.TokenServ
 	if err != nil {
 		return fmt.Errorf("%s: failed to check if password match: %w", op, err)
 	}
+
 	if !matched {
 		return le.ErrInvalidCredentials
 	}
+
 	return nil
 }
 
@@ -212,6 +225,7 @@ func (u *AuthUsecase) CheckSessionAndDevice(ctx context.Context, refreshToken st
 	if err != nil {
 		return model.Session{}, err
 	}
+
 	return session, nil
 }
 
@@ -225,6 +239,7 @@ func (u *AuthUsecase) LogoutUser(ctx context.Context, userID string, data model.
 	if err != nil {
 		return err
 	}
+
 	return u.authStorage.DeleteSession(ctx, userID, deviceID)
 }
 

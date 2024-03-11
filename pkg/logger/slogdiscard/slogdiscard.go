@@ -2,8 +2,9 @@ package slogdiscard
 
 import (
 	"context"
-	"github.com/rshelekhov/reframed/pkg/logger"
 	"log/slog"
+
+	"github.com/rshelekhov/reframed/pkg/logger"
 )
 
 // In this form, the logger will ignore all messages we send to it -

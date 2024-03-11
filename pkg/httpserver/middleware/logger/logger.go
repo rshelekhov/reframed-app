@@ -1,11 +1,13 @@
 package logger
 
 import (
-	"github.com/go-chi/chi/middleware"
-	"github.com/rshelekhov/reframed/pkg/logger"
 	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/go-chi/chi/middleware"
+
+	"github.com/rshelekhov/reframed/pkg/logger"
 )
 
 func New(log logger.Interface) func(http.Handler) http.Handler {
@@ -15,7 +17,6 @@ func New(log logger.Interface) func(http.Handler) http.Handler {
 		log.Info("logger middleware enabled")
 
 		fn := func(w http.ResponseWriter, r *http.Request) {
-
 			// Collect initial information about the request
 			entry := log.With(
 				slog.String("method", r.Method),
@@ -30,7 +31,7 @@ func New(log logger.Interface) func(http.Handler) http.Handler {
 			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
 
 			// Moment of receiving the request to calculate
-			//the processing time
+
 			t1 := time.Now()
 
 			// The record will be sent to the log after the request

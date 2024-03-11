@@ -5,15 +5,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
+	"time"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/rshelekhov/reframed/internal/model"
 	"github.com/rshelekhov/reframed/internal/port"
 	"github.com/rshelekhov/reframed/internal/storage/postgres/sqlc"
 	"github.com/rshelekhov/reframed/pkg/constants/le"
-	"strconv"
-	"time"
 )
 
 type TaskStorage struct {
@@ -89,7 +91,6 @@ func (s *TaskStorage) GetTaskStatusID(ctx context.Context, status model.StatusNa
 	const op = "task.storage.GetTaskStatusID"
 
 	statusID, err := s.Queries.GetTaskStatusID(ctx, status.String())
-
 	if errors.Is(err, pgx.ErrNoRows) {
 		return 0, le.ErrTaskStatusNotFound
 	}
@@ -143,11 +144,13 @@ func (s *TaskStorage) GetTaskByID(ctx context.Context, taskID, userID string) (m
 		tagsArray, ok := task.Tags.([]interface{})
 		if ok {
 			tags := make([]string, 0, len(tagsArray))
+
 			for _, tag := range tagsArray {
 				if t, ok := tag.(string); ok {
 					tags = append(tags, t)
 				}
 			}
+
 			taskResp.Tags = tags
 		}
 	}
@@ -158,62 +161,23 @@ func (s *TaskStorage) GetTaskByID(ctx context.Context, taskID, userID string) (m
 func (s *TaskStorage) GetTasksByUserID(ctx context.Context, userID string, pgn model.Pagination) ([]model.Task, error) {
 	const op = "task.storage.GetTasksByUserID"
 
-	var afterID string
-	if pgn.AfterID != "" {
-		afterID = pgn.AfterID
-	}
-
-	tasks, err := s.Queries.GetTasksByUserID(ctx, sqlc.GetTasksByUserIDParams{
+	tasksRaw, err := s.Queries.GetTasksByUserID(ctx, sqlc.GetTasksByUserIDParams{
 		UserID:  userID,
-		AfterID: afterID,
+		AfterID: pgn.AfterID,
 		Limit:   pgn.Limit,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("%s: failed to get tasks: %w", op, err)
 	}
 
-	var tasksResp []model.Task
+	var tasks []interface{}
+	for _, task := range tasksRaw {
+		tasks = append(tasks, task)
+	}
 
-	for _, task := range tasks {
-		t := model.Task{
-			ID:        task.ID,
-			Title:     task.Title,
-			StatusID:  int(task.StatusID),
-			ListID:    task.ListID,
-			HeadingID: task.HeadingID,
-			UpdatedAt: task.UpdatedAt,
-			Overdue:   task.Overdue,
-		}
-		if task.Description.Valid {
-			t.Description = task.Description.String
-		}
-		if task.StartDate.Valid {
-			t.StartDate = task.StartDate.Time
-		}
-		if task.Deadline.Valid {
-			t.Deadline = task.Deadline.Time
-		}
-		if task.StartTime.Valid {
-			t.StartTime = task.StartTime.Time
-		}
-		if task.EndTime.Valid {
-			t.EndTime = task.EndTime.Time
-		}
-
-		if task.Tags != nil {
-			tagsArray, ok := task.Tags.([]interface{})
-			if ok {
-				tags := make([]string, 0, len(tagsArray))
-				for _, tag := range tagsArray {
-					if t, ok := tag.(string); ok {
-						tags = append(tags, t)
-					}
-				}
-				t.Tags = tags
-			}
-		}
-
-		tasksResp = append(tasksResp, t)
+	tasksResp, err := transformTasks(tasks)
+	if err != nil {
+		return nil, err
 	}
 
 	if len(tasks) == 0 {
@@ -226,7 +190,7 @@ func (s *TaskStorage) GetTasksByUserID(ctx context.Context, userID string, pgn m
 func (s *TaskStorage) GetTasksByListID(ctx context.Context, listID, userID string) ([]model.Task, error) {
 	const op = "task.storage.GetTasksByListID"
 
-	tasks, err := s.Queries.GetTasksByListID(ctx, sqlc.GetTasksByListIDParams{
+	tasksRaw, err := s.Queries.GetTasksByListID(ctx, sqlc.GetTasksByListIDParams{
 		ListID: listID,
 		UserID: userID,
 	})
@@ -234,48 +198,14 @@ func (s *TaskStorage) GetTasksByListID(ctx context.Context, listID, userID strin
 		return nil, fmt.Errorf("%s: failed to get tasks: %w", op, err)
 	}
 
-	var tasksResp []model.Task
+	var tasks []interface{}
+	for _, task := range tasksRaw {
+		tasks = append(tasks, task)
+	}
 
-	for _, task := range tasks {
-		t := model.Task{
-			ID:        task.ID,
-			Title:     task.Title,
-			StatusID:  int(task.StatusID),
-			ListID:    task.ListID,
-			HeadingID: task.HeadingID,
-			UpdatedAt: task.UpdatedAt,
-			Overdue:   task.Overdue,
-		}
-		if task.Description.Valid {
-			t.Description = task.Description.String
-		}
-		if task.StartDate.Valid {
-			t.StartDate = task.StartDate.Time
-		}
-		if task.Deadline.Valid {
-			t.Deadline = task.Deadline.Time
-		}
-		if task.StartTime.Valid {
-			t.StartTime = task.StartTime.Time
-		}
-		if task.EndTime.Valid {
-			t.EndTime = task.EndTime.Time
-		}
-
-		if task.Tags != nil {
-			tagsArray, ok := task.Tags.([]interface{})
-			if ok {
-				tags := make([]string, 0, len(tagsArray))
-				for _, tag := range tagsArray {
-					if t, ok := tag.(string); ok {
-						tags = append(tags, t)
-					}
-				}
-				t.Tags = tags
-			}
-		}
-
-		tasksResp = append(tasksResp, t)
+	tasksResp, err := transformTasks(tasks)
+	if err != nil {
+		return nil, err
 	}
 
 	if len(tasks) == 0 {
@@ -283,6 +213,126 @@ func (s *TaskStorage) GetTasksByListID(ctx context.Context, listID, userID strin
 	}
 
 	return tasksResp, nil
+}
+
+func transformTasks(tasks []interface{}) ([]model.Task, error) {
+	var tasksResp []model.Task
+
+	for _, task := range tasks {
+		t, err := transformTask(task)
+		if err != nil {
+			return nil, err
+		}
+
+		tasksResp = append(tasksResp, t)
+	}
+
+	return tasksResp, nil
+}
+
+func transformTask(task interface{}) (model.Task, error) {
+	switch t := task.(type) {
+	case sqlc.GetTasksByUserIDRow:
+		return transformGetTasksByUserIDRow(t)
+	case sqlc.GetTasksByListIDRow:
+		return transformGetTasksByListIDRow(t)
+	default:
+		return model.Task{}, errors.New("unsupported task type")
+	}
+}
+
+func transformGetTasksByUserIDRow(task sqlc.GetTasksByUserIDRow) (model.Task, error) {
+	t := model.Task{
+		ID:        task.ID,
+		Title:     task.Title,
+		StatusID:  int(task.StatusID),
+		ListID:    task.ListID,
+		HeadingID: task.HeadingID,
+		UpdatedAt: task.UpdatedAt,
+		Overdue:   task.Overdue,
+	}
+
+	if task.Description.Valid {
+		t.Description = task.Description.String
+	}
+	if task.StartDate.Valid {
+		t.StartDate = task.StartDate.Time
+	}
+	if task.Deadline.Valid {
+		t.Deadline = task.Deadline.Time
+	}
+	if task.StartTime.Valid {
+		t.StartTime = task.StartTime.Time
+	}
+	if task.EndTime.Valid {
+		t.EndTime = task.EndTime.Time
+	}
+
+	if task.Tags != nil {
+		tags, err := transformTags(task.Tags)
+		if err != nil {
+			return model.Task{}, err
+		}
+
+		t.Tags = tags
+	}
+
+	return t, nil
+}
+
+func transformGetTasksByListIDRow(task sqlc.GetTasksByListIDRow) (model.Task, error) {
+	t := model.Task{
+		ID:        task.ID,
+		Title:     task.Title,
+		StatusID:  int(task.StatusID),
+		ListID:    task.ListID,
+		HeadingID: task.HeadingID,
+		UpdatedAt: task.UpdatedAt,
+		Overdue:   task.Overdue,
+	}
+
+	if task.Description.Valid {
+		t.Description = task.Description.String
+	}
+	if task.StartDate.Valid {
+		t.StartDate = task.StartDate.Time
+	}
+	if task.Deadline.Valid {
+		t.Deadline = task.Deadline.Time
+	}
+	if task.StartTime.Valid {
+		t.StartTime = task.StartTime.Time
+	}
+	if task.EndTime.Valid {
+		t.EndTime = task.EndTime.Time
+	}
+
+	if task.Tags != nil {
+		tags, err := transformTags(task.Tags)
+		if err != nil {
+			return model.Task{}, err
+		}
+
+		t.Tags = tags
+	}
+
+	return t, nil
+}
+
+func transformTags(tags interface{}) ([]string, error) {
+	tagsArray, ok := tags.([]interface{})
+	if !ok {
+		return nil, errors.New("invalid tags format")
+	}
+
+	var transformedTags []string
+
+	for _, tag := range tagsArray {
+		if t, ok := tag.(string); ok {
+			transformedTags = append(transformedTags, t)
+		}
+	}
+	return transformedTags, nil
 }
 
 func (s *TaskStorage) GetTasksGroupedByHeadings(ctx context.Context, listID, userID string) ([]model.TaskGroup, error) {
@@ -303,6 +353,7 @@ func (s *TaskStorage) GetTasksGroupedByHeadings(ctx context.Context, listID, use
 
 	for _, group := range groups {
 		var taskGroup model.TaskGroup
+
 		var tasks []model.TaskResponseData
 
 		err = json.Unmarshal(group.Tasks, &tasks)
@@ -334,6 +385,7 @@ func (s *TaskStorage) GetTasksForToday(ctx context.Context, userID string) ([]mo
 
 	for _, group := range groups {
 		var taskGroup model.TaskGroup
+
 		var tasks []model.TaskResponseData
 
 		err = json.Unmarshal(group.Tasks, &tasks)
@@ -380,6 +432,7 @@ func (s *TaskStorage) GetUpcomingTasks(ctx context.Context, userID string, pgn m
 
 	for _, group := range groups {
 		var taskGroup model.TaskGroup
+
 		var tasks []model.TaskResponseData
 
 		err = json.Unmarshal(group.Tasks, &tasks)
@@ -415,6 +468,7 @@ func (s *TaskStorage) GetOverdueTasks(ctx context.Context, userID string, pgn mo
 
 	for _, group := range groups {
 		var taskGroup model.TaskGroup
+
 		var tasks []model.TaskResponseData
 
 		err = json.Unmarshal(group.Tasks, &tasks)
@@ -461,6 +515,7 @@ func (s *TaskStorage) GetTasksForSomeday(ctx context.Context, userID string, pgn
 
 	for _, group := range groups {
 		var taskGroup model.TaskGroup
+
 		var tasks []model.TaskResponseData
 
 		err = json.Unmarshal(group.Tasks, &tasks)
@@ -471,6 +526,7 @@ func (s *TaskStorage) GetTasksForSomeday(ctx context.Context, userID string, pgn
 		if group.StartDate.Valid {
 			taskGroup.StartDate = group.StartDate.Time
 		}
+
 		taskGroup.Tasks = tasks
 
 		taskGroups = append(taskGroups, taskGroup)
@@ -510,6 +566,7 @@ func (s *TaskStorage) GetCompletedTasks(ctx context.Context, userID string, pgn 
 
 	for _, group := range groups {
 		var taskGroup model.TaskGroup
+
 		var tasks []model.TaskResponseData
 
 		err = json.Unmarshal(group.Tasks, &tasks)
@@ -521,6 +578,7 @@ func (s *TaskStorage) GetCompletedTasks(ctx context.Context, userID string, pgn 
 		if group.Month.Valid {
 			taskGroup.Month = group.Month.Months
 		}
+
 		taskGroup.Tasks = tasks
 
 		taskGroups = append(taskGroups, taskGroup)
@@ -560,6 +618,7 @@ func (s *TaskStorage) GetArchivedTasks(ctx context.Context, userID string, pgn m
 
 	for _, group := range groups {
 		var taskGroup model.TaskGroup
+
 		var tasks []model.TaskResponseData
 
 		err = json.Unmarshal(group.Tasks, &tasks)
@@ -571,6 +630,7 @@ func (s *TaskStorage) GetArchivedTasks(ctx context.Context, userID string, pgn m
 		if group.Month.Valid {
 			taskGroup.Month = group.Month.Months
 		}
+
 		taskGroup.Tasks = tasks
 
 		taskGroups = append(taskGroups, taskGroup)
@@ -653,12 +713,13 @@ func (s *TaskStorage) UpdateTaskTime(ctx context.Context, task model.Task) error
 	queryParams := []interface{}{task.UpdatedAt}
 
 	// Add time fields to the query
-	if !task.StartTime.IsZero() && !task.EndTime.IsZero() {
+	switch {
+	case !task.StartTime.IsZero() && !task.EndTime.IsZero():
 		queryUpdate += ", start_time = $" + strconv.Itoa(len(queryParams)+1) + ", end_time = $" + strconv.Itoa(len(queryParams)+2)
 		queryParams = append(queryParams, task.StartTime, task.EndTime)
-	} else if task.StartTime.IsZero() && task.EndTime.IsZero() {
+	case task.StartTime.IsZero() && task.EndTime.IsZero():
 		queryUpdate += ", start_time = NULL, end_time = NULL"
-	} else {
+	default:
 		return le.ErrInvalidTaskTimeRange
 	}
 

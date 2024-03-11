@@ -2,17 +2,19 @@ package v1
 
 import (
 	"errors"
+	"log/slog"
+	"net/http"
+	"strings"
+	"time"
+
 	"github.com/go-chi/chi/v5"
+
 	"github.com/rshelekhov/reframed/internal/model"
 	"github.com/rshelekhov/reframed/internal/port"
 	"github.com/rshelekhov/reframed/pkg/constants/key"
 	"github.com/rshelekhov/reframed/pkg/constants/le"
 	"github.com/rshelekhov/reframed/pkg/httpserver/middleware/jwtoken"
 	"github.com/rshelekhov/reframed/pkg/logger"
-	"log/slog"
-	"net/http"
-	"strings"
-	"time"
 )
 
 type authController struct {
@@ -116,6 +118,7 @@ func (c *authController) LoginWithPassword() http.HandlerFunc {
 		}
 
 		userID, err := c.usecase.LoginUser(ctx, c.jwt, userInput)
+
 		switch {
 		case errors.Is(err, le.ErrUserNotFound):
 			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrUserNotFound, slog.String(key.Email, userInput.Email))
@@ -172,6 +175,7 @@ func (c *authController) RefreshJWTokens() http.HandlerFunc {
 		}
 
 		session, err := c.usecase.CheckSessionAndDevice(ctx, refreshToken, userDevice)
+
 		switch {
 		case errors.Is(err, le.ErrSessionNotFound):
 			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrSessionNotFound, err, slog.String(key.RefreshToken, refreshToken))
@@ -263,6 +267,7 @@ func (c *authController) GetUserProfile() http.HandlerFunc {
 		}
 
 		user, err := c.usecase.GetUserByID(ctx, userID)
+
 		switch {
 		case errors.Is(err, le.ErrUserNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrUserNotFound, slog.String(key.UserID, userID))
@@ -296,6 +301,7 @@ func (c *authController) UpdateUser() http.HandlerFunc {
 		}
 
 		err = c.usecase.UpdateUser(ctx, c.jwt, userInput, userID)
+
 		switch {
 		case errors.Is(err, le.ErrUserNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrUserNotFound,
@@ -353,6 +359,7 @@ func (c *authController) DeleteUser() http.HandlerFunc {
 		}
 
 		err = c.usecase.DeleteUser(r.Context(), userID, userDevice)
+
 		switch {
 		case errors.Is(err, le.ErrUserNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound,

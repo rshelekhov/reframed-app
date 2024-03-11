@@ -1,11 +1,12 @@
 package v1
 
 import (
-	"github.com/rshelekhov/reframed/internal/model"
-	c "github.com/rshelekhov/reframed/pkg/constants/key"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/rshelekhov/reframed/internal/model"
+	c "github.com/rshelekhov/reframed/pkg/constants/key"
 )
 
 const (
