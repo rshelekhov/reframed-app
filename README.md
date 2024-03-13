@@ -9,6 +9,8 @@
 - The usage of [go-chi](https://github.com/go-chi/chi) as the HTTP router.
 - The usage of [validator](https://github.com/go-playground/validator) as the form validator.
 - The usage of [ksuid](https://github.com/segmentio/ksuid) as the unique identifier.
+- The usage of [sqlc](https://github.com/sqlc-dev/sqlc) as the generator type-safe code from SQL.
+- The usage of [golangci-lint](https://github.com/golangci/golangci-lint) as a Go linters runner.
 
 ## Endpoints
 
@@ -24,3 +26,11 @@
 
 
 ## Reframed App UI design
+
+![alt text](https://github.com/rshelekhov/reframed/blob/main/pkg/img/browser-1.png)
+
+![alt text](https://github.com/rshelekhov/reframed/blob/main/pkg/img/browser-2.png)
+
+![alt text](https://github.com/rshelekhov/reframed/blob/main/pkg/img/browser-3.png)
+
+![alt text](https://github.com/rshelekhov/reframed/blob/main/pkg/img/browser-4.png)
