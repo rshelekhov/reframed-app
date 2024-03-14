@@ -1,6 +1,10 @@
 # Reframed
 
-> ...
+> Reframed is like your own personal assistant for organizing your day, keeping track of your projects, and moving closer to your goals.
+
+## Stack
+- Golang backend
+- PostgresQL
 
 ## What's included
 - The REST API with JSON responses.
@@ -28,9 +32,6 @@
 ## Reframed App UI design
 
 ![alt text](https://github.com/rshelekhov/reframed/blob/main/pkg/img/browser-1.png)
-
 ![alt text](https://github.com/rshelekhov/reframed/blob/main/pkg/img/browser-2.png)
-
 ![alt text](https://github.com/rshelekhov/reframed/blob/main/pkg/img/browser-3.png)
-
 ![alt text](https://github.com/rshelekhov/reframed/blob/main/pkg/img/browser-4.png)
