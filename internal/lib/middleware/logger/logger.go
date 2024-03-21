@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-chi/chi/middleware"
 
-	"github.com/rshelekhov/reframed/pkg/logger"
+	"github.com/rshelekhov/reframed/internal/lib/logger"
 )
 
 func New(log logger.Interface) func(http.Handler) http.Handler {

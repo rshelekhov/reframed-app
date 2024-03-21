@@ -4,7 +4,7 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/rshelekhov/reframed/pkg/logger"
+	"github.com/rshelekhov/reframed/internal/lib/logger"
 )
 
 // In this form, the logger will ignore all messages we send to it -

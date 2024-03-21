@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"time"
 
+	c "github.com/rshelekhov/reframed/internal/lib/constants/key"
 	"github.com/rshelekhov/reframed/internal/model"
-	c "github.com/rshelekhov/reframed/pkg/constants/key"
 )
 
 const (

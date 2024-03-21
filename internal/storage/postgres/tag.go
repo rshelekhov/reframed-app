@@ -8,9 +8,9 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/rshelekhov/reframed/internal/lib/constants/le"
 	"github.com/rshelekhov/reframed/internal/model"
 	"github.com/rshelekhov/reframed/internal/storage/postgres/sqlc"
-	"github.com/rshelekhov/reframed/pkg/constants/le"
 )
 
 type TagStorage struct {

@@ -6,9 +6,9 @@ import (
 
 	"github.com/segmentio/ksuid"
 
+	"github.com/rshelekhov/reframed/internal/lib/constants/le"
 	"github.com/rshelekhov/reframed/internal/model"
 	"github.com/rshelekhov/reframed/internal/port"
-	"github.com/rshelekhov/reframed/pkg/constants/le"
 )
 
 type TaskUsecase struct {

@@ -10,8 +10,8 @@ import (
 
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator/v10"
-	"github.com/rshelekhov/reframed/pkg/constants/le"
-	"github.com/rshelekhov/reframed/pkg/logger"
+	"github.com/rshelekhov/reframed/internal/lib/constants/le"
+	"github.com/rshelekhov/reframed/internal/lib/logger"
 )
 
 // validateData validates the request
