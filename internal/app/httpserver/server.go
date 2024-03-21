@@ -9,11 +9,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
+
 	"github.com/go-chi/chi/v5"
 
 	"github.com/rshelekhov/reframed/config"
-	"github.com/rshelekhov/reframed/pkg/httpserver/middleware/jwtoken"
-	"github.com/rshelekhov/reframed/pkg/logger"
+	"github.com/rshelekhov/reframed/internal/lib/logger"
 )
 
 type Server struct {

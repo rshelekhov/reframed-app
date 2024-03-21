@@ -5,14 +5,15 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
+
 	"github.com/go-chi/chi/v5"
 
+	"github.com/rshelekhov/reframed/internal/lib/constants/key"
+	"github.com/rshelekhov/reframed/internal/lib/constants/le"
+	"github.com/rshelekhov/reframed/internal/lib/logger"
 	"github.com/rshelekhov/reframed/internal/model"
 	"github.com/rshelekhov/reframed/internal/port"
-	"github.com/rshelekhov/reframed/pkg/constants/key"
-	"github.com/rshelekhov/reframed/pkg/constants/le"
-	"github.com/rshelekhov/reframed/pkg/httpserver/middleware/jwtoken"
-	"github.com/rshelekhov/reframed/pkg/logger"
 )
 
 type taskController struct {

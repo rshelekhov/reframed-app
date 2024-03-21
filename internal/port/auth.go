@@ -4,8 +4,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
+
 	"github.com/rshelekhov/reframed/internal/model"
-	"github.com/rshelekhov/reframed/pkg/httpserver/middleware/jwtoken"
 )
 
 type (

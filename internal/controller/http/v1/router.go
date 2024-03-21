@@ -3,15 +3,16 @@ package v1
 import (
 	"time"
 
+	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
+	mwlogger "github.com/rshelekhov/reframed/internal/lib/middleware/logger"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/httprate"
 	"github.com/go-chi/render"
 
+	"github.com/rshelekhov/reframed/internal/lib/logger"
 	"github.com/rshelekhov/reframed/internal/port"
-	"github.com/rshelekhov/reframed/pkg/httpserver/middleware/jwtoken"
-	mwlogger "github.com/rshelekhov/reframed/pkg/httpserver/middleware/logger"
-	"github.com/rshelekhov/reframed/pkg/logger"
 )
 
 func NewRouter(

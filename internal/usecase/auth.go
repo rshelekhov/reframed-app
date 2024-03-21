@@ -6,13 +6,14 @@ import (
 	"fmt"
 	"time"
 
+	jwtoken2 "github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
+
 	"github.com/segmentio/ksuid"
 
+	"github.com/rshelekhov/reframed/internal/lib/constants/key"
+	"github.com/rshelekhov/reframed/internal/lib/constants/le"
 	"github.com/rshelekhov/reframed/internal/model"
 	"github.com/rshelekhov/reframed/internal/port"
-	"github.com/rshelekhov/reframed/pkg/constants/key"
-	"github.com/rshelekhov/reframed/pkg/constants/le"
-	"github.com/rshelekhov/reframed/pkg/httpserver/middleware/jwtoken"
 )
 
 type AuthUsecase struct {
@@ -33,10 +34,10 @@ func NewAuthUsecase(
 	}
 }
 
-func (u *AuthUsecase) CreateUser(ctx context.Context, jwt *jwtoken.TokenService, data *model.UserRequestData) (string, error) {
+func (u *AuthUsecase) CreateUser(ctx context.Context, jwt *jwtoken2.TokenService, data *model.UserRequestData) (string, error) {
 	const op = "usecase.AuthUsecase.CreateUser"
 
-	hash, err := jwtoken.PasswordHashBcrypt(
+	hash, err := jwtoken2.PasswordHashBcrypt(
 		data.Password,
 		jwt.PasswordHashCost,
 		[]byte(jwt.PasswordHashSalt),
@@ -72,30 +73,30 @@ func (u *AuthUsecase) CreateUser(ctx context.Context, jwt *jwtoken.TokenService,
 // TODO: Move sessions from Postgres to Redis
 func (u *AuthUsecase) CreateUserSession(
 	ctx context.Context,
-	jwt *jwtoken.TokenService,
+	jwt *jwtoken2.TokenService,
 	userID string,
 	data model.UserDeviceRequestData,
 ) (
-	jwtoken.TokenData,
+	jwtoken2.TokenData,
 	error,
 ) {
 	additionalClaims := map[string]interface{}{
-		jwtoken.ContextUserID: userID,
+		jwtoken2.ContextUserID: userID,
 	}
 
 	deviceID, err := u.getDeviceID(ctx, userID, data)
 	if err != nil {
-		return jwtoken.TokenData{}, err
+		return jwtoken2.TokenData{}, err
 	}
 
 	accessToken, err := jwt.NewAccessToken(additionalClaims)
 	if err != nil {
-		return jwtoken.TokenData{}, err
+		return jwtoken2.TokenData{}, err
 	}
 
 	refreshToken, err := jwt.NewRefreshToken()
 	if err != nil {
-		return jwtoken.TokenData{}, err
+		return jwtoken2.TokenData{}, err
 	}
 
 	expiresAt := time.Now().Add(jwt.RefreshTokenTTL)
@@ -109,11 +110,11 @@ func (u *AuthUsecase) CreateUserSession(
 	}
 
 	if err = u.authStorage.SaveSession(ctx, session); err != nil {
-		return jwtoken.TokenData{}, err
+		return jwtoken2.TokenData{}, err
 	}
 
 	additionalFields := map[string]string{key.UserID: userID}
-	tokenData := jwtoken.TokenData{
+	tokenData := jwtoken2.TokenData{
 		AccessToken:      accessToken,
 		RefreshToken:     refreshToken,
 		Domain:           jwt.RefreshTokenCookieDomain,
@@ -165,7 +166,7 @@ func (u *AuthUsecase) updateLatestLoginAt(ctx context.Context, deviceID string) 
 	return u.authStorage.UpdateLatestLoginAt(ctx, deviceID, latestLoginAt)
 }
 
-func (u *AuthUsecase) LoginUser(ctx context.Context, jwt *jwtoken.TokenService, data *model.UserRequestData) (string, error) {
+func (u *AuthUsecase) LoginUser(ctx context.Context, jwt *jwtoken2.TokenService, data *model.UserRequestData) (string, error) {
 	user, err := u.authStorage.GetUserByEmail(ctx, data.Email)
 	if err != nil {
 		return "", err
@@ -178,7 +179,7 @@ func (u *AuthUsecase) LoginUser(ctx context.Context, jwt *jwtoken.TokenService, 
 	return user.ID, nil
 }
 
-func (u *AuthUsecase) VerifyPassword(ctx context.Context, jwt *jwtoken.TokenService, user model.User, password string) error {
+func (u *AuthUsecase) VerifyPassword(ctx context.Context, jwt *jwtoken2.TokenService, user model.User, password string) error {
 	const op = "user.AuthUsecase.VerifyPassword"
 
 	user, err := u.authStorage.GetUserData(ctx, user.ID)
@@ -190,7 +191,7 @@ func (u *AuthUsecase) VerifyPassword(ctx context.Context, jwt *jwtoken.TokenServ
 		return le.ErrUserHasNoPassword
 	}
 
-	matched, err := jwtoken.PasswordMatch(user.PasswordHash, password, []byte(jwt.PasswordHashSalt))
+	matched, err := jwtoken2.PasswordMatch(user.PasswordHash, password, []byte(jwt.PasswordHashSalt))
 	if err != nil {
 		return fmt.Errorf("%s: failed to check if password match: %w", op, err)
 	}
@@ -258,7 +259,7 @@ func (u *AuthUsecase) GetUserByID(ctx context.Context, id string) (model.UserRes
 	return userResponse, err
 }
 
-func (u *AuthUsecase) UpdateUser(ctx context.Context, jwt *jwtoken.TokenService, data *model.UserRequestData, userID string) error {
+func (u *AuthUsecase) UpdateUser(ctx context.Context, jwt *jwtoken2.TokenService, data *model.UserRequestData, userID string) error {
 	const op = "usecase.UserUsecase.UpdateUser"
 
 	currentUser, err := u.authStorage.GetUserData(ctx, userID)
@@ -266,7 +267,7 @@ func (u *AuthUsecase) UpdateUser(ctx context.Context, jwt *jwtoken.TokenService,
 		return err
 	}
 
-	hash, err := jwtoken.PasswordHashBcrypt(
+	hash, err := jwtoken2.PasswordHashBcrypt(
 		data.Password,
 		jwt.PasswordHashCost,
 		[]byte(jwt.PasswordHashSalt),
@@ -302,10 +303,10 @@ func (u *AuthUsecase) UpdateUser(ctx context.Context, jwt *jwtoken.TokenService,
 	return u.authStorage.UpdateUser(ctx, updatedUser)
 }
 
-func (u *AuthUsecase) checkPassword(jwt *jwtoken.TokenService, currentPasswordHash, passwordFromRequest string) error {
+func (u *AuthUsecase) checkPassword(jwt *jwtoken2.TokenService, currentPasswordHash, passwordFromRequest string) error {
 	const op = "usecase.UserUsecase.checkPassword"
 
-	updatedPasswordHash, err := jwtoken.PasswordHashBcrypt(
+	updatedPasswordHash, err := jwtoken2.PasswordHashBcrypt(
 		passwordFromRequest,
 		jwt.PasswordHashCost,
 		[]byte(jwt.PasswordHashSalt),
