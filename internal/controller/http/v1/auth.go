@@ -205,6 +205,7 @@ func (c *authController) RefreshJWTokens() http.HandlerFunc {
 		}
 
 		log.Info("tokens created",
+			slog.Any(key.UserID, session.UserID),
 			slog.Any(key.AccessToken, tokenData.AccessToken),
 			slog.Any(key.RefreshToken, tokenData.RefreshToken))
 		jwtoken.SendTokensToWeb(w, tokenData, http.StatusOK)

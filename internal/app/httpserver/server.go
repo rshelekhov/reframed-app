@@ -3,6 +3,7 @@ package httpserver
 import (
 	"context"
 	"errors"
+	"github.com/rshelekhov/reframed/internal/config"
 	"net/http"
 	"os"
 	"os/signal"
@@ -13,7 +14,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/rshelekhov/reframed/config"
 	"github.com/rshelekhov/reframed/internal/lib/logger"
 )
 

@@ -2,6 +2,8 @@
 package main
 
 import (
+	"context"
+	"github.com/rshelekhov/reframed/internal/config"
 	"log/slog"
 
 	"github.com/rshelekhov/reframed/internal/app/httpserver"
@@ -9,7 +11,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 
-	"github.com/rshelekhov/reframed/config"
+	ssogrpc "github.com/rshelekhov/reframed/internal/clients/sso/grpc"
 	v1 "github.com/rshelekhov/reframed/internal/controller/http/v1"
 	"github.com/rshelekhov/reframed/internal/lib/logger"
 	"github.com/rshelekhov/reframed/internal/storage/postgres"
@@ -29,6 +31,14 @@ func main() {
 		"initializing httpserver",
 		slog.String("address", cfg.HTTPServer.Address))
 	log.Debug("logger debug mode enabled")
+
+	ssoClient, err := ssogrpc.New(
+		context.Background(),
+		log,
+		cfg.Clients.SSO.Address,
+		cfg.Clients.SSO.Timeout,
+		cfg.Clients.SSO.RetriesCount,
+	)
 
 	tokenAuth := jwtoken.NewJWTokenService(
 		cfg.JWTAuth.SigningKey,

@@ -8,12 +8,11 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/rshelekhov/reframed/internal/config"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-
-	"github.com/rshelekhov/reframed/config"
 )
 
 func main() {

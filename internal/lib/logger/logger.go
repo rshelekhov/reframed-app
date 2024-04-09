@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"os"
@@ -20,6 +21,7 @@ type Interface interface {
 	Info(msg string, attrs ...interface{})
 	Warn(msg string, attrs ...interface{})
 	Error(msg string, attrs ...interface{})
+	Log(ctx context.Context, level slog.Level, msg string, args ...any)
 }
 
 type Logger struct {
@@ -77,4 +79,8 @@ func (l *Logger) Warn(msg string, attrs ...interface{}) {
 
 func (l *Logger) Error(msg string, attrs ...interface{}) {
 	l.Logger.Error(msg, attrs...)
+}
+
+func (l *Logger) Log(ctx context.Context, level slog.Level, msg string, args ...any) {
+	l.Logger.Log(ctx, level, msg, args...)
 }

@@ -10,6 +10,7 @@ type (
 		HTTPServer HTTPServerConfig `mapstructure:",squash"`
 		Postgres   PostgresConfig   `mapstructure:",squash"`
 		JWTAuth    JWTConfig        `mapstructure:",squash"`
+		Clients    ClientsConfig    `mapstructure:",squash"`
 	}
 
 	HTTPServerConfig struct {
@@ -48,5 +49,17 @@ type (
 	PasswordHashBcrypt struct {
 		Cost int    `mapstructure:"PASSWORD_HASH_BCRYPT_COST"`
 		Salt string `mapstructure:"PASSWORD_HASH_BCRYPT_SALT"`
+	}
+
+	Client struct {
+		Address      string        `mapstructure:"SSO_CLIENT_ADDRESS"`
+		Timeout      time.Duration `mapstructure:"SSO_CLIENT_TIMEOUT"`
+		RetriesCount int           `mapstructure:"SSO_CLIENT_RETRIES_COUNT"`
+		// TODO: implement secure transport
+		// Insecure     bool          `mapstructure:"SSO_CLIENT_INSECURE"`
+	}
+
+	ClientsConfig struct {
+		SSO Client `mapstructure:",squash"`
 	}
 )

@@ -3,12 +3,12 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"github.com/rshelekhov/reframed/internal/config"
 	"net"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib" // Import for side effects
 
-	"github.com/rshelekhov/reframed/config"
 	"github.com/rshelekhov/reframed/internal/storage/postgres/sqlc"
 )
 
