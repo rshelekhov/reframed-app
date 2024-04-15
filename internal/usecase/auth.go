@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	ssogrpc "github.com/rshelekhov/reframed/internal/clients/sso/grpc"
 	"time"
 
 	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
@@ -18,17 +19,20 @@ import (
 
 type AuthUsecase struct {
 	authStorage    port.AuthStorage
+	ssoClient      *ssogrpc.Client
 	listUsecase    port.ListUsecase
 	headingUsecase port.HeadingUsecase
 }
 
 func NewAuthUsecase(
 	storage port.AuthStorage,
+	ssoClient *ssogrpc.Client,
 	listUsecase port.ListUsecase,
 	headingUsecase port.HeadingUsecase,
 ) *AuthUsecase {
 	return &AuthUsecase{
 		authStorage:    storage,
+		ssoClient:      ssoClient,
 		listUsecase:    listUsecase,
 		headingUsecase: headingUsecase,
 	}
