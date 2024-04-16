@@ -108,33 +108,17 @@ func (c *authController) LoginWithPassword() http.HandlerFunc {
 			return
 		}
 
-		userID, err := c.usecase.LoginUser(ctx, c.jwt, userInput)
-
-		switch {
-		case errors.Is(err, le.ErrUserNotFound):
-			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrUserNotFound, slog.String(key.Email, userInput.Email))
-			return
-		case errors.Is(err, le.ErrUserHasNoPassword):
-			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrUserHasNoPassword, slog.String(key.Email, userInput.Email))
-			return
-		case errors.Is(err, le.ErrInvalidCredentials):
-			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrInvalidCredentials, slog.String(key.Email, userInput.Email))
-			return
-		case err != nil:
-			handleInternalServerError(w, r, log, le.ErrFailedToLogin, err)
-			return
-		}
-
-		// Create session
 		userDevice := model.UserDeviceRequestData{
 			UserAgent: r.UserAgent(),
 			IP:        strings.Split(r.RemoteAddr, ":")[0],
 		}
 
-		tokenData, err := c.usecase.CreateUserSession(ctx, c.jwt, userID, userDevice)
+		tokenData, userID, err := c.usecase.LoginUser(ctx, userInput, userDevice)
 		if err != nil {
-			handleInternalServerError(w, r, log, le.ErrFailedToCreateSession, err)
-			return
+			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrFailedToLoginUser,
+				slog.String(key.Email, userInput.Email),
+				slog.String(key.Error, err.Error()),
+			)
 		}
 
 		log.Info(

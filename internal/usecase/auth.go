@@ -67,32 +67,50 @@ func (u *AuthUsecase) CreateUser(
 		return nil, "", err
 	}
 
-	// TODO: move to another function for getting userID from tokenData (use this one and in the login usecase)
 	tokenData = resp.GetTokenData()
 	if tokenData == nil {
 		return nil, "", le.ErrFailedToGetTokenData
 	}
 
-	jwks, err := u.ssoClient.Api.GetJWKS(ctx, &ssov1.GetJWKSRequest{
-		AppId: userData.AppID,
-	})
+	tokenParsed, err := u.parseToken(ctx, tokenData, userData.AppID)
 	if err != nil {
 		return nil, "", err
+	}
+
+	claims, ok := tokenParsed.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, "", le.ErrFailedGoGetClaimsFromToken
+	}
+
+	userID = claims[key.UserID].(string)
+
+	return tokenData, userID, nil
+}
+
+// TODO: move it to lib/jwt (and refactor that folder to lib/jwt and lib/jwt/middleware)
+func (u *AuthUsecase) parseToken(ctx context.Context, tokenData *ssov1.TokenData, appID int32) (*jwt.Token, error) {
+
+	// TODO: refactor, use cash for saving JWKS
+	jwks, err := u.ssoClient.Api.GetJWKS(ctx, &ssov1.GetJWKSRequest{
+		AppId: appID,
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	jwk, err := getJWKByKid(jwks.GetJwks(), tokenData.GetKid())
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 
 	n, err := base64.RawURLEncoding.DecodeString(jwk.GetN())
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 
 	e, err := base64.RawURLEncoding.DecodeString(jwk.GetE())
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 
 	pubKey := &rsa.PublicKey{
@@ -108,17 +126,10 @@ func (u *AuthUsecase) CreateUser(
 		return pubKey, nil
 	})
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 
-	claims, ok := tokenParsed.Claims.(jwt.MapClaims)
-	if !ok {
-		return nil, "", le.ErrFailedGoGetClaimsFromToken
-	}
-
-	userID = claims[key.UserID].(string)
-
-	return tokenData, userID, nil
+	return tokenParsed, nil
 }
 
 func getJWKByKid(jwks []*ssov1.JWK, kid string) (*ssov1.JWK, error) {
@@ -225,17 +236,46 @@ func (u *AuthUsecase) updateLatestLoginAt(ctx context.Context, deviceID string) 
 	return u.authStorage.UpdateLatestLoginAt(ctx, deviceID, latestLoginAt)
 }
 
-func (u *AuthUsecase) LoginUser(ctx context.Context, jwt *jwtoken.TokenService, data *model.UserRequestData) (string, error) {
-	user, err := u.authStorage.GetUserByEmail(ctx, data.Email)
+func (u *AuthUsecase) LoginUser(
+	ctx context.Context,
+	userData *model.UserRequestData,
+	userDevice model.UserDeviceRequestData,
+) (
+	tokenData *ssov1.TokenData,
+	userID string,
+	err error,
+) {
+	resp, err := u.ssoClient.Api.Login(ctx, &ssov1.LoginRequest{
+		Email:    userData.Email,
+		Password: userData.Password,
+		AppId:    userData.AppID,
+		UserDeviceData: &ssov1.UserDeviceData{
+			UserAgent: userDevice.UserAgent,
+			Ip:        userDevice.IP,
+		},
+	})
 	if err != nil {
-		return "", err
+		return nil, "", err
 	}
 
-	if err = u.VerifyPassword(ctx, jwt, user, data.Password); err != nil {
-		return "", err
+	tokenData = resp.GetTokenData()
+	if tokenData == nil {
+		return nil, "", le.ErrFailedToGetTokenData
 	}
 
-	return user.ID, nil
+	tokenParsed, err := u.parseToken(ctx, tokenData, userData.AppID)
+	if err != nil {
+		return nil, "", err
+	}
+
+	claims, ok := tokenParsed.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, "", le.ErrFailedGoGetClaimsFromToken
+	}
+
+	userID = claims[key.UserID].(string)
+
+	return tokenData, userID, nil
 }
 
 func (u *AuthUsecase) VerifyPassword(ctx context.Context, jwt *jwtoken.TokenService, user model.User, password string) error {

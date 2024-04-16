@@ -17,7 +17,7 @@ const (
 	ErrUserHasNoPassword          LocalError = "user has no password"
 	ErrUserDeviceNotFound         LocalError = "user device not found"
 	ErrSessionNotFound            LocalError = "session not found"
-	ErrFailedToLogin              LocalError = "failed to login"
+	ErrFailedToLoginUser          LocalError = "failed to login user"
 	ErrFailedToCreateUser         LocalError = "failed to create user"
 	ErrFailedToRegisterDevice     LocalError = "failed to register device"
 	ErrFailedToCheckDevice        LocalError = "failed to check device"

@@ -13,7 +13,7 @@ type (
 	AuthUsecase interface {
 		CreateUser(ctx context.Context, userData *model.UserRequestData, userDevice model.UserDeviceRequestData) (tokenData *ssov1.TokenData, userID string, err error)
 		CreateUserSession(ctx context.Context, jwt *jwtoken.TokenService, userID string, device model.UserDeviceRequestData) (jwtoken.TokenData, error)
-		LoginUser(ctx context.Context, jwt *jwtoken.TokenService, data *model.UserRequestData) (string, error)
+		LoginUser(ctx context.Context, userData *model.UserRequestData, userDevice model.UserDeviceRequestData) (tokenData *ssov1.TokenData, userID string, err error)
 		CheckSessionAndDevice(ctx context.Context, refreshToken string, data model.UserDeviceRequestData) (model.Session, error)
 		DeleteRefreshToken(ctx context.Context, refreshToken string) error
 		LogoutUser(ctx context.Context, userID string, data model.UserDeviceRequestData) error
