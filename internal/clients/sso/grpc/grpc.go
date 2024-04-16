@@ -15,7 +15,7 @@ import (
 )
 
 type Client struct {
-	api    ssov1.AuthClient
+	Api    ssov1.AuthClient
 	logger logger.Interface
 }
 
@@ -51,7 +51,7 @@ func New(
 	}
 
 	return &Client{
-		api:    ssov1.NewAuthClient(cc),
+		Api:    ssov1.NewAuthClient(cc),
 		logger: log,
 	}, nil
 }

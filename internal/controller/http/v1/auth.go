@@ -73,27 +73,17 @@ func (c *authController) CreateUser() http.HandlerFunc {
 			return
 		}
 
-		// Create the user
-		userID, err := c.usecase.CreateUser(ctx, c.jwt, userInput)
-		if errors.Is(err, le.ErrUserAlreadyExists) {
-			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrUserAlreadyExists, slog.String(key.Email, userInput.Email))
-			return
-		}
-		if err != nil {
-			handleInternalServerError(w, r, log, le.ErrFailedToCreateUser, err)
-			return
-		}
-
-		// Create session
 		userDevice := model.UserDeviceRequestData{
 			UserAgent: r.UserAgent(),
 			IP:        strings.Split(r.RemoteAddr, ":")[0],
 		}
 
-		tokenData, err := c.usecase.CreateUserSession(ctx, c.jwt, userID, userDevice)
+		tokenData, userID, err := c.usecase.CreateUser(ctx, userInput, userDevice)
 		if err != nil {
-			handleInternalServerError(w, r, log, le.ErrFailedToCreateSession, err)
-			return
+			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrFailedToCreateUser,
+				slog.String(key.Email, userInput.Email),
+				slog.String(key.Error, err.Error()),
+			)
 		}
 
 		log.Info("user and tokens created",

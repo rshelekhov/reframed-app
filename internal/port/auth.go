@@ -2,16 +2,16 @@ package port
 
 import (
 	"context"
-	"time"
-
 	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
+	ssov1 "github.com/rshelekhov/sso-protos/gen/go/sso"
+	"time"
 
 	"github.com/rshelekhov/reframed/internal/model"
 )
 
 type (
 	AuthUsecase interface {
-		CreateUser(ctx context.Context, jwt *jwtoken.TokenService, data *model.UserRequestData) (string, error)
+		CreateUser(ctx context.Context, userData *model.UserRequestData, userDevice model.UserDeviceRequestData) (tokenData *ssov1.TokenData, userID string, err error)
 		CreateUserSession(ctx context.Context, jwt *jwtoken.TokenService, userID string, device model.UserDeviceRequestData) (jwtoken.TokenData, error)
 		LoginUser(ctx context.Context, jwt *jwtoken.TokenService, data *model.UserRequestData) (string, error)
 		CheckSessionAndDevice(ctx context.Context, refreshToken string, data model.UserDeviceRequestData) (model.Session, error)

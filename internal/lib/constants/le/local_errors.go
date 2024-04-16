@@ -24,10 +24,12 @@ const (
 	ErrFailedToDeleteRefreshToken LocalError = "failed to delete refresh token"
 	ErrFailedToCreateSession      LocalError = "failed to create session"
 	ErrFailedToRemoveSession      LocalError = "failed to remove session"
+	ErrFailedToGetTokenData       LocalError = "failed to get token data"
 	ErrFailedToGetUserIDFromToken LocalError = "failed to get user id from token"
 	ErrFailedToGetAccessToken     LocalError = "failed to get token from context"
 	ErrFailedToGetRefreshToken    LocalError = "failed to get refresh token from context"
 	ErrFailedToRefreshTokens      LocalError = "failed to refresh tokens"
+	ErrFailedGoGetClaimsFromToken LocalError = "failed to get claims from token"
 	ErrFailedToLogout             LocalError = "failed to logout"
 	ErrSessionExpired             LocalError = "session expired"
 

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	ssov1 "github.com/rshelekhov/sso-protos/gen/go/sso"
 	"github.com/segmentio/ksuid"
 )
 
@@ -309,8 +310,14 @@ func SetRefreshTokenCookie(w http.ResponseWriter, refreshToken, domain, path str
 	SetTokenCookie(w, "refreshToken", refreshToken, domain, path, expiresAt, httpOnly)
 }
 
-func SendTokensToWeb(w http.ResponseWriter, data TokenData, httpStatus int) {
-	SetRefreshTokenCookie(w, data.RefreshToken, data.Domain, data.Path, data.ExpiresAt, data.HTTPOnly)
+func SendTokensToWeb(w http.ResponseWriter, data *ssov1.TokenData, httpStatus int) {
+	SetRefreshTokenCookie(w,
+		data.GetRefreshToken(),
+		data.GetDomain(),
+		data.GetPath(),
+		data.GetExpiresAt().AsTime(),
+		data.GetHttpOnly(),
+	)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(httpStatus)
 
@@ -327,6 +334,7 @@ func SendTokensToWeb(w http.ResponseWriter, data TokenData, httpStatus int) {
 	}
 }
 
+// TODO: update tokenData
 func SendTokensToMobileApp(w http.ResponseWriter, data TokenData, httpStatus int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(httpStatus)

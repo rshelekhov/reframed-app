@@ -2,9 +2,14 @@ package usecase
 
 import (
 	"context"
+	"crypto/rsa"
+	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/golang-jwt/jwt/v5"
 	ssogrpc "github.com/rshelekhov/reframed/internal/clients/sso/grpc"
+	ssov1 "github.com/rshelekhov/sso-protos/gen/go/sso"
+	"math/big"
 	"time"
 
 	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
@@ -38,40 +43,91 @@ func NewAuthUsecase(
 	}
 }
 
-func (u *AuthUsecase) CreateUser(ctx context.Context, jwt *jwtoken.TokenService, data *model.UserRequestData) (string, error) {
+func (u *AuthUsecase) CreateUser(
+	ctx context.Context,
+	userData *model.UserRequestData,
+	userDevice model.UserDeviceRequestData,
+) (
+	tokenData *ssov1.TokenData,
+	userID string,
+	err error,
+) {
 	const op = "usecase.AuthUsecase.CreateUser"
 
-	hash, err := jwtoken.PasswordHashBcrypt(
-		data.Password,
-		jwt.PasswordHashCost,
-		[]byte(jwt.PasswordHashSalt),
-	)
+	resp, err := u.ssoClient.Api.Register(ctx, &ssov1.RegisterRequest{
+		Email:    userData.Email,
+		Password: userData.Password,
+		AppId:    userData.AppID,
+		UserDeviceData: &ssov1.UserDeviceData{
+			UserAgent: userDevice.UserAgent,
+			Ip:        userDevice.IP,
+		},
+	})
 	if err != nil {
-		return "", fmt.Errorf("%s: failed to generate password hash: %w", op, err)
+		return nil, "", err
 	}
 
-	user := model.User{
-		ID:           ksuid.New().String(),
-		Email:        data.Email,
-		PasswordHash: hash,
-		UpdatedAt:    time.Now(),
+	// TODO: move to another function for getting userID from tokenData (use this one and in the login usecase)
+	tokenData = resp.GetTokenData()
+	if tokenData == nil {
+		return nil, "", le.ErrFailedToGetTokenData
 	}
 
-	if err = u.authStorage.Transaction(ctx, func(_ port.AuthStorage) error {
-		if err = u.authStorage.CreateUser(ctx, user); err != nil {
-			return err
+	jwks, err := u.ssoClient.Api.GetJWKS(ctx, &ssov1.GetJWKSRequest{
+		AppId: userData.AppID,
+	})
+	if err != nil {
+		return nil, "", err
+	}
+
+	jwk, err := getJWKByKid(jwks.GetJwks(), tokenData.GetKid())
+	if err != nil {
+		return nil, "", err
+	}
+
+	n, err := base64.RawURLEncoding.DecodeString(jwk.GetN())
+	if err != nil {
+		return nil, "", err
+	}
+
+	e, err := base64.RawURLEncoding.DecodeString(jwk.GetE())
+	if err != nil {
+		return nil, "", err
+	}
+
+	pubKey := &rsa.PublicKey{
+		N: new(big.Int).SetBytes(n),
+		E: int(new(big.Int).SetBytes(e).Int64()),
+	}
+
+	// Parse the tokenData using the public key
+	tokenParsed, err := jwt.Parse(tokenData.GetAccessToken(), func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-
-		if err = u.listUsecase.CreateDefaultList(ctx, user.ID); err != nil {
-			return err
-		}
-
-		return nil
-	}); err != nil {
-		return "", err
+		return pubKey, nil
+	})
+	if err != nil {
+		return nil, "", err
 	}
 
-	return user.ID, nil
+	claims, ok := tokenParsed.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, "", le.ErrFailedGoGetClaimsFromToken
+	}
+
+	userID = claims[key.UserID].(string)
+
+	return tokenData, userID, nil
+}
+
+func getJWKByKid(jwks []*ssov1.JWK, kid string) (*ssov1.JWK, error) {
+	for _, jwk := range jwks {
+		if jwk.GetKid() == kid {
+			return jwk, nil
+		}
+	}
+	return nil, fmt.Errorf("JWK with kid %s not found", kid)
 }
 
 func (u *AuthUsecase) CreateUserSession(
