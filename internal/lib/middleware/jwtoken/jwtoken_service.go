@@ -2,49 +2,28 @@ package jwtoken
 
 import (
 	"context"
+	"crypto/rsa"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	ssogrpc "github.com/rshelekhov/reframed/internal/clients/sso/grpc"
+	"math/big"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	ssov1 "github.com/rshelekhov/sso-protos/gen/go/sso"
-	"github.com/segmentio/ksuid"
 )
 
 type TokenService struct {
-	SignKey                  string
-	SigningMethod            jwt.SigningMethod
-	AccessTokenTTL           time.Duration
-	RefreshTokenTTL          time.Duration
-	RefreshTokenCookieDomain string
-	RefreshTokenCookiePath   string
-	PasswordHashCost         int
-	PasswordHashSalt         string
+	ssoClient *ssogrpc.Client
+	jwks      []*ssov1.JWK
 }
 
-func NewJWTokenService(
-	signKey string,
-	signingMethod jwt.SigningMethod,
-	accessTokenTTL time.Duration,
-	refreshTokenTTL time.Duration,
-	refreshTokenCookieDomain string,
-	refreshTokenCookiePath string,
-	passwordHashCost int,
-	passwordHashSalt string,
-) *TokenService {
-	return &TokenService{
-		SignKey:                  signKey,
-		SigningMethod:            signingMethod,
-		AccessTokenTTL:           accessTokenTTL,
-		RefreshTokenTTL:          refreshTokenTTL,
-		RefreshTokenCookieDomain: refreshTokenCookieDomain,
-		RefreshTokenCookiePath:   refreshTokenCookiePath,
-		PasswordHashCost:         passwordHashCost,
-		PasswordHashSalt:         passwordHashSalt,
-	}
+func NewJWTokenService(ssoClient *ssogrpc.Client) *TokenService {
+	return &TokenService{ssoClient: ssoClient}
 }
 
 type TokenData struct {
@@ -78,27 +57,6 @@ var (
 const (
 	ContextUserID = "user_id"
 )
-
-func (j *TokenService) NewAccessToken(additionalClaims map[string]interface{}) (string, error) {
-	claims := jwt.MapClaims{
-		"exp": time.Now().Add(j.AccessTokenTTL).Unix(),
-	}
-
-	if additionalClaims != nil { // nolint:gosimple
-		for key, value := range additionalClaims {
-			claims[key] = value
-		}
-	}
-
-	token := jwt.NewWithClaims(j.SigningMethod, claims)
-
-	return token.SignedString([]byte(j.SignKey))
-}
-
-func (j *TokenService) NewRefreshToken() (string, error) {
-	token := ksuid.New().String()
-	return token, nil
-}
 
 func Verifier(j *TokenService) func(http.Handler) http.Handler {
 	return j.Verify(GetTokenFromHeader, GetTokenFromCookie, GetTokenFromQuery)
@@ -135,7 +93,7 @@ func (j *TokenService) FindToken(r *http.Request, findTokenFns ...func(r *http.R
 		return nil, ErrNoTokenFound
 	}
 
-	return j.VerifyToken(accessTokenString)
+	return j.VerifyToken(r.Context(), accessTokenString)
 }
 
 func FindRefreshToken(r *http.Request) (string, error) {
@@ -154,8 +112,8 @@ func FindRefreshToken(r *http.Request) (string, error) {
 	return refreshToken, nil
 }
 
-func (j *TokenService) VerifyToken(accessTokenString string) (*jwt.Token, error) {
-	token, err := j.DecodeToken(accessTokenString)
+func (j *TokenService) VerifyToken(ctx context.Context, accessTokenString string) (*jwt.Token, error) {
+	token, err := j.ParseToken(ctx, accessTokenString)
 	if err != nil {
 		return nil, Errors(err)
 	}
@@ -167,26 +125,69 @@ func (j *TokenService) VerifyToken(accessTokenString string) (*jwt.Token, error)
 	return token, nil
 }
 
-// func (j *TokenService) EncodeToken
+func (j *TokenService) ParseToken(ctx context.Context, accessTokenString string) (*jwt.Token, error) {
 
-func (j *TokenService) DecodeToken(accessTokenString string) (*jwt.Token, error) {
-	return j.ParseToken(accessTokenString)
-}
+	if j.jwks == nil {
+		err := j.loadJWKSFromServer(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
 
-func (j *TokenService) ParseToken(accessTokenString string) (*jwt.Token, error) {
-	token, err := jwt.Parse(accessTokenString, func(token *jwt.Token) (interface{}, error) {
-		// TODO: add signing method to TokenService
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("%v: %v", ErrUnexpectedSigningMethod, token.Header["alg"])
+	// Parse the tokenData using the public key
+	tokenParsed, err := jwt.Parse(accessTokenString, func(token *jwt.Token) (interface{}, error) {
+		kid := token.Header["kid"].(string)
+
+		jwk, err := getJWKByKid(j.jwks, kid)
+		if err != nil {
+			return nil, err
 		}
 
-		return []byte(j.SignKey), nil
+		n, err := base64.RawURLEncoding.DecodeString(jwk.GetN())
+		if err != nil {
+			return nil, err
+		}
+
+		e, err := base64.RawURLEncoding.DecodeString(jwk.GetE())
+		if err != nil {
+			return nil, err
+		}
+
+		pubKey := &rsa.PublicKey{
+			N: new(big.Int).SetBytes(n),
+			E: int(new(big.Int).SetBytes(e).Int64()),
+		}
+
+		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return pubKey, nil
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return token, nil
+	return tokenParsed, nil
+}
+
+func (j *TokenService) loadJWKSFromServer(ctx context.Context) error {
+	jwks, err := j.ssoClient.Api.GetJWKS(ctx, &ssov1.GetJWKSRequest{})
+	if err != nil {
+		return err
+	}
+
+	j.jwks = jwks.GetJwks()
+
+	return nil
+}
+
+func getJWKByKid(jwks []*ssov1.JWK, kid string) (*ssov1.JWK, error) {
+	for _, jwk := range jwks {
+		if jwk.GetKid() == kid {
+			return jwk, nil
+		}
+	}
+	return nil, fmt.Errorf("JWK with kid %s not found", kid)
 }
 
 func Authenticator() func(http.Handler) http.Handler {
@@ -334,8 +335,7 @@ func SendTokensToWeb(w http.ResponseWriter, data *ssov1.TokenData, httpStatus in
 	}
 }
 
-// TODO: update tokenData
-func SendTokensToMobileApp(w http.ResponseWriter, data TokenData, httpStatus int) {
+func SendTokensToMobileApp(w http.ResponseWriter, data *ssov1.TokenData, httpStatus int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(httpStatus)
 
