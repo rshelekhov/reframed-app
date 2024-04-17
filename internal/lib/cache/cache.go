@@ -31,6 +31,10 @@ func (c *Cache) Set(key string, value any, ttl time.Duration) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
+	if ttl <= time.Duration(0) {
+		ttl = DefaultExpiration
+	}
+
 	c.data[key] = Item{
 		value:  value,
 		expiry: time.Now().Add(ttl),
