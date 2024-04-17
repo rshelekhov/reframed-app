@@ -8,9 +8,11 @@ import (
 	"errors"
 	"fmt"
 	ssogrpc "github.com/rshelekhov/reframed/internal/clients/sso/grpc"
+	"github.com/rshelekhov/reframed/internal/lib/cache"
 	"math/big"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -19,11 +21,18 @@ import (
 
 type TokenService struct {
 	ssoClient *ssogrpc.Client
-	jwks      []*ssov1.JWK
+	// jwks      []*ssov1.JWK
+	jwksCache *cache.Cache
+	mu        sync.RWMutex
+	appID     int32
 }
 
-func NewJWTokenService(ssoClient *ssogrpc.Client) *TokenService {
-	return &TokenService{ssoClient: ssoClient}
+func NewJWTokenService(ssoClient *ssogrpc.Client, appID int32) *TokenService {
+	return &TokenService{
+		ssoClient: ssoClient,
+		jwksCache: cache.New(),
+		appID:     appID,
+	}
 }
 
 type TokenData struct {
@@ -56,6 +65,7 @@ var (
 
 const (
 	ContextUserID = "user_id"
+	CacheJWKS     = "jwks"
 )
 
 func Verifier(j *TokenService) func(http.Handler) http.Handler {
@@ -127,19 +137,16 @@ func (j *TokenService) VerifyToken(ctx context.Context, accessTokenString string
 
 func (j *TokenService) ParseToken(ctx context.Context, accessTokenString string) (*jwt.Token, error) {
 
-	// TODO: add cache for jwks
-	if j.jwks == nil {
-		err := j.loadJWKSFromServer(ctx)
-		if err != nil {
-			return nil, err
-		}
+	jwks, err := j.GetJWKS(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	// Parse the tokenData using the public key
 	tokenParsed, err := jwt.Parse(accessTokenString, func(token *jwt.Token) (interface{}, error) {
 		kid := token.Header["kid"].(string)
 
-		jwk, err := getJWKByKid(j.jwks, kid)
+		jwk, err := getJWKByKid(jwks, kid)
 		if err != nil {
 			return nil, err
 		}
@@ -171,16 +178,50 @@ func (j *TokenService) ParseToken(ctx context.Context, accessTokenString string)
 	return tokenParsed, nil
 }
 
-func (j *TokenService) loadJWKSFromServer(ctx context.Context) error {
-	jwks, err := j.ssoClient.Api.GetJWKS(ctx, &ssov1.GetJWKSRequest{})
-	if err != nil {
-		return err
+func (j *TokenService) GetJWKS(ctx context.Context) ([]*ssov1.JWK, error) {
+	var jwks []*ssov1.JWK
+
+	j.mu.RLock()
+	cacheValue, found := j.jwksCache.Get(CacheJWKS)
+	j.mu.RUnlock()
+
+	if found {
+		cachedJWKS, ok := cacheValue.([]*ssov1.JWK)
+		if !ok {
+			return nil, errors.New("invalid JWKS cache value type")
+		}
+
+		jwks = make([]*ssov1.JWK, len(cachedJWKS))
+		copy(jwks, cachedJWKS)
+	} else {
+		jwksResponse, err := j.ssoClient.Api.GetJWKS(ctx, &ssov1.GetJWKSRequest{
+			AppId: j.appID,
+		})
+
+		if err != nil {
+			return nil, err
+		}
+
+		jwks = jwksResponse.GetJwks()
+
+		j.mu.Lock()
+		j.jwksCache.Set(CacheJWKS, jwks, cache.DefaultExpiration)
+		j.mu.Unlock()
 	}
 
-	j.jwks = jwks.GetJwks()
-
-	return nil
+	return jwks, nil
 }
+
+//func (j *TokenService) loadJWKSFromServer(ctx context.Context) error {
+//	jwks, err := j.ssoClient.Api.GetJWKS(ctx, &ssov1.GetJWKSRequest{})
+//	if err != nil {
+//		return err
+//	}
+//
+//	j.jwks = jwks.GetJwks()
+//
+//	return nil
+//}
 
 func getJWKByKid(jwks []*ssov1.JWK, kid string) (*ssov1.JWK, error) {
 	for _, jwk := range jwks {
