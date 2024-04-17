@@ -127,6 +127,7 @@ func (j *TokenService) VerifyToken(ctx context.Context, accessTokenString string
 
 func (j *TokenService) ParseToken(ctx context.Context, accessTokenString string) (*jwt.Token, error) {
 
+	// TODO: add cache for jwks
 	if j.jwks == nil {
 		err := j.loadJWKSFromServer(ctx)
 		if err != nil {

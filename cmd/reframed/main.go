@@ -56,7 +56,7 @@ func main() {
 	// Usecases
 	headingUsecase := usecase.NewHeadingUsecase(headingStorage)
 	listUsecase := usecase.NewListUsecase(listStorage, headingUsecase)
-	authUsecase := usecase.NewAuthUsecase(ssoClient, listUsecase, headingUsecase)
+	authUsecase := usecase.NewAuthUsecase(ssoClient, tokenAuth, listUsecase, headingUsecase)
 	tagUsecase := usecase.NewTagUsecase(tagStorage)
 	taskUsecase := usecase.NewTaskUsecase(taskStorage, headingUsecase, tagUsecase, listUsecase)
 
