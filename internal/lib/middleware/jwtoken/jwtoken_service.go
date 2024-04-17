@@ -203,9 +203,13 @@ func (j *TokenService) GetJWKS(ctx context.Context) ([]*ssov1.JWK, error) {
 		}
 
 		jwks = jwksResponse.GetJwks()
+		ttl, err := time.ParseDuration(jwksResponse.GetTtl().String())
+		if err != nil {
+			return nil, err
+		}
 
 		j.mu.Lock()
-		j.jwksCache.Set(CacheJWKS, jwks, cache.DefaultExpiration)
+		j.jwksCache.Set(CacheJWKS, jwks, ttl)
 		j.mu.Unlock()
 	}
 
