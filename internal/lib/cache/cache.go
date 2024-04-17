@@ -24,6 +24,8 @@ func New() *Cache {
 	}
 }
 
+const DefaultExpiration = time.Hour
+
 // Set adds or updates a key-value pair in the cache with the given TTL.
 func (c *Cache) Set(key string, value any, ttl time.Duration) {
 	c.mu.Lock()
