@@ -21,7 +21,6 @@ import (
 
 type TokenService struct {
 	ssoClient *ssogrpc.Client
-	// jwks      []*ssov1.JWK
 	jwksCache *cache.Cache
 	mu        sync.RWMutex
 	appID     int32
@@ -167,7 +166,7 @@ func (j *TokenService) ParseToken(ctx context.Context, accessTokenString string)
 		}
 
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			return nil, fmt.Errorf("%w: %v", ErrUnexpectedSigningMethod, token.Header["alg"])
 		}
 		return pubKey, nil
 	})
@@ -215,17 +214,6 @@ func (j *TokenService) GetJWKS(ctx context.Context) ([]*ssov1.JWK, error) {
 
 	return jwks, nil
 }
-
-//func (j *TokenService) loadJWKSFromServer(ctx context.Context) error {
-//	jwks, err := j.ssoClient.Api.GetJWKS(ctx, &ssov1.GetJWKSRequest{})
-//	if err != nil {
-//		return err
-//	}
-//
-//	j.jwks = jwks.GetJwks()
-//
-//	return nil
-//}
 
 func getJWKByKid(jwks []*ssov1.JWK, kid string) (*ssov1.JWK, error) {
 	for _, jwk := range jwks {
