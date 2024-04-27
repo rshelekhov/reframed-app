@@ -52,7 +52,7 @@ func NewAuthRoutes(
 		r.Post("/logout", c.Logout())
 
 		r.Route("/user/", func(r chi.Router) {
-			r.Get("/", c.GetUserProfile())
+			r.Get("/", c.GetUser())
 			r.Put("/", c.UpdateUser())
 			r.Delete("/", c.DeleteUser())
 		})
@@ -203,8 +203,8 @@ func (c *authController) Logout() http.HandlerFunc {
 	}
 }
 
-// GetUserProfile get a user by ID
-func (c *authController) GetUserProfile() http.HandlerFunc {
+// GetUser get a user by ID
+func (c *authController) GetUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.controller.GetUserData"
 
@@ -217,7 +217,7 @@ func (c *authController) GetUserProfile() http.HandlerFunc {
 			return
 		}
 
-		user, err := c.usecase.GetUserByID(ctx, userID)
+		user, err := c.usecase.GetUserByID(ctx)
 
 		switch {
 		case errors.Is(err, le.ErrUserNotFound):

@@ -178,20 +178,21 @@ func (u *AuthUsecase) LogoutUser(ctx context.Context, data model.UserDeviceReque
 	if err != nil {
 		return err
 	}
-	
+
 	return nil
 }
 
-func (u *AuthUsecase) GetUserByID(ctx context.Context, id string) (model.UserResponseData, error) {
-	user, err := u.authStorage.GetUserByID(ctx, id)
+func (u *AuthUsecase) GetUserByID(ctx context.Context) (model.UserResponseData, error) {
+	user, err := u.ssoClient.Api.GetUser(ctx, &ssov1.GetUserRequest{
+		AppId: u.jwt.AppID,
+	})
 	if err != nil {
 		return model.UserResponseData{}, err
 	}
 
 	userResponse := model.UserResponseData{
-		ID:        user.ID,
 		Email:     user.Email,
-		UpdatedAt: user.UpdatedAt,
+		UpdatedAt: user.UpdatedAt.AsTime(),
 	}
 
 	return userResponse, err

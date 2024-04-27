@@ -16,7 +16,7 @@ type (
 		Refresh(ctx context.Context, refreshToken string, data model.UserDeviceRequestData) (tokenData *ssov1.TokenData, userID string, err error)
 
 		LogoutUser(ctx context.Context, data model.UserDeviceRequestData) error
-		GetUserByID(ctx context.Context, id string) (model.UserResponseData, error)
+		GetUserByID(ctx context.Context) (model.UserResponseData, error)
 		UpdateUser(ctx context.Context, jwt *jwtoken.TokenService, data *model.UserRequestData, userID string) error
 		DeleteUser(ctx context.Context, userUD string, data model.UserDeviceRequestData) error
 	}
