@@ -247,11 +247,11 @@ func (c *authController) UpdateUser() http.HandlerFunc {
 		}
 
 		userInput := &model.UserRequestData{}
-		if err := decodeAndValidateJSON(w, r, log, userInput); err != nil {
+		if err = decodeAndValidateJSON(w, r, log, userInput); err != nil {
 			return
 		}
 
-		err = c.usecase.UpdateUser(ctx, c.jwt, userInput, userID)
+		err = c.usecase.UpdateUser(ctx, userInput)
 
 		switch {
 		case errors.Is(err, le.ErrUserNotFound):

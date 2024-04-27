@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"fmt"
 	"github.com/golang-jwt/jwt/v5"
 	ssogrpc "github.com/rshelekhov/reframed/internal/clients/sso/grpc"
 	ssov1 "github.com/rshelekhov/sso-protos/gen/go/sso"
@@ -198,48 +197,18 @@ func (u *AuthUsecase) GetUserByID(ctx context.Context) (model.UserResponseData, 
 	return userResponse, err
 }
 
-func (u *AuthUsecase) UpdateUser(ctx context.Context, jwt *jwtoken.TokenService, data *model.UserRequestData, userID string) error {
-	const op = "usecase.UserUsecase.UpdateUser"
-
-	currentUser, err := u.authStorage.GetUserData(ctx, userID)
+func (u *AuthUsecase) UpdateUser(ctx context.Context, data *model.UserRequestData) error {
+	_, err := u.ssoClient.Api.UpdateUser(ctx, &ssov1.UpdateUserRequest{
+		Email:           data.Email,
+		CurrentPassword: data.Password,
+		UpdatedPassword: data.UpdatedPassword,
+		AppId:           u.jwt.AppID,
+	})
 	if err != nil {
 		return err
 	}
 
-	hash, err := jwtoken.PasswordHashBcrypt(
-		data.Password,
-		jwt.PasswordHashCost,
-		[]byte(jwt.PasswordHashSalt),
-	)
-	if err != nil {
-		return fmt.Errorf("%s: failed to generate password hash: %w", op, err)
-	}
-
-	updatedUser := model.User{
-		ID:           userID,
-		Email:        data.Email,
-		PasswordHash: hash,
-		UpdatedAt:    time.Now(),
-	}
-
-	emailChanged := updatedUser.Email != "" && updatedUser.Email != currentUser.Email
-	passwordChanged := updatedUser.PasswordHash != ""
-
-	if !emailChanged && !passwordChanged {
-		return le.ErrNoChangesDetected
-	}
-
-	if err = u.authStorage.CheckEmailUniqueness(ctx, updatedUser); err != nil {
-		return err
-	}
-
-	if data.Password != "" {
-		if err = u.checkPassword(jwt, currentUser.PasswordHash, data.Password); err != nil {
-			return err
-		}
-	}
-
-	return u.authStorage.UpdateUser(ctx, updatedUser)
+	return nil
 }
 
 func (u *AuthUsecase) DeleteUser(ctx context.Context, userID string, data model.UserDeviceRequestData) error {

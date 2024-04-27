@@ -2,7 +2,6 @@ package port
 
 import (
 	"context"
-	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
 	ssov1 "github.com/rshelekhov/sso-protos/gen/go/sso"
 	"time"
 
@@ -17,7 +16,7 @@ type (
 
 		LogoutUser(ctx context.Context, data model.UserDeviceRequestData) error
 		GetUserByID(ctx context.Context) (model.UserResponseData, error)
-		UpdateUser(ctx context.Context, jwt *jwtoken.TokenService, data *model.UserRequestData, userID string) error
+		UpdateUser(ctx context.Context, data *model.UserRequestData) error
 		DeleteUser(ctx context.Context, userUD string, data model.UserDeviceRequestData) error
 	}
 
