@@ -38,7 +38,9 @@ func main() {
 		cfg.Clients.SSO.RetriesCount,
 	)
 
-	tokenAuth := jwtoken.NewJWTokenService(ssoClient)
+	// TODO: research where and how to set appID
+	var appID int32
+	tokenAuth := jwtoken.NewJWTokenService(ssoClient, appID)
 
 	// Storage
 	pg, err := postgres.NewStorage(cfg)

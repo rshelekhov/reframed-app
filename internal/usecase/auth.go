@@ -126,14 +126,60 @@ func (u *AuthUsecase) LoginUser(
 	return tokenData, userID, nil
 }
 
-func (u *AuthUsecase) LogoutUser(ctx context.Context, userID string, data model.UserDeviceRequestData) error {
-	// Check if the device exists
-	deviceID, err := u.authStorage.GetUserDeviceID(ctx, userID, data.UserAgent)
+func (u *AuthUsecase) Refresh(
+	ctx context.Context,
+	refreshToken string,
+	data model.UserDeviceRequestData,
+) (
+	tokenData *ssov1.TokenData,
+	userID string,
+	err error,
+) {
+
+	resp, err := u.ssoClient.Api.Refresh(ctx, &ssov1.RefreshRequest{
+		RefreshToken: refreshToken,
+		AppId:        u.jwt.AppID,
+		UserDeviceData: &ssov1.UserDeviceData{
+			UserAgent: data.UserAgent,
+			Ip:        data.IP,
+		},
+	})
+	if err != nil {
+		return nil, "", err
+	}
+
+	tokenData = resp.GetTokenData()
+	if tokenData == nil {
+		return nil, "", le.ErrFailedToGetTokenData
+	}
+
+	tokenParsed, err := u.jwt.ParseToken(ctx, tokenData.GetAccessToken())
+	if err != nil {
+		return nil, "", err
+	}
+
+	claims, ok := tokenParsed.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, "", le.ErrFailedGoGetClaimsFromToken
+	}
+
+	userID = claims[key.UserID].(string)
+
+	return tokenData, userID, nil
+}
+
+func (u *AuthUsecase) LogoutUser(ctx context.Context, data model.UserDeviceRequestData) error {
+	_, err := u.ssoClient.Api.Logout(ctx, &ssov1.LogoutRequest{
+		UserDeviceData: &ssov1.UserDeviceData{
+			UserAgent: data.UserAgent,
+			Ip:        data.IP,
+		},
+	})
 	if err != nil {
 		return err
 	}
-
-	return u.authStorage.DeleteSession(ctx, userID, deviceID)
+	
+	return nil
 }
 
 func (u *AuthUsecase) GetUserByID(ctx context.Context, id string) (model.UserResponseData, error) {

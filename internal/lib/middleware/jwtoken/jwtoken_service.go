@@ -23,14 +23,14 @@ type TokenService struct {
 	ssoClient *ssogrpc.Client
 	jwksCache *cache.Cache
 	mu        sync.RWMutex
-	appID     int32
+	AppID     int32
 }
 
 func NewJWTokenService(ssoClient *ssogrpc.Client, appID int32) *TokenService {
 	return &TokenService{
 		ssoClient: ssoClient,
 		jwksCache: cache.New(),
-		appID:     appID,
+		AppID:     appID,
 	}
 }
 
@@ -194,7 +194,7 @@ func (j *TokenService) GetJWKS(ctx context.Context) ([]*ssov1.JWK, error) {
 		copy(jwks, cachedJWKS)
 	} else {
 		jwksResponse, err := j.ssoClient.Api.GetJWKS(ctx, &ssov1.GetJWKSRequest{
-			AppId: j.appID,
+			AppId: j.AppID,
 		})
 
 		if err != nil {

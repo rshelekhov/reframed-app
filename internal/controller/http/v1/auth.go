@@ -147,39 +147,19 @@ func (c *authController) RefreshJWTokens() http.HandlerFunc {
 
 		userDevice := model.UserDeviceRequestData{
 			UserAgent: r.UserAgent(),
+			IP:        strings.Split(r.RemoteAddr, ":")[0],
 		}
 
-		session, err := c.usecase.CheckSessionAndDevice(ctx, refreshToken, userDevice)
-
-		switch {
-		case errors.Is(err, le.ErrSessionNotFound):
-			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrSessionNotFound, err, slog.String(key.RefreshToken, refreshToken))
-			return
-		case errors.Is(err, le.ErrSessionExpired):
-			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrSessionExpired, err, slog.String(key.RefreshToken, refreshToken))
-			return
-		case errors.Is(err, le.ErrUserDeviceNotFound):
-			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrUserDeviceNotFound, err, slog.String(key.RefreshToken, refreshToken))
-		}
+		tokenData, userID, err := c.usecase.Refresh(ctx, refreshToken, userDevice)
 		if err != nil {
-			handleInternalServerError(w, r, log, le.ErrFailedToRefreshTokens, err)
-			return
-		}
-
-		err = c.usecase.DeleteRefreshToken(ctx, refreshToken)
-		if err != nil {
-			handleInternalServerError(w, r, log, le.ErrFailedToDeleteRefreshToken, err)
-			return
-		}
-
-		tokenData, err := c.usecase.CreateUserSession(ctx, c.jwt, session.UserID, userDevice)
-		if err != nil {
-			handleInternalServerError(w, r, log, le.ErrFailedToCreateSession, err)
-			return
+			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrFailedToLoginUser,
+				slog.String(key.UserID, userID), // TODO: check if can return userID when error is here
+				slog.String(key.Error, err.Error()),
+			)
 		}
 
 		log.Info("tokens created",
-			slog.Any(key.UserID, session.UserID),
+			slog.Any(key.UserID, userID),
 			slog.Any(key.AccessToken, tokenData.AccessToken),
 			slog.Any(key.RefreshToken, tokenData.RefreshToken))
 		jwtoken.SendTokensToWeb(w, tokenData, http.StatusOK)
@@ -194,17 +174,12 @@ func (c *authController) Logout() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
 
-		userID, err := jwtoken.GetUserID(ctx)
-		if err != nil {
-			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
-			return
-		}
-
 		userDevice := model.UserDeviceRequestData{
 			UserAgent: r.UserAgent(),
+			IP:        strings.Split(r.RemoteAddr, ":")[0],
 		}
 
-		err = c.usecase.LogoutUser(ctx, userID, userDevice)
+		err := c.usecase.LogoutUser(ctx, userDevice)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToLogout, err)
 			return
