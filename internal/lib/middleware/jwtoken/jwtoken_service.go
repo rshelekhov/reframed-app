@@ -2,47 +2,35 @@ package jwtoken
 
 import (
 	"context"
+	"crypto/rsa"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	ssogrpc "github.com/rshelekhov/reframed/internal/clients/sso/grpc"
+	"github.com/rshelekhov/reframed/internal/lib/cache"
+	"math/big"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/segmentio/ksuid"
+	ssov1 "github.com/rshelekhov/sso-protos/gen/go/sso"
 )
 
 type TokenService struct {
-	SignKey                  string
-	SigningMethod            jwt.SigningMethod
-	AccessTokenTTL           time.Duration
-	RefreshTokenTTL          time.Duration
-	RefreshTokenCookieDomain string
-	RefreshTokenCookiePath   string
-	PasswordHashCost         int
-	PasswordHashSalt         string
+	ssoClient *ssogrpc.Client
+	jwksCache *cache.Cache
+	mu        sync.RWMutex
+	AppID     int32
 }
 
-func NewJWTokenService(
-	signKey string,
-	signingMethod jwt.SigningMethod,
-	accessTokenTTL time.Duration,
-	refreshTokenTTL time.Duration,
-	refreshTokenCookieDomain string,
-	refreshTokenCookiePath string,
-	passwordHashCost int,
-	passwordHashSalt string,
-) *TokenService {
+func NewJWTokenService(ssoClient *ssogrpc.Client, appID int32) *TokenService {
 	return &TokenService{
-		SignKey:                  signKey,
-		SigningMethod:            signingMethod,
-		AccessTokenTTL:           accessTokenTTL,
-		RefreshTokenTTL:          refreshTokenTTL,
-		RefreshTokenCookieDomain: refreshTokenCookieDomain,
-		RefreshTokenCookiePath:   refreshTokenCookiePath,
-		PasswordHashCost:         passwordHashCost,
-		PasswordHashSalt:         passwordHashSalt,
+		ssoClient: ssoClient,
+		jwksCache: cache.New(),
+		AppID:     appID,
 	}
 }
 
@@ -63,7 +51,7 @@ type ContextKey struct {
 type ClaimCTXKey string
 
 var (
-	TokenCtxKey = ContextKey{"Token"}
+	TokenCtxKey = ContextKey{"token"}
 
 	ErrUnauthorized             = errors.New("unauthorized")
 	ErrNoTokenFound             = errors.New("no token found")
@@ -76,28 +64,8 @@ var (
 
 const (
 	ContextUserID = "user_id"
+	CacheJWKS     = "jwks"
 )
-
-func (j *TokenService) NewAccessToken(additionalClaims map[string]interface{}) (string, error) {
-	claims := jwt.MapClaims{
-		"exp": time.Now().Add(j.AccessTokenTTL).Unix(),
-	}
-
-	if additionalClaims != nil { // nolint:gosimple
-		for key, value := range additionalClaims {
-			claims[key] = value
-		}
-	}
-
-	token := jwt.NewWithClaims(j.SigningMethod, claims)
-
-	return token.SignedString([]byte(j.SignKey))
-}
-
-func (j *TokenService) NewRefreshToken() (string, error) {
-	token := ksuid.New().String()
-	return token, nil
-}
 
 func Verifier(j *TokenService) func(http.Handler) http.Handler {
 	return j.Verify(GetTokenFromHeader, GetTokenFromCookie, GetTokenFromQuery)
@@ -134,7 +102,7 @@ func (j *TokenService) FindToken(r *http.Request, findTokenFns ...func(r *http.R
 		return nil, ErrNoTokenFound
 	}
 
-	return j.VerifyToken(accessTokenString)
+	return j.VerifyToken(r.Context(), accessTokenString)
 }
 
 func FindRefreshToken(r *http.Request) (string, error) {
@@ -153,8 +121,8 @@ func FindRefreshToken(r *http.Request) (string, error) {
 	return refreshToken, nil
 }
 
-func (j *TokenService) VerifyToken(accessTokenString string) (*jwt.Token, error) {
-	token, err := j.DecodeToken(accessTokenString)
+func (j *TokenService) VerifyToken(ctx context.Context, accessTokenString string) (*jwt.Token, error) {
+	token, err := j.ParseToken(ctx, accessTokenString)
 	if err != nil {
 		return nil, Errors(err)
 	}
@@ -166,26 +134,94 @@ func (j *TokenService) VerifyToken(accessTokenString string) (*jwt.Token, error)
 	return token, nil
 }
 
-// func (j *TokenService) EncodeToken
+func (j *TokenService) ParseToken(ctx context.Context, accessTokenString string) (*jwt.Token, error) {
 
-func (j *TokenService) DecodeToken(accessTokenString string) (*jwt.Token, error) {
-	return j.ParseToken(accessTokenString)
-}
+	jwks, err := j.GetJWKS(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-func (j *TokenService) ParseToken(accessTokenString string) (*jwt.Token, error) {
-	token, err := jwt.Parse(accessTokenString, func(token *jwt.Token) (interface{}, error) {
-		// TODO: add signing method to TokenService
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("%v: %v", ErrUnexpectedSigningMethod, token.Header["alg"])
+	// Parse the tokenData using the public key
+	tokenParsed, err := jwt.Parse(accessTokenString, func(token *jwt.Token) (interface{}, error) {
+		kid := token.Header["kid"].(string)
+
+		jwk, err := getJWKByKid(jwks, kid)
+		if err != nil {
+			return nil, err
 		}
 
-		return []byte(j.SignKey), nil
+		n, err := base64.RawURLEncoding.DecodeString(jwk.GetN())
+		if err != nil {
+			return nil, err
+		}
+
+		e, err := base64.RawURLEncoding.DecodeString(jwk.GetE())
+		if err != nil {
+			return nil, err
+		}
+
+		pubKey := &rsa.PublicKey{
+			N: new(big.Int).SetBytes(n),
+			E: int(new(big.Int).SetBytes(e).Int64()),
+		}
+
+		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
+			return nil, fmt.Errorf("%w: %v", ErrUnexpectedSigningMethod, token.Header["alg"])
+		}
+		return pubKey, nil
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return token, nil
+	return tokenParsed, nil
+}
+
+func (j *TokenService) GetJWKS(ctx context.Context) ([]*ssov1.JWK, error) {
+	var jwks []*ssov1.JWK
+
+	j.mu.RLock()
+	cacheValue, found := j.jwksCache.Get(CacheJWKS)
+	j.mu.RUnlock()
+
+	if found {
+		cachedJWKS, ok := cacheValue.([]*ssov1.JWK)
+		if !ok {
+			return nil, errors.New("invalid JWKS cache value type")
+		}
+
+		jwks = make([]*ssov1.JWK, len(cachedJWKS))
+		copy(jwks, cachedJWKS)
+	} else {
+		jwksResponse, err := j.ssoClient.Api.GetJWKS(ctx, &ssov1.GetJWKSRequest{
+			AppId: j.AppID,
+		})
+
+		if err != nil {
+			return nil, err
+		}
+
+		jwks = jwksResponse.GetJwks()
+		ttl, err := time.ParseDuration(jwksResponse.GetTtl().String())
+		if err != nil {
+			return nil, err
+		}
+
+		j.mu.Lock()
+		j.jwksCache.Set(CacheJWKS, jwks, ttl)
+		j.mu.Unlock()
+	}
+
+	return jwks, nil
+}
+
+func getJWKByKid(jwks []*ssov1.JWK, kid string) (*ssov1.JWK, error) {
+	for _, jwk := range jwks {
+		if jwk.GetKid() == kid {
+			return jwk, nil
+		}
+	}
+	return nil, fmt.Errorf("JWK with kid %s not found", kid)
 }
 
 func Authenticator() func(http.Handler) http.Handler {
@@ -309,8 +345,14 @@ func SetRefreshTokenCookie(w http.ResponseWriter, refreshToken, domain, path str
 	SetTokenCookie(w, "refreshToken", refreshToken, domain, path, expiresAt, httpOnly)
 }
 
-func SendTokensToWeb(w http.ResponseWriter, data TokenData, httpStatus int) {
-	SetRefreshTokenCookie(w, data.RefreshToken, data.Domain, data.Path, data.ExpiresAt, data.HTTPOnly)
+func SendTokensToWeb(w http.ResponseWriter, data *ssov1.TokenData, httpStatus int) {
+	SetRefreshTokenCookie(w,
+		data.GetRefreshToken(),
+		data.GetDomain(),
+		data.GetPath(),
+		data.GetExpiresAt().AsTime(),
+		data.GetHttpOnly(),
+	)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(httpStatus)
 
@@ -327,7 +369,7 @@ func SendTokensToWeb(w http.ResponseWriter, data TokenData, httpStatus int) {
 	}
 }
 
-func SendTokensToMobileApp(w http.ResponseWriter, data TokenData, httpStatus int) {
+func SendTokensToMobileApp(w http.ResponseWriter, data *ssov1.TokenData, httpStatus int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(httpStatus)
 

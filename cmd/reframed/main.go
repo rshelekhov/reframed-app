@@ -9,8 +9,6 @@ import (
 	"github.com/rshelekhov/reframed/internal/app/httpserver"
 	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
 
-	"github.com/golang-jwt/jwt/v5"
-
 	ssogrpc "github.com/rshelekhov/reframed/internal/clients/sso/grpc"
 	v1 "github.com/rshelekhov/reframed/internal/controller/http/v1"
 	"github.com/rshelekhov/reframed/internal/lib/logger"
@@ -40,16 +38,9 @@ func main() {
 		cfg.Clients.SSO.RetriesCount,
 	)
 
-	tokenAuth := jwtoken.NewJWTokenService(
-		cfg.JWTAuth.SigningKey,
-		jwt.SigningMethodHS256,
-		cfg.JWTAuth.AccessTokenTTL,
-		cfg.JWTAuth.RefreshTokenTTL,
-		cfg.JWTAuth.RefreshTokenCookieDomain,
-		cfg.JWTAuth.RefreshTokenCookiePath,
-		cfg.JWTAuth.PasswordHash.Cost,
-		cfg.JWTAuth.PasswordHash.Salt,
-	)
+	// TODO: research where and how to set appID
+	var appID int32
+	tokenAuth := jwtoken.NewJWTokenService(ssoClient, appID)
 
 	// Storage
 	pg, err := postgres.NewStorage(cfg)
@@ -61,14 +52,13 @@ func main() {
 
 	headingStorage := postgres.NewHeadingStorage(pg)
 	listStorage := postgres.NewListStorage(pg)
-	authStorage := postgres.NewAuthStorage(pg)
 	taskStorage := postgres.NewTaskStorage(pg)
 	tagStorage := postgres.NewTagStorage(pg)
 
 	// Usecases
 	headingUsecase := usecase.NewHeadingUsecase(headingStorage)
 	listUsecase := usecase.NewListUsecase(listStorage, headingUsecase)
-	authUsecase := usecase.NewAuthUsecase(authStorage, ssoClient, listUsecase, headingUsecase)
+	authUsecase := usecase.NewAuthUsecase(ssoClient, tokenAuth, listUsecase, headingUsecase)
 	tagUsecase := usecase.NewTagUsecase(tagStorage)
 	taskUsecase := usecase.NewTaskUsecase(taskStorage, headingUsecase, tagUsecase, listUsecase)
 

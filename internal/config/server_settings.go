@@ -9,7 +9,6 @@ type (
 		AppEnv     string           `mapstructure:"APP_ENV"`
 		HTTPServer HTTPServerConfig `mapstructure:",squash"`
 		Postgres   PostgresConfig   `mapstructure:",squash"`
-		JWTAuth    JWTConfig        `mapstructure:",squash"`
 		Clients    ClientsConfig    `mapstructure:",squash"`
 	}
 
@@ -35,20 +34,6 @@ type (
 		WriteTimeout time.Duration `mapstructure:"DB_WRITE_TIMEOUT" envDefault:"5s"`
 		IdleTimeout  time.Duration `mapstructure:"DB_IDLE_TIMEOUT" envDefault:"60s"`
 		DialTimeout  time.Duration `mapstructure:"DB_DIAL_TIMEOUT" envDefault:"10s"`
-	}
-
-	JWTConfig struct {
-		SigningKey               string        `mapstructure:"JWT_SIGNING_KEY"`
-		AccessTokenTTL           time.Duration `mapstructure:"JWT_ACCESS_TOKEN_TTL"`
-		RefreshTokenTTL          time.Duration `mapstructure:"JWT_REFRESH_TOKEN_TTL"`
-		RefreshTokenCookieDomain string        `mapstructure:"JWT_REFRESH_TOKEN_COOKIE_DOMAIN"`
-		RefreshTokenCookiePath   string        `mapstructure:"JWT_REFRESH_TOKEN_COOKIE_PATH"`
-		PasswordHash             PasswordHashBcrypt
-	}
-
-	PasswordHashBcrypt struct {
-		Cost int    `mapstructure:"PASSWORD_HASH_BCRYPT_COST"`
-		Salt string `mapstructure:"PASSWORD_HASH_BCRYPT_SALT"`
 	}
 
 	Client struct {
