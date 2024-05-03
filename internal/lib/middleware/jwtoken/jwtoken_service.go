@@ -51,7 +51,7 @@ type ContextKey struct {
 type ClaimCTXKey string
 
 var (
-	TokenCtxKey = ContextKey{"Token"}
+	TokenCtxKey = ContextKey{"token"}
 
 	ErrUnauthorized             = errors.New("unauthorized")
 	ErrNoTokenFound             = errors.New("no token found")
