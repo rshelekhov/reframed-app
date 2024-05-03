@@ -307,9 +307,10 @@ func (c *authController) DeleteUser() http.HandlerFunc {
 
 		userDevice := model.UserDeviceRequestData{
 			UserAgent: r.UserAgent(),
+			IP:        strings.Split(r.RemoteAddr, ":")[0],
 		}
 
-		err = c.usecase.DeleteUser(r.Context(), userID, userDevice)
+		err = c.usecase.DeleteUser(ctx, userDevice)
 
 		switch {
 		case errors.Is(err, le.ErrUserNotFound):

@@ -4,10 +4,8 @@ import (
 	"context"
 	"github.com/golang-jwt/jwt/v5"
 	ssogrpc "github.com/rshelekhov/reframed/internal/clients/sso/grpc"
-	ssov1 "github.com/rshelekhov/sso-protos/gen/go/sso"
-	"time"
-
 	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
+	ssov1 "github.com/rshelekhov/sso-protos/gen/go/sso"
 
 	"github.com/rshelekhov/reframed/internal/lib/constants/key"
 	"github.com/rshelekhov/reframed/internal/lib/constants/le"
@@ -198,37 +196,26 @@ func (u *AuthUsecase) GetUserByID(ctx context.Context) (model.UserResponseData, 
 }
 
 func (u *AuthUsecase) UpdateUser(ctx context.Context, data *model.UserRequestData) error {
-	_, err := u.ssoClient.Api.UpdateUser(ctx, &ssov1.UpdateUserRequest{
+	if _, err := u.ssoClient.Api.UpdateUser(ctx, &ssov1.UpdateUserRequest{
 		Email:           data.Email,
 		CurrentPassword: data.Password,
 		UpdatedPassword: data.UpdatedPassword,
 		AppId:           u.jwt.AppID,
-	})
-	if err != nil {
+	}); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (u *AuthUsecase) DeleteUser(ctx context.Context, userID string, data model.UserDeviceRequestData) error {
-	deviceID, err := u.authStorage.GetUserDeviceID(ctx, userID, data.UserAgent)
-	if err != nil {
-		return err
-	}
-
-	deletedUser := model.User{
-		ID:        userID,
-		DeletedAt: time.Now(),
-	}
-
-	err = u.authStorage.DeleteUser(ctx, deletedUser)
-	if err != nil {
-		return err
-	}
-
-	err = u.authStorage.DeleteSession(ctx, userID, deviceID)
-	if err != nil {
+func (u *AuthUsecase) DeleteUser(ctx context.Context, data model.UserDeviceRequestData) error {
+	if _, err := u.ssoClient.Api.DeleteUser(ctx, &ssov1.DeleteUserRequest{
+		AppId: u.jwt.AppID,
+		UserDeviceData: &ssov1.UserDeviceData{
+			UserAgent: data.UserAgent,
+			Ip:        data.IP,
+		},
+	}); err != nil {
 		return err
 	}
 
