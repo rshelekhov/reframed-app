@@ -9,7 +9,7 @@ type (
 		AppEnv     string           `mapstructure:"APP_ENV"`
 		HTTPServer HTTPServerConfig `mapstructure:",squash"`
 		Postgres   PostgresConfig   `mapstructure:",squash"`
-		JWTAuth    JWTConfig        `mapstructure:",squash"`
+		Clients    ClientsConfig    `mapstructure:",squash"`
 	}
 
 	HTTPServerConfig struct {
@@ -36,17 +36,15 @@ type (
 		DialTimeout  time.Duration `mapstructure:"DB_DIAL_TIMEOUT" envDefault:"10s"`
 	}
 
-	JWTConfig struct {
-		SigningKey               string        `mapstructure:"JWT_SIGNING_KEY"`
-		AccessTokenTTL           time.Duration `mapstructure:"JWT_ACCESS_TOKEN_TTL"`
-		RefreshTokenTTL          time.Duration `mapstructure:"JWT_REFRESH_TOKEN_TTL"`
-		RefreshTokenCookieDomain string        `mapstructure:"JWT_REFRESH_TOKEN_COOKIE_DOMAIN"`
-		RefreshTokenCookiePath   string        `mapstructure:"JWT_REFRESH_TOKEN_COOKIE_PATH"`
-		PasswordHash             PasswordHashBcrypt
+	Client struct {
+		Address      string        `mapstructure:"SSO_CLIENT_ADDRESS"`
+		Timeout      time.Duration `mapstructure:"SSO_CLIENT_TIMEOUT"`
+		RetriesCount int           `mapstructure:"SSO_CLIENT_RETRIES_COUNT"`
+		// TODO: implement secure transport
+		// Insecure     bool          `mapstructure:"SSO_CLIENT_INSECURE"`
 	}
 
-	PasswordHashBcrypt struct {
-		Cost int    `mapstructure:"PASSWORD_HASH_BCRYPT_COST"`
-		Salt string `mapstructure:"PASSWORD_HASH_BCRYPT_SALT"`
+	ClientsConfig struct {
+		SSO Client `mapstructure:",squash"`
 	}
 )

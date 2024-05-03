@@ -2,14 +2,14 @@
 package main
 
 import (
+	"context"
+	"github.com/rshelekhov/reframed/internal/config"
 	"log/slog"
 
 	"github.com/rshelekhov/reframed/internal/app/httpserver"
 	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
 
-	"github.com/golang-jwt/jwt/v5"
-
-	"github.com/rshelekhov/reframed/config"
+	ssogrpc "github.com/rshelekhov/reframed/internal/clients/sso/grpc"
 	v1 "github.com/rshelekhov/reframed/internal/controller/http/v1"
 	"github.com/rshelekhov/reframed/internal/lib/logger"
 	"github.com/rshelekhov/reframed/internal/storage/postgres"
@@ -30,16 +30,17 @@ func main() {
 		slog.String("address", cfg.HTTPServer.Address))
 	log.Debug("logger debug mode enabled")
 
-	tokenAuth := jwtoken.NewJWTokenService(
-		cfg.JWTAuth.SigningKey,
-		jwt.SigningMethodHS256,
-		cfg.JWTAuth.AccessTokenTTL,
-		cfg.JWTAuth.RefreshTokenTTL,
-		cfg.JWTAuth.RefreshTokenCookieDomain,
-		cfg.JWTAuth.RefreshTokenCookiePath,
-		cfg.JWTAuth.PasswordHash.Cost,
-		cfg.JWTAuth.PasswordHash.Salt,
+	ssoClient, err := ssogrpc.New(
+		context.Background(),
+		log,
+		cfg.Clients.SSO.Address,
+		cfg.Clients.SSO.Timeout,
+		cfg.Clients.SSO.RetriesCount,
 	)
+
+	// TODO: research where and how to set appID
+	var appID int32
+	tokenAuth := jwtoken.NewJWTokenService(ssoClient, appID)
 
 	// Storage
 	pg, err := postgres.NewStorage(cfg)
@@ -51,14 +52,13 @@ func main() {
 
 	headingStorage := postgres.NewHeadingStorage(pg)
 	listStorage := postgres.NewListStorage(pg)
-	authStorage := postgres.NewAuthStorage(pg)
 	taskStorage := postgres.NewTaskStorage(pg)
 	tagStorage := postgres.NewTagStorage(pg)
 
 	// Usecases
 	headingUsecase := usecase.NewHeadingUsecase(headingStorage)
 	listUsecase := usecase.NewListUsecase(listStorage, headingUsecase)
-	authUsecase := usecase.NewAuthUsecase(authStorage, listUsecase, headingUsecase)
+	authUsecase := usecase.NewAuthUsecase(ssoClient, tokenAuth, listUsecase, headingUsecase)
 	tagUsecase := usecase.NewTagUsecase(tagStorage)
 	taskUsecase := usecase.NewTaskUsecase(taskStorage, headingUsecase, tagUsecase, listUsecase)
 

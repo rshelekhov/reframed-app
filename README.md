@@ -31,7 +31,7 @@
 
 ## Reframed App UI design
 
-![alt text](https://github.com/rshelekhov/reframed/blob/main/pkg/img/browser-1.png)
-![alt text](https://github.com/rshelekhov/reframed/blob/main/pkg/img/browser-2.png)
-![alt text](https://github.com/rshelekhov/reframed/blob/main/pkg/img/browser-3.png)
-![alt text](https://github.com/rshelekhov/reframed/blob/main/pkg/img/browser-4.png)
+![alt text](https://github.com/rshelekhov/reframed/blob/main/internal/lib/img/browser-1.png)
+![alt text](https://github.com/rshelekhov/reframed/blob/main/internal/lib/img/browser-2.png)
+![alt text](https://github.com/rshelekhov/reframed/blob/main/internal/lib/img/browser-3.png)
+![alt text](https://github.com/rshelekhov/reframed/blob/main/internal/lib/img/browser-4.png)
