@@ -19,14 +19,14 @@ import (
 )
 
 type authController struct {
-	logger  logger.Interface
+	logger  *slog.Logger
 	jwt     *jwtoken.TokenService
 	usecase port.AuthUsecase
 }
 
 func NewAuthRoutes(
 	r *chi.Mux,
-	log logger.Interface,
+	log *slog.Logger,
 	jwt *jwtoken.TokenService,
 	usecase port.AuthUsecase,
 ) {
@@ -39,7 +39,7 @@ func NewAuthRoutes(
 	// Public routes
 	r.Group(func(r chi.Router) {
 		r.Post("/login", c.LoginWithPassword())
-		r.Post("/register", c.CreateUser())
+		r.Post("/register", c.Register())
 		// TODO: add handler for RequestResetPassword
 		r.Post("/refresh-tokens", c.RefreshJWTokens())
 	})
@@ -59,10 +59,10 @@ func NewAuthRoutes(
 	})
 }
 
-// CreateUser creates a new user
-func (c *authController) CreateUser() http.HandlerFunc {
+// Register creates a new user
+func (c *authController) Register() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.controller.CreateUser"
+		const op = "user.controller.RegisterNewUser"
 
 		ctx := r.Context()
 
@@ -78,7 +78,7 @@ func (c *authController) CreateUser() http.HandlerFunc {
 			IP:        strings.Split(r.RemoteAddr, ":")[0],
 		}
 
-		tokenData, userID, err := c.usecase.CreateUser(ctx, userInput, userDevice)
+		tokenData, userID, err := c.usecase.RegisterNewUser(ctx, userInput, userDevice)
 		if err != nil {
 			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrFailedToCreateUser,
 				slog.String(key.Email, userInput.Email),
