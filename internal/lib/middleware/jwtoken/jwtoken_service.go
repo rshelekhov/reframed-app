@@ -143,7 +143,15 @@ func (j *TokenService) ParseToken(ctx context.Context, accessTokenString string)
 
 	// Parse the tokenData using the public key
 	tokenParsed, err := jwt.Parse(accessTokenString, func(token *jwt.Token) (interface{}, error) {
-		kid := token.Header["kid"].(string)
+		kidRaw, ok := token.Header["kid"]
+		if !ok {
+			return nil, errors.New("kid not found in token header")
+		}
+
+		kid, ok := kidRaw.(string)
+		if !ok {
+			return nil, errors.New("kid is not a string")
+		}
 
 		jwk, err := getJWKByKid(jwks, kid)
 		if err != nil {
@@ -202,10 +210,7 @@ func (j *TokenService) GetJWKS(ctx context.Context) ([]*ssov1.JWK, error) {
 		}
 
 		jwks = jwksResponse.GetJwks()
-		ttl, err := time.ParseDuration(jwksResponse.GetTtl().String())
-		if err != nil {
-			return nil, err
-		}
+		ttl := time.Duration(jwksResponse.GetTtl().Seconds) * time.Second
 
 		j.mu.Lock()
 		j.jwksCache.Set(CacheJWKS, jwks, ttl)
