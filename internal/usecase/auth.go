@@ -34,7 +34,7 @@ func NewAuthUsecase(
 	}
 }
 
-func (u *AuthUsecase) CreateUser(
+func (u *AuthUsecase) RegisterNewUser(
 	ctx context.Context,
 	userData *model.UserRequestData,
 	userDevice model.UserDeviceRequestData,
@@ -43,7 +43,7 @@ func (u *AuthUsecase) CreateUser(
 	userID string,
 	err error,
 ) {
-	const op = "usecase.AuthUsecase.CreateUser"
+	const op = "usecase.AuthUsecase.RegisterNewUser"
 
 	resp, err := u.ssoClient.Api.Register(ctx, &ssov1.RegisterRequest{
 		Email:    userData.Email,
