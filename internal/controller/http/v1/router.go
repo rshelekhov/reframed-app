@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"log/slog"
 	"time"
 
 	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
@@ -11,12 +12,11 @@ import (
 	"github.com/go-chi/httprate"
 	"github.com/go-chi/render"
 
-	"github.com/rshelekhov/reframed/internal/lib/logger"
 	"github.com/rshelekhov/reframed/internal/port"
 )
 
 func NewRouter(
-	log logger.Interface,
+	log *slog.Logger,
 	jwt *jwtoken.TokenService,
 	a port.AuthUsecase,
 	l port.ListUsecase,

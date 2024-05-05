@@ -17,14 +17,14 @@ import (
 )
 
 type taskController struct {
-	logger  logger.Interface
+	logger  *slog.Logger
 	jwt     *jwtoken.TokenService
 	usecase port.TaskUsecase
 }
 
 func NewTaskRoutes(
 	r *chi.Mux,
-	log logger.Interface,
+	log *slog.Logger,
 	jwt *jwtoken.TokenService,
 	usecase port.TaskUsecase,
 ) {

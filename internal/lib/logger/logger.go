@@ -15,17 +15,17 @@ const (
 	envProd  = "prod"
 )
 
-type Interface interface {
-	With(args ...any) *Logger
-	Debug(msg string, attrs ...interface{})
-	Info(msg string, attrs ...interface{})
-	Warn(msg string, attrs ...interface{})
-	Error(msg string, attrs ...interface{})
-	Log(ctx context.Context, level slog.Level, msg string, args ...any)
-}
+//type Interface interface {
+//	With(args ...any) *Logger
+//	Debug(msg string, attrs ...interface{})
+//	Info(msg string, attrs ...interface{})
+//	Warn(msg string, attrs ...interface{})
+//	Error(msg string, attrs ...interface{})
+//	Log(ctx context.Context, level slog.Level, msg string, args ...any)
+//}
 
 type Logger struct {
-	Logger *slog.Logger
+	*slog.Logger
 }
 
 func SetupLogger(env string) *Logger {
@@ -33,11 +33,20 @@ func SetupLogger(env string) *Logger {
 
 	switch env {
 	case envLocal:
-		log = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
+		log = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+			Level:     slog.LevelDebug,
+			AddSource: true,
+		}))
 	case envDev:
-		log = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
+		log = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+			Level:     slog.LevelDebug,
+			AddSource: true,
+		}))
 	case envProd:
-		log = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+		log = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+			Level:     slog.LevelInfo,
+			AddSource: true,
+		}))
 	}
 
 	return &Logger{Logger: log}
@@ -51,7 +60,7 @@ func Err(err error) slog.Attr {
 	}
 }
 
-func LogWithRequest(log Interface, op string, r *http.Request) Interface {
+func LogWithRequest(log *slog.Logger, op string, r *http.Request) *slog.Logger {
 	log.With(
 		slog.String("op", op),
 		slog.String("request_id", middleware.GetReqID(r.Context())),
