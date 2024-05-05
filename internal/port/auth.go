@@ -7,7 +7,7 @@ import (
 )
 
 type AuthUsecase interface {
-	CreateUser(ctx context.Context, userData *model.UserRequestData, userDevice model.UserDeviceRequestData) (tokenData *ssov1.TokenData, userID string, err error)
+	RegisterNewUser(ctx context.Context, userData *model.UserRequestData, userDevice model.UserDeviceRequestData) (tokenData *ssov1.TokenData, userID string, err error)
 	LoginUser(ctx context.Context, userData *model.UserRequestData, userDevice model.UserDeviceRequestData) (tokenData *ssov1.TokenData, userID string, err error)
 	Refresh(ctx context.Context, refreshToken string, data model.UserDeviceRequestData) (tokenData *ssov1.TokenData, userID string, err error)
 	LogoutUser(ctx context.Context, data model.UserDeviceRequestData) error
