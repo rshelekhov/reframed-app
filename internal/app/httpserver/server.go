@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/rshelekhov/reframed/internal/config"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -13,20 +14,18 @@ import (
 	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
 
 	"github.com/go-chi/chi/v5"
-
-	"github.com/rshelekhov/reframed/internal/lib/logger"
 )
 
 type Server struct {
 	cfg       *config.ServerSettings
-	log       logger.Interface
+	log       *slog.Logger
 	tokenAuth *jwtoken.TokenService
 	router    *chi.Mux
 }
 
 func NewServer(
 	cfg *config.ServerSettings,
-	log logger.Interface,
+	log *slog.Logger,
 	tokenAuth *jwtoken.TokenService,
 	router *chi.Mux,
 ) *Server {
