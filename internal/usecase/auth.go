@@ -6,6 +6,8 @@ import (
 	ssogrpc "github.com/rshelekhov/reframed/internal/clients/sso/grpc"
 	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
 	ssov1 "github.com/rshelekhov/sso-protos/gen/go/sso"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/rshelekhov/reframed/internal/lib/constants/key"
 	"github.com/rshelekhov/reframed/internal/lib/constants/le"
@@ -55,7 +57,19 @@ func (u *AuthUsecase) RegisterNewUser(
 		},
 	})
 	if err != nil {
-		return nil, "", err
+		st, ok := status.FromError(err)
+		if !ok {
+			return nil, "", err
+		}
+
+		switch st.Code() {
+		case codes.AlreadyExists:
+			return nil, "", le.ErrUserAlreadyExists
+		case codes.Unauthenticated:
+			return nil, "", le.ErrAppIDDoesNotExists
+		default:
+			return nil, "", err
+		}
 	}
 
 	tokenData = resp.GetTokenData()

@@ -11,6 +11,7 @@ const (
 	//   auth errors
 	// ===========================================================================
 
+	ErrAppIDDoesNotExists         LocalError = "app_id does not exists"
 	ErrUserNotFound               LocalError = "user not found"
 	ErrInvalidCredentials         LocalError = "invalid credentials"
 	ErrPasswordsDoNotMatch        LocalError = "passwords do not match"

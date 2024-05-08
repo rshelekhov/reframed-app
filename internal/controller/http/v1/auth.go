@@ -79,17 +79,26 @@ func (c *authController) Register() http.HandlerFunc {
 		}
 
 		tokenData, userID, err := c.usecase.RegisterNewUser(ctx, userInput, userDevice)
-		if err != nil {
-			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrFailedToCreateUser,
+		switch {
+		case errors.Is(err, le.ErrUserAlreadyExists):
+			handleResponseError(w, r, log, http.StatusConflict, le.ErrUserAlreadyExists,
 				slog.String(key.Email, userInput.Email),
-				slog.String(key.Error, err.Error()),
 			)
+			return
+		case errors.Is(err, le.ErrAppIDDoesNotExists):
+			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrAppIDDoesNotExists,
+				slog.Any(key.AppID, userInput.AppID),
+			)
+			return
+		case err != nil:
+			handleInternalServerError(w, r, log, le.ErrFailedToCreateUser, err)
+			return
 		}
 
 		log.Info("user and tokens created",
 			slog.String(key.UserID, userID),
-			slog.Any(key.AccessToken, tokenData.AccessToken),
-			slog.Any(key.RefreshToken, tokenData.RefreshToken),
+			slog.Any(key.AccessToken, tokenData.GetAccessToken()),
+			slog.Any(key.RefreshToken, tokenData.GetRefreshToken()),
 		)
 		jwtoken.SendTokensToWeb(w, tokenData, http.StatusCreated)
 	}

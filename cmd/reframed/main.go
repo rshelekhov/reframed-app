@@ -41,7 +41,7 @@ func main() {
 	// TODO: research where and how to set appID
 	var appID int32
 	appID = 1
-	tokenAuth := jwtoken.NewJWTokenService(ssoClient, appID)
+	tokenAuth := jwtoken.NewService(ssoClient, appID)
 
 	// Storage
 	pg, err := postgres.NewStorage(cfg)
