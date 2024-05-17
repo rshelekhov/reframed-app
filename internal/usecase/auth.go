@@ -6,6 +6,8 @@ import (
 	ssogrpc "github.com/rshelekhov/reframed/internal/clients/sso/grpc"
 	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
 	ssov1 "github.com/rshelekhov/sso-protos/gen/go/sso"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/rshelekhov/reframed/internal/lib/constants/key"
 	"github.com/rshelekhov/reframed/internal/lib/constants/le"
@@ -34,7 +36,7 @@ func NewAuthUsecase(
 	}
 }
 
-func (u *AuthUsecase) CreateUser(
+func (u *AuthUsecase) RegisterNewUser(
 	ctx context.Context,
 	userData *model.UserRequestData,
 	userDevice model.UserDeviceRequestData,
@@ -43,7 +45,7 @@ func (u *AuthUsecase) CreateUser(
 	userID string,
 	err error,
 ) {
-	const op = "usecase.AuthUsecase.CreateUser"
+	const op = "usecase.AuthUsecase.RegisterNewUser"
 
 	resp, err := u.ssoClient.Api.Register(ctx, &ssov1.RegisterRequest{
 		Email:    userData.Email,
@@ -55,7 +57,19 @@ func (u *AuthUsecase) CreateUser(
 		},
 	})
 	if err != nil {
-		return nil, "", err
+		st, ok := status.FromError(err)
+		if !ok {
+			return nil, "", err
+		}
+
+		switch st.Code() {
+		case codes.AlreadyExists:
+			return nil, "", le.ErrUserAlreadyExists
+		case codes.Unauthenticated:
+			return nil, "", le.ErrAppIDDoesNotExists
+		default:
+			return nil, "", err
+		}
 	}
 
 	tokenData = resp.GetTokenData()

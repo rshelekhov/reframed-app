@@ -16,14 +16,14 @@ import (
 )
 
 type tagController struct {
-	logger  logger.Interface
+	logger  *slog.Logger
 	jwt     *jwtoken.TokenService
 	usecase port.TagUsecase
 }
 
 func NewTagRoutes(
 	r *chi.Mux,
-	log logger.Interface,
+	log *slog.Logger,
 	jwt *jwtoken.TokenService,
 	usecase port.TagUsecase,
 ) {

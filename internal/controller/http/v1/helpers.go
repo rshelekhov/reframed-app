@@ -15,7 +15,7 @@ import (
 )
 
 // validateData validates the request
-func validateData(w http.ResponseWriter, r *http.Request, log logger.Interface, data any) error {
+func validateData(w http.ResponseWriter, r *http.Request, log *slog.Logger, data any) error {
 	if data == nil || reflect.DeepEqual(data, reflect.Zero(reflect.TypeOf(data)).Interface()) {
 		handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyData)
 		return le.ErrEmptyData
@@ -39,7 +39,7 @@ func validateData(w http.ResponseWriter, r *http.Request, log logger.Interface, 
 }
 
 // decodeJSON decodes the request body
-func decodeJSON(w http.ResponseWriter, r *http.Request, log logger.Interface, data any) error {
+func decodeJSON(w http.ResponseWriter, r *http.Request, log *slog.Logger, data any) error {
 	// Decode the request body
 	err := render.DecodeJSON(r.Body, &data)
 	if errors.Is(err, io.EOF) {
@@ -58,7 +58,7 @@ func decodeJSON(w http.ResponseWriter, r *http.Request, log logger.Interface, da
 	return nil
 }
 
-func decodeAndValidateJSON(w http.ResponseWriter, r *http.Request, log logger.Interface, data any) error {
+func decodeAndValidateJSON(w http.ResponseWriter, r *http.Request, log *slog.Logger, data any) error {
 	if err := decodeJSON(w, r, log, data); err != nil {
 		return err
 	}
@@ -127,7 +127,7 @@ func responseSuccess(
 func handleResponseSuccess(
 	w http.ResponseWriter,
 	r *http.Request,
-	log logger.Interface,
+	log *slog.Logger,
 	message string,
 	data any,
 	addLogData ...any,
@@ -140,7 +140,7 @@ func handleResponseSuccess(
 func handleResponseCreated(
 	w http.ResponseWriter,
 	r *http.Request,
-	log logger.Interface,
+	log *slog.Logger,
 	message string,
 	data any,
 	addLogData ...any,
@@ -174,7 +174,7 @@ func responseError(
 func handleResponseError(
 	w http.ResponseWriter,
 	r *http.Request,
-	log logger.Interface,
+	log *slog.Logger,
 	status int,
 	error le.LocalError,
 	addLogData ...interface{},
@@ -186,9 +186,9 @@ func handleResponseError(
 func handleInternalServerError(
 	w http.ResponseWriter,
 	r *http.Request,
-	log logger.Interface,
+	log *slog.Logger,
 	error le.LocalError,
-	addLogData ...interface{},
+	addLogData ...interface{}, // TODO: use map instead (avoid !BADKEY in logs)
 ) {
 	log.Error("Internal Server Error: ", addLogData...)
 	responseError(w, r, http.StatusInternalServerError, error)

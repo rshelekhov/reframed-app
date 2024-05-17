@@ -7,9 +7,11 @@ const (
 	//  auth keys
 	// ===========================================================================
 
+	AppID        = "app_id"
 	Tokens       = "tokens"
 	AccessToken  = "access_token"
 	RefreshToken = "refresh_token"
+	Kid          = "kid"
 
 	// ===========================================================================
 	//  entities keys

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	ssogrpc "github.com/rshelekhov/reframed/internal/clients/sso/grpc"
 	"github.com/rshelekhov/reframed/internal/lib/cache"
+	"github.com/rshelekhov/reframed/internal/lib/constants/key"
 	"math/big"
 	"net/http"
 	"strings"
@@ -24,9 +25,18 @@ type TokenService struct {
 	jwksCache *cache.Cache
 	mu        sync.RWMutex
 	AppID     int32
+	Cookie    cookie
+	// TODO: добавить jwt data из переменных окружения
 }
 
-func NewJWTokenService(ssoClient *ssogrpc.Client, appID int32) *TokenService {
+type cookie struct {
+	Domain    string
+	Path      string
+	ExpiresAt time.Time
+	HttpOnly  bool
+}
+
+func NewService(ssoClient *ssogrpc.Client, appID int32) *TokenService {
 	return &TokenService{
 		ssoClient: ssoClient,
 		jwksCache: cache.New(),
@@ -60,6 +70,8 @@ var (
 	ErrNoTokenFoundInCtx        = errors.New("token not found in context")
 	ErrUserIDNotFoundInCtx      = errors.New("user id not found in context")
 	ErrFailedToParseTokenClaims = errors.New("failed to parse token claims from context")
+	ErrKidNotFoundInTokenHeader = errors.New("kid not found in token header")
+	ErrKidIsNotAString          = errors.New("kid is not a string")
 )
 
 const (
@@ -143,7 +155,15 @@ func (j *TokenService) ParseToken(ctx context.Context, accessTokenString string)
 
 	// Parse the tokenData using the public key
 	tokenParsed, err := jwt.Parse(accessTokenString, func(token *jwt.Token) (interface{}, error) {
-		kid := token.Header["kid"].(string)
+		kidRaw, ok := token.Header[key.Kid]
+		if !ok {
+			return nil, ErrKidNotFoundInTokenHeader
+		}
+
+		kid, ok := kidRaw.(string)
+		if !ok {
+			return nil, ErrKidIsNotAString
+		}
 
 		jwk, err := getJWKByKid(jwks, kid)
 		if err != nil {
@@ -202,10 +222,7 @@ func (j *TokenService) GetJWKS(ctx context.Context) ([]*ssov1.JWK, error) {
 		}
 
 		jwks = jwksResponse.GetJwks()
-		ttl, err := time.ParseDuration(jwksResponse.GetTtl().String())
-		if err != nil {
-			return nil, err
-		}
+		ttl := time.Duration(jwksResponse.GetTtl().Seconds) * time.Second
 
 		j.mu.Lock()
 		j.jwksCache.Set(CacheJWKS, jwks, ttl)
@@ -339,6 +356,8 @@ func SetTokenCookie(w http.ResponseWriter, name, value, domain, path string, exp
 		Expires:  expiresAt,
 		HttpOnly: httpOnly,
 	})
+	fmt.Printf("\n- - - - - - - DOMAIN - - - - - - -\n")
+	fmt.Printf("%s\n\n", domain)
 }
 
 func SetRefreshTokenCookie(w http.ResponseWriter, refreshToken, domain, path string, expiresAt time.Time, httpOnly bool) {

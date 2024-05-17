@@ -17,14 +17,14 @@ import (
 )
 
 type listController struct {
-	logger  logger.Interface
+	logger  *slog.Logger
 	jwt     *jwtoken.TokenService
 	usecase port.ListUsecase
 }
 
 func NewListRoutes(
 	r *chi.Mux,
-	log logger.Interface,
+	log *slog.Logger,
 	jwt *jwtoken.TokenService,
 	usecase port.ListUsecase,
 ) {

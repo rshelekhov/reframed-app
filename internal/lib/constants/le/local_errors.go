@@ -6,32 +6,22 @@ func (l LocalError) Error() string {
 	return string(l)
 }
 
+// TODO: add unwrapping
+
 const (
 	// ===========================================================================
 	//   auth errors
 	// ===========================================================================
 
+	ErrAppIDDoesNotExists         LocalError = "app_id does not exists"
 	ErrUserNotFound               LocalError = "user not found"
-	ErrInvalidCredentials         LocalError = "invalid credentials"
-	ErrPasswordsDoNotMatch        LocalError = "passwords do not match"
-	ErrUserHasNoPassword          LocalError = "user has no password"
-	ErrUserDeviceNotFound         LocalError = "user device not found"
-	ErrSessionNotFound            LocalError = "session not found"
 	ErrFailedToLoginUser          LocalError = "failed to login user"
 	ErrFailedToCreateUser         LocalError = "failed to create user"
-	ErrFailedToRegisterDevice     LocalError = "failed to register device"
-	ErrFailedToCheckDevice        LocalError = "failed to check device"
-	ErrFailedToDeleteRefreshToken LocalError = "failed to delete refresh token"
-	ErrFailedToCreateSession      LocalError = "failed to create session"
-	ErrFailedToRemoveSession      LocalError = "failed to remove session"
 	ErrFailedToGetTokenData       LocalError = "failed to get token data"
 	ErrFailedToGetUserIDFromToken LocalError = "failed to get user id from token"
-	ErrFailedToGetAccessToken     LocalError = "failed to get token from context"
 	ErrFailedToGetRefreshToken    LocalError = "failed to get refresh token from context"
-	ErrFailedToRefreshTokens      LocalError = "failed to refresh tokens"
 	ErrFailedGoGetClaimsFromToken LocalError = "failed to get claims from token"
 	ErrFailedToLogout             LocalError = "failed to logout"
-	ErrSessionExpired             LocalError = "session expired"
 
 	// ===========================================================================
 	//   controller errors
@@ -49,8 +39,6 @@ const (
 	//   user errors
 	// ===========================================================================
 
-	ErrNoUsersFound              LocalError = "no users found"
-	ErrFailedToGetUsers          LocalError = "failed to get users"
 	ErrUserAlreadyExists         LocalError = "user with this email already exists"
 	ErrEmailAlreadyTaken         LocalError = "this email already taken"
 	ErrNoChangesDetected         LocalError = "no changes detected"

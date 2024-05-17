@@ -17,14 +17,14 @@ import (
 )
 
 type headingController struct {
-	logger  logger.Interface
+	logger  *slog.Logger
 	jwt     *jwtoken.TokenService
 	usecase port.HeadingUsecase
 }
 
 func NewHeadingRoutes(
 	r *chi.Mux,
-	log logger.Interface,
+	log *slog.Logger,
 	jwt *jwtoken.TokenService,
 	usecase port.HeadingUsecase,
 ) {
