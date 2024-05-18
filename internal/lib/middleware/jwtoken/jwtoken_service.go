@@ -26,7 +26,7 @@ type TokenService struct {
 	mu        sync.RWMutex
 	AppID     int32
 	Cookie    cookie
-	// TODO: добавить jwt data из переменных окружения
+	// TODO: добавить jwt data из переменных окружения (?)
 }
 
 type cookie struct {
@@ -75,8 +75,10 @@ var (
 )
 
 const (
-	ContextUserID = "user_id"
-	CacheJWKS     = "jwks"
+	AccessTokenKey  = "access_token"
+	RefreshTokenKey = "refresh_token"
+	ContextUserID   = "user_id"
+	CacheJWKS       = "jwks"
 )
 
 func Verifier(j *TokenService) func(http.Handler) http.Handler {
@@ -273,7 +275,7 @@ func GetTokenFromHeader(r *http.Request) string {
 }
 
 func GetRefreshTokenFromHeader(r *http.Request) (string, error) {
-	refreshToken := r.Header.Get("RefreshToken")
+	refreshToken := r.Header.Get(RefreshTokenKey)
 	if refreshToken == "" {
 		// If the refreshToken is not in the headers, we try to extract it from the request body
 		err := r.ParseForm()
@@ -281,14 +283,14 @@ func GetRefreshTokenFromHeader(r *http.Request) (string, error) {
 			return "", err
 		}
 
-		refreshToken = r.FormValue("RefreshToken")
+		refreshToken = r.FormValue(refreshToken)
 	}
 
 	return refreshToken, nil
 }
 
 func GetTokenFromCookie(r *http.Request) string {
-	cookie, err := r.Cookie("jwtoken")
+	cookie, err := r.Cookie(AccessTokenKey)
 	if err != nil {
 		return ""
 	}
@@ -297,7 +299,7 @@ func GetTokenFromCookie(r *http.Request) string {
 }
 
 func GetRefreshTokenFromCookie(r *http.Request) (string, error) {
-	cookie, err := r.Cookie("refreshToken")
+	cookie, err := r.Cookie(RefreshTokenKey)
 	if err != nil {
 		return "", err
 	}
@@ -307,7 +309,7 @@ func GetRefreshTokenFromCookie(r *http.Request) (string, error) {
 
 func GetTokenFromQuery(r *http.Request) string {
 	// Get token from query param named "jwtoken".
-	return r.URL.Query().Get("jwtoken")
+	return r.URL.Query().Get(AccessTokenKey)
 }
 
 func GetTokenFromContext(ctx context.Context) (*jwt.Token, error) {
@@ -361,7 +363,7 @@ func SetTokenCookie(w http.ResponseWriter, name, value, domain, path string, exp
 }
 
 func SetRefreshTokenCookie(w http.ResponseWriter, refreshToken, domain, path string, expiresAt time.Time, httpOnly bool) {
-	SetTokenCookie(w, "refreshToken", refreshToken, domain, path, expiresAt, httpOnly)
+	SetTokenCookie(w, RefreshTokenKey, refreshToken, domain, path, expiresAt, httpOnly)
 }
 
 func SendTokensToWeb(w http.ResponseWriter, data *ssov1.TokenData, httpStatus int) {
@@ -375,7 +377,7 @@ func SendTokensToWeb(w http.ResponseWriter, data *ssov1.TokenData, httpStatus in
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(httpStatus)
 
-	responseBody := map[string]string{"accessToken": data.AccessToken}
+	responseBody := map[string]string{AccessTokenKey: data.AccessToken}
 
 	if len(data.AdditionalFields) > 0 {
 		for key, value := range data.AdditionalFields {
@@ -392,7 +394,7 @@ func SendTokensToMobileApp(w http.ResponseWriter, data *ssov1.TokenData, httpSta
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(httpStatus)
 
-	responseBody := map[string]string{"accessToken": data.AccessToken, "refreshToken": data.RefreshToken}
+	responseBody := map[string]string{AccessTokenKey: data.AccessToken, RefreshTokenKey: data.RefreshToken}
 
 	if len(data.AdditionalFields) > 0 {
 		for key, value := range data.AdditionalFields {
