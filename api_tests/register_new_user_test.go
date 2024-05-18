@@ -106,7 +106,6 @@ func TestRegisterNewUser_FailCases(t *testing.T) {
 				Scheme: "http",
 				Host:   host,
 			}
-
 			e := httpexpect.Default(t, u.String())
 
 			if tc.name == "Register user when user already exists" {

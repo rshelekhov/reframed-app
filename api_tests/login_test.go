@@ -66,11 +66,10 @@ func TestLogin_FailCases(t *testing.T) {
 		Scheme: "http",
 		Host:   host,
 	}
+	e := httpexpect.Default(t, u.String())
 
 	email := gofakeit.Email()
 	password := randomFakePassword()
-
-	e := httpexpect.Default(t, u.String())
 
 	// Register user
 	e.POST("/register").
