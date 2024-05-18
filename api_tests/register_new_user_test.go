@@ -16,7 +16,6 @@ func TestRegisterNewUser_HappyPath(t *testing.T) {
 		Scheme: "http",
 		Host:   host,
 	}
-
 	e := httpexpect.Default(t, u.String())
 
 	// Check if access token is returned
