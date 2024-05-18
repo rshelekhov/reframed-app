@@ -3,6 +3,7 @@ package api_tests
 import (
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/gavv/httpexpect/v2"
+	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
 	"github.com/rshelekhov/reframed/internal/model"
 	"net/http"
 	"net/url"
@@ -42,7 +43,7 @@ func TestLogin_HappyPath(t *testing.T) {
 		Status(http.StatusOK).
 		JSON().Object()
 
-	at.Value("accessToken").String().NotEmpty()
+	at.Value(jwtoken.AccessTokenKey).String().NotEmpty()
 
 	// Login user and check cookies
 	c := e.POST("/login").
@@ -53,7 +54,7 @@ func TestLogin_HappyPath(t *testing.T) {
 		}).
 		Expect().
 		Status(http.StatusOK).
-		Cookie("refreshToken")
+		Cookie(jwtoken.RefreshTokenKey)
 
 	c.Value().NotEmpty()
 	c.Domain().IsEqual("localhost")
