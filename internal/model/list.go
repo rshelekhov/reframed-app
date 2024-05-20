@@ -8,7 +8,7 @@ import (
 type (
 	List struct {
 		ID        string    `db:"id"`
-		Title     string    `db:"headingTitle"`
+		Title     string    `db:"title"`
 		UserID    string    `db:"user_id"`
 		IsDefault bool      `db:"is_default"`
 		UpdatedAt time.Time `db:"updated_at"`

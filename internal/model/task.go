@@ -8,7 +8,7 @@ import (
 type (
 	Task struct {
 		ID          string    `db:"id"`
-		Title       string    `db:"headingTitle"`
+		Title       string    `db:"title"`
 		Description string    `db:"description"`
 		StartDate   time.Time `db:"start_date"`
 		Deadline    time.Time `db:"deadline"`

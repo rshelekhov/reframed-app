@@ -8,7 +8,7 @@ import (
 type (
 	Heading struct {
 		ID        string    `db:"id"`
-		Title     string    `db:"headingTitle"`
+		Title     string    `db:"title"`
 		ListID    string    `db:"list_id"`
 		UserID    string    `db:"user_id"`
 		IsDefault bool      `db:"is_default"`
