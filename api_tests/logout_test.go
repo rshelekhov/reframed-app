@@ -1,7 +1,6 @@
 package api_tests
 
 import (
-	"fmt"
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/gavv/httpexpect/v2"
 	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
@@ -30,7 +29,6 @@ func TestLogout_HappyPath(t *testing.T) {
 		JSON().Object()
 
 	accessToken := resp.Value(jwtoken.AccessTokenKey).String().Raw()
-	fmt.Printf("access token: %s\n", accessToken)
 
 	// Logout user
 	e.POST("/logout").
