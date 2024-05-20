@@ -146,7 +146,8 @@ func (u *AuthUsecase) Refresh(
 
 	resp, err := u.ssoClient.Api.Refresh(ctx, &ssov1.RefreshRequest{
 		RefreshToken: refreshToken,
-		AppId:        u.jwt.AppID,
+		// TODO: update to use AppID from UserRequestData
+		AppId: u.jwt.AppID,
 		UserDeviceData: &ssov1.UserDeviceData{
 			UserAgent: data.UserAgent,
 			Ip:        data.IP,
@@ -177,7 +178,13 @@ func (u *AuthUsecase) Refresh(
 }
 
 func (u *AuthUsecase) LogoutUser(ctx context.Context, data model.UserDeviceRequestData) error {
-	_, err := u.ssoClient.Api.Logout(ctx, &ssov1.LogoutRequest{
+	ctx, err := jwtoken.AddAccessTokenToMetadata(ctx)
+	if err != nil {
+		return err
+	}
+
+	_, err = u.ssoClient.Api.Logout(ctx, &ssov1.LogoutRequest{
+		AppId: u.jwt.AppID,
 		UserDeviceData: &ssov1.UserDeviceData{
 			UserAgent: data.UserAgent,
 			Ip:        data.IP,

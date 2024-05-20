@@ -10,6 +10,7 @@ import (
 	ssogrpc "github.com/rshelekhov/reframed/internal/clients/sso/grpc"
 	"github.com/rshelekhov/reframed/internal/lib/cache"
 	"github.com/rshelekhov/reframed/internal/lib/constants/key"
+	"google.golang.org/grpc/metadata"
 	"math/big"
 	"net/http"
 	"strings"
@@ -61,14 +62,13 @@ type ContextKey struct {
 type ClaimCTXKey string
 
 var (
-	TokenCtxKey = ContextKey{"token"}
-
 	ErrUnauthorized             = errors.New("unauthorized")
 	ErrNoTokenFound             = errors.New("no token found")
 	ErrInvalidToken             = errors.New("invalid token")
 	ErrUnexpectedSigningMethod  = errors.New("unexpected signing method")
-	ErrNoTokenFoundInCtx        = errors.New("token not found in context")
+	ErrTokenNotFoundInCtx       = errors.New("token not found in context")
 	ErrUserIDNotFoundInCtx      = errors.New("user id not found in context")
+	ErrAccessTokenNotFoundInCtx = errors.New("access token not found in context")
 	ErrFailedToParseTokenClaims = errors.New("failed to parse token claims from context")
 	ErrKidNotFoundInTokenHeader = errors.New("kid not found in token header")
 	ErrKidIsNotAString          = errors.New("kid is not a string")
@@ -319,7 +319,7 @@ func GetTokenFromQuery(r *http.Request) string {
 func GetTokenFromContext(ctx context.Context) (string, error) {
 	token, ok := ctx.Value(AccessTokenKey).(string)
 	if !ok {
-		return "", ErrNoTokenFoundInCtx
+		return "", ErrTokenNotFoundInCtx
 	}
 
 	return token, nil
@@ -356,6 +356,19 @@ func (j *TokenService) GetUserID(ctx context.Context) (string, error) {
 	}
 
 	return userID.(string), nil
+}
+
+func AddAccessTokenToMetadata(ctx context.Context) (context.Context, error) {
+	accessToken, ok := ctx.Value(AccessTokenKey).(string)
+	if !ok {
+		return nil, ErrAccessTokenNotFoundInCtx
+	}
+
+	md := metadata.Pairs(AccessTokenKey, accessToken)
+
+	newCtx := metadata.NewOutgoingContext(ctx, md)
+
+	return newCtx, nil
 }
 
 func SetTokenCookie(w http.ResponseWriter, name, value, domain, path string, expiresAt time.Time, httpOnly bool) {
