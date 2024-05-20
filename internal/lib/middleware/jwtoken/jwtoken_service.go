@@ -88,21 +88,21 @@ func Verifier(j *TokenService) func(http.Handler) http.Handler {
 func (j *TokenService) Verify(findTokenFns ...func(r *http.Request) string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			token, err := j.FindToken(r, findTokenFns...)
+			accessToken, err := j.FindToken(r, findTokenFns...)
 			if errors.Is(err, ErrNoTokenFound) {
 				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 				return
 			}
 
 			ctx := r.Context()
-			ctx = context.WithValue(ctx, TokenCtxKey, token)
+			ctx = context.WithValue(ctx, AccessTokenKey, accessToken)
 
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 }
 
-func (j *TokenService) FindToken(r *http.Request, findTokenFns ...func(r *http.Request) string) (*jwt.Token, error) {
+func (j *TokenService) FindToken(r *http.Request, findTokenFns ...func(r *http.Request) string) (string, error) {
 	var accessTokenString string
 
 	for _, fn := range findTokenFns {
@@ -113,10 +113,14 @@ func (j *TokenService) FindToken(r *http.Request, findTokenFns ...func(r *http.R
 	}
 
 	if accessTokenString == "" {
-		return nil, ErrNoTokenFound
+		return "", ErrNoTokenFound
 	}
 
-	return j.VerifyToken(r.Context(), accessTokenString)
+	if err := j.VerifyToken(r.Context(), accessTokenString); err != nil {
+		return "", err
+	}
+
+	return accessTokenString, nil
 }
 
 func FindRefreshToken(r *http.Request) (string, error) {
@@ -135,17 +139,17 @@ func FindRefreshToken(r *http.Request) (string, error) {
 	return refreshToken, nil
 }
 
-func (j *TokenService) VerifyToken(ctx context.Context, accessTokenString string) (*jwt.Token, error) {
+func (j *TokenService) VerifyToken(ctx context.Context, accessTokenString string) error {
 	token, err := j.ParseToken(ctx, accessTokenString)
 	if err != nil {
-		return nil, Errors(err)
+		return Errors(err)
 	}
 
 	if !token.Valid {
-		return nil, ErrInvalidToken
+		return ErrInvalidToken
 	}
 
-	return token, nil
+	return nil
 }
 
 func (j *TokenService) ParseToken(ctx context.Context, accessTokenString string) (*jwt.Token, error) {
@@ -252,7 +256,7 @@ func Authenticator() func(http.Handler) http.Handler {
 				return
 			}
 
-			if token == nil {
+			if len(token) == 0 {
 				http.Error(w, ErrNoTokenFound.Error(), http.StatusUnauthorized)
 				return
 			}
@@ -312,19 +316,24 @@ func GetTokenFromQuery(r *http.Request) string {
 	return r.URL.Query().Get(AccessTokenKey)
 }
 
-func GetTokenFromContext(ctx context.Context) (*jwt.Token, error) {
-	token, ok := ctx.Value(TokenCtxKey).(*jwt.Token)
+func GetTokenFromContext(ctx context.Context) (string, error) {
+	token, ok := ctx.Value(AccessTokenKey).(string)
 	if !ok {
-		return nil, ErrNoTokenFoundInCtx
+		return "", ErrNoTokenFoundInCtx
 	}
 
 	return token, nil
 }
 
-func GetClaimsFromToken(ctx context.Context) (map[string]interface{}, error) {
-	token, err := GetTokenFromContext(ctx)
+func (j *TokenService) GetClaimsFromToken(ctx context.Context) (map[string]interface{}, error) {
+	accessToken, err := GetTokenFromContext(ctx)
 	if err != nil {
 		return nil, err
+	}
+
+	token, err := j.ParseToken(ctx, accessToken)
+	if err != nil {
+		return nil, Errors(err)
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
@@ -335,8 +344,8 @@ func GetClaimsFromToken(ctx context.Context) (map[string]interface{}, error) {
 	return claims, nil
 }
 
-func GetUserID(ctx context.Context) (string, error) {
-	claims, err := GetClaimsFromToken(ctx)
+func (j *TokenService) GetUserID(ctx context.Context) (string, error) {
+	claims, err := j.GetClaimsFromToken(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -358,8 +367,6 @@ func SetTokenCookie(w http.ResponseWriter, name, value, domain, path string, exp
 		Expires:  expiresAt,
 		HttpOnly: httpOnly,
 	})
-	fmt.Printf("\n- - - - - - - DOMAIN - - - - - - -\n")
-	fmt.Printf("%s\n\n", domain)
 }
 
 func SetRefreshTokenCookie(w http.ResponseWriter, refreshToken, domain, path string, expiresAt time.Time, httpOnly bool) {

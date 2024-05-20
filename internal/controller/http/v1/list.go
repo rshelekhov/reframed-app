@@ -59,7 +59,7 @@ func (c *listController) CreateList() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
 
-		userID, err := jwtoken.GetUserID(ctx)
+		userID, err := c.jwt.GetUserID(ctx)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 			return
@@ -91,7 +91,7 @@ func (c *listController) GetListByID() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
 
-		userID, err := jwtoken.GetUserID(ctx)
+		userID, err := c.jwt.GetUserID(ctx)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 			return
@@ -130,7 +130,7 @@ func (c *listController) GetListsByUserID() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
 
-		userID, err := jwtoken.GetUserID(ctx)
+		userID, err := c.jwt.GetUserID(ctx)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 			return
@@ -160,7 +160,7 @@ func (c *listController) UpdateList() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
 
-		userID, err := jwtoken.GetUserID(ctx)
+		userID, err := c.jwt.GetUserID(ctx)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 			return
@@ -202,7 +202,7 @@ func (c *listController) DeleteList() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
 
-		userID, err := jwtoken.GetUserID(ctx)
+		userID, err := c.jwt.GetUserID(ctx)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 			return

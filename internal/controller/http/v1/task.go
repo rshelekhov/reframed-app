@@ -79,7 +79,7 @@ func (c *taskController) CreateTask() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
 
-		userID, err := jwtoken.GetUserID(ctx)
+		userID, err := c.jwt.GetUserID(ctx)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 			return
@@ -124,7 +124,7 @@ func (c *taskController) CreateTaskInDefaultList() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
 
-		userID, err := jwtoken.GetUserID(ctx)
+		userID, err := c.jwt.GetUserID(ctx)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 			return
@@ -159,7 +159,7 @@ func (c *taskController) GetTaskByID() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
 
-		userID, err := jwtoken.GetUserID(ctx)
+		userID, err := c.jwt.GetUserID(ctx)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 			return
@@ -198,7 +198,7 @@ func (c *taskController) GetTasksByUserID() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
 
-		userID, err := jwtoken.GetUserID(ctx)
+		userID, err := c.jwt.GetUserID(ctx)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 			return
@@ -230,7 +230,7 @@ func (c *taskController) GetTasksByListID() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
 
-		userID, err := jwtoken.GetUserID(ctx)
+		userID, err := c.jwt.GetUserID(ctx)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 			return
@@ -271,7 +271,7 @@ func (c *taskController) GetTasksGroupedByHeadings() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
 
-		userID, err := jwtoken.GetUserID(ctx)
+		userID, err := c.jwt.GetUserID(ctx)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 			return
@@ -310,7 +310,7 @@ func (c *taskController) GetTasksForToday() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
 
-		userID, err := jwtoken.GetUserID(ctx)
+		userID, err := c.jwt.GetUserID(ctx)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 			return
@@ -338,7 +338,7 @@ func (c *taskController) GetUpcomingTasks() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
 
-		userID, err := jwtoken.GetUserID(ctx)
+		userID, err := c.jwt.GetUserID(ctx)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 			return
@@ -372,7 +372,7 @@ func (c *taskController) GetOverdueTasks() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
 
-		userID, err := jwtoken.GetUserID(ctx)
+		userID, err := c.jwt.GetUserID(ctx)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 			return
@@ -402,7 +402,7 @@ func (c *taskController) GetTasksForSomeday() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
 
-		userID, err := jwtoken.GetUserID(ctx)
+		userID, err := c.jwt.GetUserID(ctx)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 			return
@@ -432,7 +432,7 @@ func (c *taskController) GetCompletedTasks() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
 
-		userID, err := jwtoken.GetUserID(ctx)
+		userID, err := c.jwt.GetUserID(ctx)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 			return
@@ -466,7 +466,7 @@ func (c *taskController) GetArchivedTasks() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
 
-		userID, err := jwtoken.GetUserID(ctx)
+		userID, err := c.jwt.GetUserID(ctx)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 			return
@@ -500,7 +500,7 @@ func (c *taskController) UpdateTask() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
 
-		userID, err := jwtoken.GetUserID(ctx)
+		userID, err := c.jwt.GetUserID(ctx)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 			return
@@ -542,7 +542,7 @@ func (c *taskController) UpdateTaskTime() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
 
-		userID, err := jwtoken.GetUserID(ctx)
+		userID, err := c.jwt.GetUserID(ctx)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 			return
@@ -584,7 +584,7 @@ func (c *taskController) MoveTaskToAnotherList() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
 
-		userID, err := jwtoken.GetUserID(ctx)
+		userID, err := c.jwt.GetUserID(ctx)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 			return
@@ -630,7 +630,7 @@ func (c *taskController) CompleteTask() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
 
-		userID, err := jwtoken.GetUserID(ctx)
+		userID, err := c.jwt.GetUserID(ctx)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 			return
@@ -669,7 +669,7 @@ func (c *taskController) ArchiveTask() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
 
-		userID, err := jwtoken.GetUserID(ctx)
+		userID, err := c.jwt.GetUserID(ctx)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 			return

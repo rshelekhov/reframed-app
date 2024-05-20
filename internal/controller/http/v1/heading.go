@@ -59,7 +59,7 @@ func (c *headingController) CreateHeading() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
 
-		userID, err := jwtoken.GetUserID(ctx)
+		userID, err := c.jwt.GetUserID(ctx)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 			return
@@ -100,7 +100,7 @@ func (c *headingController) GetHeadingByID() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
 
-		userID, err := jwtoken.GetUserID(ctx)
+		userID, err := c.jwt.GetUserID(ctx)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 			return
@@ -139,7 +139,7 @@ func (c *headingController) GetHeadingsByListID() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
 
-		userID, err := jwtoken.GetUserID(ctx)
+		userID, err := c.jwt.GetUserID(ctx)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 			return
@@ -178,7 +178,7 @@ func (c *headingController) UpdateHeading() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
 
-		userID, err := jwtoken.GetUserID(ctx)
+		userID, err := c.jwt.GetUserID(ctx)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 			return
@@ -220,7 +220,7 @@ func (c *headingController) MoveHeadingToAnotherList() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
 
-		userID, err := jwtoken.GetUserID(ctx)
+		userID, err := c.jwt.GetUserID(ctx)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 			return
@@ -266,7 +266,7 @@ func (c *headingController) DeleteHeading() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
 
-		userID, err := jwtoken.GetUserID(ctx)
+		userID, err := c.jwt.GetUserID(ctx)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 			return
