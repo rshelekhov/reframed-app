@@ -198,6 +198,11 @@ func (u *AuthUsecase) LogoutUser(ctx context.Context, data model.UserDeviceReque
 }
 
 func (u *AuthUsecase) GetUserByID(ctx context.Context) (model.UserResponseData, error) {
+	ctx, err := jwtoken.AddAccessTokenToMetadata(ctx)
+	if err != nil {
+		return model.UserResponseData{}, err
+	}
+
 	user, err := u.ssoClient.Api.GetUser(ctx, &ssov1.GetUserRequest{
 		AppId: u.jwt.AppID,
 	})
@@ -206,8 +211,8 @@ func (u *AuthUsecase) GetUserByID(ctx context.Context) (model.UserResponseData, 
 	}
 
 	userResponse := model.UserResponseData{
-		Email:     user.Email,
-		UpdatedAt: user.UpdatedAt.AsTime(),
+		Email:     user.GetEmail(),
+		UpdatedAt: user.GetUpdatedAt().AsTime(),
 	}
 
 	return userResponse, err
