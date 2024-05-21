@@ -128,3 +128,41 @@ func TestLogin_FailCases(t *testing.T) {
 		})
 	}
 }
+
+func TestLoginUserNotFound(t *testing.T) {
+	u := url.URL{
+		Scheme: "http",
+		Host:   host,
+	}
+	e := httpexpect.Default(t, u.String())
+
+	email := gofakeit.Email()
+	password := randomFakePassword()
+
+	// Register user
+	resp := e.POST("/register").
+		WithJSON(model.UserRequestData{
+			Email:    email,
+			Password: password,
+		}).
+		Expect().
+		Status(http.StatusCreated).
+		JSON().Object()
+
+	accessToken := resp.Value(jwtoken.AccessTokenKey).String().Raw()
+
+	// Delete user
+	e.DELETE("/user/").
+		WithHeader("Authorization", "Bearer "+accessToken).
+		Expect().
+		Status(http.StatusOK)
+
+	// Try to log in user
+	e.POST("/login").
+		WithJSON(model.UserRequestData{
+			Email:    email,
+			Password: password,
+		}).
+		Expect().
+		Status(http.StatusUnauthorized)
+}
