@@ -305,6 +305,10 @@ func (c *authController) DeleteUser() http.HandlerFunc {
 
 		userID, err := c.jwt.GetUserID(ctx)
 		if err != nil {
+			if errors.Is(err, le.ErrUserNotFound) {
+				handleResponseError(w, r, log, http.StatusNotFound, le.ErrUserNotFound, slog.String(key.UserID, userID))
+				return
+			}
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 			return
 		}

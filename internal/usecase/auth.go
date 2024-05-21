@@ -206,7 +206,14 @@ func (u *AuthUsecase) GetUserByID(ctx context.Context) (model.UserResponseData, 
 		AppId: u.jwt.AppID,
 	})
 	if err != nil {
-		return model.UserResponseData{}, err
+		st, ok := status.FromError(err)
+		if !ok {
+			return model.UserResponseData{}, err
+		}
+
+		if st.Code() == codes.NotFound {
+			return model.UserResponseData{}, le.ErrUserNotFound
+		}
 	}
 
 	userResponse := model.UserResponseData{

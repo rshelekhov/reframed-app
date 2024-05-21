@@ -84,5 +84,34 @@ func TestGetUser_FailCases(t *testing.T) {
 // Delete user
 // Try to get deleted user
 
-//func TestGetUserNotFound(t *testing.T) {
-//}
+func TestGetUserNotFound(t *testing.T) {
+	u := url.URL{
+		Scheme: "http",
+		Host:   host,
+	}
+	e := httpexpect.Default(t, u.String())
+
+	// Register user
+	resp := e.POST("/register").
+		WithJSON(model.UserRequestData{
+			Email:    gofakeit.Email(),
+			Password: randomFakePassword(),
+		}).
+		Expect().
+		Status(http.StatusCreated).
+		JSON().Object()
+
+	accessToken := resp.Value(jwtoken.AccessTokenKey).String().Raw()
+
+	// Delete user
+	e.DELETE("/user/").
+		WithHeader("Authorization", "Bearer "+accessToken).
+		Expect().
+		Status(http.StatusOK)
+
+	// Try to get user
+	e.GET("/user/").
+		WithHeader("Authorization", "Bearer "+accessToken).
+		Expect().
+		Status(http.StatusNotFound)
+}
