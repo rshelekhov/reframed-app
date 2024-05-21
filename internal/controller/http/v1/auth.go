@@ -119,6 +119,12 @@ func (c *authController) LoginWithPassword() http.HandlerFunc {
 
 		tokenData, userID, err := c.usecase.LoginUser(ctx, userInput, userDevice)
 		if err != nil {
+			if errors.Is(err, le.ErrUserNotFound) {
+				handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrUserNotFound,
+					slog.String(key.Email, userInput.Email),
+				)
+				return
+			}
 			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrFailedToLoginUser,
 				slog.String(key.Email, userInput.Email),
 				slog.String(key.Error, err.Error()),

@@ -111,7 +111,19 @@ func (u *AuthUsecase) LoginUser(
 		},
 	})
 	if err != nil {
-		return nil, "", err
+		st, ok := status.FromError(err)
+		if !ok {
+			return nil, "", err
+		}
+
+		switch st.Code() {
+		case codes.NotFound:
+			return nil, "", le.ErrUserNotFound
+		case codes.Unauthenticated:
+			return nil, "", le.ErrUserUnauthenticated
+		default:
+			return nil, "", err
+		}
 	}
 
 	tokenData = resp.GetTokenData()

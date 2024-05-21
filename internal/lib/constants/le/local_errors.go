@@ -15,6 +15,7 @@ const (
 
 	ErrAppIDDoesNotExists         LocalError = "app_id does not exists"
 	ErrUserNotFound               LocalError = "user not found"
+	ErrUserUnauthenticated        LocalError = "user is not authenticated"
 	ErrFailedToLoginUser          LocalError = "failed to login user"
 	ErrFailedToCreateUser         LocalError = "failed to create user"
 	ErrFailedToGetTokenData       LocalError = "failed to get token data"
