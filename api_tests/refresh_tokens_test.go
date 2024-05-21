@@ -92,31 +92,19 @@ func TestRefreshToken_FailCases(t *testing.T) {
 
 	testCases := []struct {
 		name         string
-		appID        int32
 		refreshToken string
 		status       int
 	}{
 		{
 			name:         "Refresh with empty refresh token",
-			appID:        appID,
 			refreshToken: "",
 			status:       http.StatusUnauthorized,
 		},
 		{
 			name:         "Refresh when session not found",
-			appID:        appID,
 			refreshToken: ksuid.New().String(),
 			status:       http.StatusUnauthorized,
 		},
-		//
-		// This test case is actual if we get appID from the request (from the client)
-		//
-		//{
-		//	name:         "Refresh with empty app id",
-		//	appID:        emptyAppID,
-		//	refreshToken: refreshToken,
-		//	status:       http.StatusBadRequest,
-		//},
 	}
 
 	for _, tc := range testCases {

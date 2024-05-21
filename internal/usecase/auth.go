@@ -146,8 +146,7 @@ func (u *AuthUsecase) Refresh(
 
 	resp, err := u.ssoClient.Api.Refresh(ctx, &ssov1.RefreshRequest{
 		RefreshToken: refreshToken,
-		// TODO: update to use AppID from UserRequestData
-		AppId: u.jwt.AppID,
+		AppId:        u.jwt.AppID,
 		UserDeviceData: &ssov1.UserDeviceData{
 			UserAgent: data.UserAgent,
 			Ip:        data.IP,
