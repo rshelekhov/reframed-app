@@ -231,7 +231,12 @@ func (u *AuthUsecase) UpdateUser(ctx context.Context, data *model.UserRequestDat
 }
 
 func (u *AuthUsecase) DeleteUser(ctx context.Context, data model.UserDeviceRequestData) error {
-	if _, err := u.ssoClient.Api.DeleteUser(ctx, &ssov1.DeleteUserRequest{
+	ctx, err := jwtoken.AddAccessTokenToMetadata(ctx)
+	if err != nil {
+		return err
+	}
+
+	if _, err = u.ssoClient.Api.DeleteUser(ctx, &ssov1.DeleteUserRequest{
 		AppId: u.jwt.AppID,
 		UserDeviceData: &ssov1.UserDeviceData{
 			UserAgent: data.UserAgent,
