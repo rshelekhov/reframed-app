@@ -22,7 +22,6 @@ func TestGetUser_HappyPath(t *testing.T) {
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
-			AppID:    appID,
 		}).
 		Expect().
 		Status(http.StatusCreated).
@@ -50,7 +49,6 @@ func TestGetUser_FailCases(t *testing.T) {
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
-			AppID:    appID,
 		}).
 		Expect().
 		Status(http.StatusCreated).

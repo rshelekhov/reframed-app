@@ -50,7 +50,7 @@ func (u *AuthUsecase) RegisterNewUser(
 	resp, err := u.ssoClient.Api.Register(ctx, &ssov1.RegisterRequest{
 		Email:    userData.Email,
 		Password: userData.Password,
-		AppId:    userData.AppID,
+		AppId:    u.jwt.AppID,
 		UserDeviceData: &ssov1.UserDeviceData{
 			UserAgent: userDevice.UserAgent,
 			Ip:        userDevice.IP,
@@ -104,7 +104,7 @@ func (u *AuthUsecase) LoginUser(
 	resp, err := u.ssoClient.Api.Login(ctx, &ssov1.LoginRequest{
 		Email:    userData.Email,
 		Password: userData.Password,
-		AppId:    userData.AppID,
+		AppId:    u.jwt.AppID,
 		UserDeviceData: &ssov1.UserDeviceData{
 			UserAgent: userDevice.UserAgent,
 			Ip:        userDevice.IP,

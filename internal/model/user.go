@@ -18,7 +18,6 @@ type (
 		Email           string `json:"email" validate:"required,email"`
 		Password        string `json:"password" validate:"required,min=8"`
 		UpdatedPassword string `json:"updated_password"`
-		AppID           int32  `json:"app_id" validate:"required"`
 	}
 
 	UserResponseData struct {

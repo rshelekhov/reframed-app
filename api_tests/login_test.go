@@ -26,7 +26,6 @@ func TestLogin_HappyPath(t *testing.T) {
 		WithJSON(model.UserRequestData{
 			Email:    email,
 			Password: password,
-			AppID:    appID,
 		}).
 		Expect().
 		Status(http.StatusCreated)
@@ -36,7 +35,6 @@ func TestLogin_HappyPath(t *testing.T) {
 		WithJSON(model.UserRequestData{
 			Email:    email,
 			Password: password,
-			AppID:    appID,
 		}).
 		Expect().
 		Status(http.StatusOK).
@@ -49,7 +47,6 @@ func TestLogin_HappyPath(t *testing.T) {
 		WithJSON(model.UserRequestData{
 			Email:    email,
 			Password: password,
-			AppID:    appID,
 		}).
 		Expect().
 		Status(http.StatusOK).
@@ -76,7 +73,6 @@ func TestLogin_FailCases(t *testing.T) {
 		WithJSON(model.UserRequestData{
 			Email:    email,
 			Password: password,
-			AppID:    appID,
 		}).
 		Expect().
 		Status(http.StatusCreated)
@@ -85,56 +81,36 @@ func TestLogin_FailCases(t *testing.T) {
 		name     string
 		email    string
 		password string
-		appID    int32
 		status   int
 	}{
 		{
 			name:     "Login with empty email",
 			email:    "",
 			password: password,
-			appID:    appID,
 			status:   http.StatusBadRequest,
 		},
 		{
 			name:     "Login with empty password",
 			email:    email,
 			password: "",
-			appID:    appID,
-			status:   http.StatusBadRequest,
-		},
-		{
-			name:     "Login with empty app id",
-			email:    email,
-			password: password,
-			appID:    emptyAppID,
 			status:   http.StatusBadRequest,
 		},
 		{
 			name:     "Login with invalid email",
 			email:    "invalid",
 			password: password,
-			appID:    appID,
 			status:   http.StatusBadRequest,
 		},
 		{
 			name:     "Login with invalid password",
 			email:    email,
 			password: "",
-			appID:    appID,
 			status:   http.StatusBadRequest,
-		},
-		{
-			name:     "Login with invalid app id",
-			email:    email,
-			password: password,
-			appID:    invalidAppID,
-			status:   http.StatusUnauthorized,
 		},
 		{
 			name:     "Login with wrong password",
 			email:    email,
 			password: randomFakePassword(),
-			appID:    appID,
 			status:   http.StatusUnauthorized,
 		},
 	}
@@ -146,7 +122,6 @@ func TestLogin_FailCases(t *testing.T) {
 				WithJSON(model.UserRequestData{
 					Email:    tc.email,
 					Password: tc.password,
-					AppID:    tc.appID,
 				}).
 				Expect().
 				Status(tc.status)

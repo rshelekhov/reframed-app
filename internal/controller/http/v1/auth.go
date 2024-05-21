@@ -85,11 +85,6 @@ func (c *authController) Register() http.HandlerFunc {
 				slog.String(key.Email, userInput.Email),
 			)
 			return
-		case errors.Is(err, le.ErrAppIDDoesNotExists):
-			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrAppIDDoesNotExists,
-				slog.Any(key.AppID, userInput.AppID),
-			)
-			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToCreateUser, err)
 			return

@@ -23,7 +23,6 @@ func TestRefreshTokenUsingCookie_HappyPath(t *testing.T) {
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
-			AppID:    appID,
 		}).
 		Expect().
 		Status(http.StatusCreated).
@@ -54,7 +53,6 @@ func TestRefreshTokenUsingHeader_HappyPath(t *testing.T) {
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
-			AppID:    appID,
 		}).
 		Expect().
 		Status(http.StatusCreated).
@@ -85,7 +83,6 @@ func TestRefreshToken_FailCases(t *testing.T) {
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
-			AppID:    appID,
 		}).
 		Expect().
 		Status(http.StatusCreated)
