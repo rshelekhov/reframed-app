@@ -51,7 +51,7 @@ func NewAuthRoutes(
 
 		r.Post("/logout", c.Logout())
 
-		r.Route("/user/", func(r chi.Router) {
+		r.Route("/user", func(r chi.Router) {
 			r.Get("/", c.GetUser())
 			r.Put("/", c.UpdateUser())
 			r.Delete("/", c.DeleteUser())
