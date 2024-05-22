@@ -66,7 +66,7 @@ func (c *listController) CreateList() http.HandlerFunc {
 		}
 
 		listInput := &model.ListRequestData{}
-		if err := decodeAndValidateJSON(w, r, log, listInput); err != nil {
+		if err = decodeAndValidateJSON(w, r, log, listInput); err != nil {
 			return
 		}
 
@@ -78,9 +78,7 @@ func (c *listController) CreateList() http.HandlerFunc {
 			return
 		}
 
-		handleResponseCreated(
-			w, r, log, "list created", list, slog.String(key.ListID, list.ID),
-		)
+		handleResponseCreated(w, r, log, "list created", list, slog.String(key.ListID, list.ID))
 	}
 }
 
