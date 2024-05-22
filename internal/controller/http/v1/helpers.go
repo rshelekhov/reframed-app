@@ -3,6 +3,7 @@ package v1
 import (
 	"errors"
 	"fmt"
+	"github.com/rshelekhov/reframed/internal/model"
 	"io"
 	"log/slog"
 	"net/http"
@@ -107,12 +108,19 @@ func responseSuccess(
 	message string,
 	data any,
 ) {
-	response := struct {
-		Code        int    `json:"code"`
-		StatusText  string `json:"status_text"`
-		Description string `json:"description"`
-		Data        any    `json:"data"`
-	}{
+	//response := struct {
+	//	Code        int    `json:"code"`
+	//	StatusText  string `json:"status_text"`
+	//	Description string `json:"description"`
+	//	Data        any    `json:"data"`
+	//}{
+	//	Code:        statusCode,
+	//	StatusText:  http.StatusText(statusCode),
+	//	Description: message,
+	//	Data:        data,
+	//}
+
+	response := model.Response{
 		Code:        statusCode,
 		StatusText:  http.StatusText(statusCode),
 		Description: message,
