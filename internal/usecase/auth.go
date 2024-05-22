@@ -237,13 +237,34 @@ func (u *AuthUsecase) GetUserByID(ctx context.Context) (model.UserResponseData, 
 }
 
 func (u *AuthUsecase) UpdateUser(ctx context.Context, data *model.UserRequestData) error {
-	if _, err := u.ssoClient.Api.UpdateUser(ctx, &ssov1.UpdateUserRequest{
+	ctx, err := jwtoken.AddAccessTokenToMetadata(ctx)
+	if err != nil {
+		return err
+	}
+
+	_, err = u.ssoClient.Api.UpdateUser(ctx, &ssov1.UpdateUserRequest{
 		Email:           data.Email,
 		CurrentPassword: data.Password,
 		UpdatedPassword: data.UpdatedPassword,
 		AppId:           u.jwt.AppID,
-	}); err != nil {
-		return err
+	})
+
+	if err != nil {
+		st, ok := status.FromError(err)
+		if !ok {
+			return err
+		}
+
+		switch st.Code() {
+		case codes.NotFound:
+			return le.ErrUserNotFound
+		case codes.AlreadyExists:
+			return le.ErrEmailAlreadyTaken
+		case codes.InvalidArgument:
+			return le.ErrNoChangesDetected
+		default:
+			return err
+		}
 	}
 
 	return nil

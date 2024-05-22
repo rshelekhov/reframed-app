@@ -271,7 +271,7 @@ func (c *authController) UpdateUser() http.HandlerFunc {
 			)
 			return
 		case errors.Is(err, le.ErrEmailAlreadyTaken):
-			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmailAlreadyTaken,
+			handleResponseError(w, r, log, http.StatusConflict, le.ErrEmailAlreadyTaken,
 				slog.String(key.UserID, userID),
 				slog.String(key.Email, userInput.Email),
 			)
@@ -279,17 +279,6 @@ func (c *authController) UpdateUser() http.HandlerFunc {
 		case errors.Is(err, le.ErrNoChangesDetected):
 			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrNoChangesDetected,
 				slog.String(key.UserID, userID),
-			)
-			return
-		case errors.Is(err, le.ErrNoPasswordChangesDetected):
-			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrNoPasswordChangesDetected,
-				slog.String(key.UserID, userID),
-			)
-			return
-		case err != nil:
-			handleInternalServerError(w, r, log, le.ErrFailedToUpdateUser,
-				slog.String(key.UserID, userID),
-				slog.Any(key.Error, err),
 			)
 			return
 		default:
