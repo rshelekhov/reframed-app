@@ -79,11 +79,6 @@ func TestGetUser_FailCases(t *testing.T) {
 	}
 }
 
-// TODO: add this test
-// Register user and save access token to variable
-// Delete user
-// Try to get deleted user
-
 func TestGetUserNotFound(t *testing.T) {
 	u := url.URL{
 		Scheme: "http",
