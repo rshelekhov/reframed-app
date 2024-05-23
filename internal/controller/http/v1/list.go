@@ -78,7 +78,6 @@ func (c *listController) GetListByID() http.HandlerFunc {
 		}
 
 		listID := chi.URLParam(r, "list_id")
-		log.Info("Received request", "userID", userID, "listID", listID) // Add log here
 
 		if listID == "" {
 			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryListID)
@@ -89,10 +88,8 @@ func (c *listController) GetListByID() http.HandlerFunc {
 			ID:     listID,
 			UserID: userID,
 		}
-		log.Info("list input before query in database: ", "listInput", listInput)
 
 		listResp, err := c.usecase.GetListByID(ctx, listInput)
-		log.Info("list response after getting list by listID and userID: ", "listResp", listResp)
 
 		switch {
 		case errors.Is(err, le.ErrListNotFound):
