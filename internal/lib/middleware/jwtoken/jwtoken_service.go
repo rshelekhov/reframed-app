@@ -89,8 +89,12 @@ func (j *TokenService) Verify(findTokenFns ...func(r *http.Request) string) func
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			accessToken, err := j.FindToken(r, findTokenFns...)
-			if errors.Is(err, ErrNoTokenFound) {
-				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			if err != nil {
+				if errors.Is(err, ErrNoTokenFound) {
+					http.Error(w, ErrNoTokenFound.Error(), http.StatusUnauthorized)
+					return
+				}
+				http.Error(w, err.Error(), http.StatusUnauthorized)
 				return
 			}
 
