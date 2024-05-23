@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-func TestGetListByID_HappyPath(t *testing.T) {
+func TestUpdateList_HappyPath(t *testing.T) {
 	u := url.URL{
 		Scheme: "http",
 		Host:   host,
@@ -28,6 +28,7 @@ func TestGetListByID_HappyPath(t *testing.T) {
 		JSON().Object()
 
 	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+	t.Log(accessToken)
 
 	// Create list
 	c := e.POST("/user/lists/").
@@ -41,16 +42,19 @@ func TestGetListByID_HappyPath(t *testing.T) {
 
 	listID := c.Value("data").Object().Value("id").String().Raw()
 
-	// Get list by ID
-	e.GET("/user/lists/{list_id}").
+	// Update list
+	e.PUT("/user/lists/{list_id}").
 		WithPath("list_id", listID).
 		WithHeader("Authorization", "Bearer "+accessToken).
+		WithJSON(model.ListRequestData{
+			Title: gofakeit.Word(),
+		}).
 		Expect().
 		Status(http.StatusOK).
 		JSON().Object().NotEmpty()
 }
 
-func TestGetListByID_NotFound(t *testing.T) {
+func TestUpdateList_NotFound(t *testing.T) {
 	u := url.URL{
 		Scheme: "http",
 		Host:   host,
@@ -68,6 +72,7 @@ func TestGetListByID_NotFound(t *testing.T) {
 		JSON().Object()
 
 	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+	t.Log(accessToken)
 
 	// Create list
 	c := e.POST("/user/lists/").
@@ -88,16 +93,19 @@ func TestGetListByID_NotFound(t *testing.T) {
 		Expect().
 		Status(http.StatusOK)
 
-	// Get list by ID
-	e.GET("/user/lists/{list_id}").
+	// Update list
+	e.PUT("/user/lists/{list_id}").
 		WithPath("list_id", listID).
 		WithHeader("Authorization", "Bearer "+accessToken).
+		WithJSON(model.ListRequestData{
+			Title: gofakeit.Word(),
+		}).
 		Expect().
 		Status(http.StatusOK).
 		JSON().Object().NotEmpty()
 }
 
-func TestGetListsByUserID_HappyPath(t *testing.T) {
+func TestUpdateList_EmptyTitle(t *testing.T) {
 	u := url.URL{
 		Scheme: "http",
 		Host:   host,
@@ -117,22 +125,26 @@ func TestGetListsByUserID_HappyPath(t *testing.T) {
 	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
 	t.Log(accessToken)
 
-	// Create lists
-	for i := 0; i < 5; i++ {
-		e.POST("/user/lists/").
-			WithHeader("Authorization", "Bearer "+accessToken).
-			WithJSON(model.ListRequestData{
-				Title: gofakeit.Word(),
-			}).
-			Expect().
-			Status(http.StatusCreated).
-			JSON().Object().NotEmpty()
-	}
-
-	// Get lists by userID
-	e.GET("/user/lists").
+	// Create list
+	c := e.POST("/user/lists/").
 		WithHeader("Authorization", "Bearer "+accessToken).
+		WithJSON(model.ListRequestData{
+			Title: gofakeit.Word(),
+		}).
 		Expect().
-		Status(http.StatusOK).
+		Status(http.StatusCreated).
+		JSON().Object()
+
+	listID := c.Value("data").Object().Value("id").String().Raw()
+
+	// Update list
+	e.PUT("/user/lists/{list_id}").
+		WithPath("list_id", listID).
+		WithHeader("Authorization", "Bearer "+accessToken).
+		WithJSON(model.ListRequestData{
+			Title: "",
+		}).
+		Expect().
+		Status(http.StatusBadRequest).
 		JSON().Object().NotEmpty()
 }
