@@ -108,18 +108,6 @@ func responseSuccess(
 	message string,
 	data any,
 ) {
-	//response := struct {
-	//	Code        int    `json:"code"`
-	//	StatusText  string `json:"status_text"`
-	//	Description string `json:"description"`
-	//	Data        any    `json:"data"`
-	//}{
-	//	Code:        statusCode,
-	//	StatusText:  http.StatusText(statusCode),
-	//	Description: message,
-	//	Data:        data,
-	//}
-
 	response := model.Response{
 		Code:        statusCode,
 		StatusText:  http.StatusText(statusCode),
