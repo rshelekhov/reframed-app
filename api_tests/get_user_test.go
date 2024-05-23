@@ -79,7 +79,7 @@ func TestGetUser_FailCases(t *testing.T) {
 	}
 }
 
-func TestGetUserNotFound(t *testing.T) {
+func TestGetUser_NotFound(t *testing.T) {
 	u := url.URL{
 		Scheme: "http",
 		Host:   host,
