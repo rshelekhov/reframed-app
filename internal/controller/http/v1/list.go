@@ -22,34 +22,16 @@ type listController struct {
 	usecase port.ListUsecase
 }
 
-func NewListRoutes(
-	r *chi.Mux,
+func newListController(
 	log *slog.Logger,
 	jwt *jwtoken.TokenService,
 	usecase port.ListUsecase,
-) {
-	c := &listController{
+) *listController {
+	return &listController{
 		logger:  log,
 		jwt:     jwt,
 		usecase: usecase,
 	}
-
-	// Protected routes
-	r.Group(func(r chi.Router) {
-		r.Use(jwtoken.Verifier(jwt))
-		r.Use(jwtoken.Authenticator())
-
-		r.Route("/user/lists", func(r chi.Router) {
-			r.Get("/", c.GetListsByUserID())
-			r.Post("/", c.CreateList())
-
-			r.Route("/{list_id}", func(r chi.Router) {
-				r.Get("/", c.GetListByID())
-				r.Put("/", c.UpdateList())
-				r.Delete("/", c.DeleteList())
-			})
-		})
-	})
 }
 
 func (c *listController) CreateList() http.HandlerFunc {
@@ -95,7 +77,9 @@ func (c *listController) GetListByID() http.HandlerFunc {
 			return
 		}
 
-		listID := chi.URLParam(r, key.ListID)
+		listID := chi.URLParam(r, "list_id")
+		log.Info("Received request", "userID", userID, "listID", listID) // Add log here
+
 		if listID == "" {
 			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryListID)
 			return
@@ -105,8 +89,10 @@ func (c *listController) GetListByID() http.HandlerFunc {
 			ID:     listID,
 			UserID: userID,
 		}
+		log.Info("list input before query in database: ", "listInput", listInput)
 
 		listResp, err := c.usecase.GetListByID(ctx, listInput)
+		log.Info("list response after getting list by listID and userID: ", "listResp", listResp)
 
 		switch {
 		case errors.Is(err, le.ErrListNotFound):

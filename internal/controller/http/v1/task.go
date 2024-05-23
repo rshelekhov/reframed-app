@@ -22,54 +22,16 @@ type taskController struct {
 	usecase port.TaskUsecase
 }
 
-func NewTaskRoutes(
-	r *chi.Mux,
+func newTaskController(
 	log *slog.Logger,
 	jwt *jwtoken.TokenService,
 	usecase port.TaskUsecase,
-) {
-	c := &taskController{
+) *taskController {
+	return &taskController{
 		logger:  log,
 		jwt:     jwt,
 		usecase: usecase,
 	}
-
-	r.Group(func(r chi.Router) {
-		r.Use(jwtoken.Verifier(jwt))
-		r.Use(jwtoken.Authenticator())
-
-		// Add handler for creating task in the inbox list
-		r.Post("/user/lists/default", c.CreateTaskInDefaultList())
-
-		r.Route("/user/lists/{list_id}", func(r chi.Router) {
-			r.Get("/tasks", c.GetTasksByListID())
-			r.Post("/tasks", c.CreateTask())
-
-			r.Route("/headings", func(r chi.Router) {
-				r.Get("/tasks", c.GetTasksGroupedByHeadings())
-				r.Post("/{heading_id}", c.CreateTask())
-			})
-		})
-
-		r.Route("/user/tasks", func(r chi.Router) {
-			r.Get("/", c.GetTasksByUserID())
-			r.Get("/today", c.GetTasksForToday())      // grouped by list title
-			r.Get("/upcoming", c.GetUpcomingTasks())   // grouped by start_date
-			r.Get("/overdue", c.GetOverdueTasks())     // grouped by list title
-			r.Get("/someday", c.GetTasksForSomeday())  // tasks without start_date, grouped by list title
-			r.Get("/completed", c.GetCompletedTasks()) // grouped by month
-			r.Get("/archived", c.GetArchivedTasks())   // grouped by month
-
-			r.Route("/{task_id}", func(r chi.Router) {
-				r.Get("/", c.GetTaskByID())
-				r.Put("/", c.UpdateTask())
-				r.Put("/time", c.UpdateTaskTime())
-				r.Put("/move", c.MoveTaskToAnotherList())
-				r.Put("/complete", c.CompleteTask())
-				r.Delete("/", c.ArchiveTask())
-			})
-		})
-	})
 }
 
 func (c *taskController) CreateTask() http.HandlerFunc {

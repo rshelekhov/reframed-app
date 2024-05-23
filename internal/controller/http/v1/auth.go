@@ -9,8 +9,6 @@ import (
 
 	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
 
-	"github.com/go-chi/chi/v5"
-
 	"github.com/rshelekhov/reframed/internal/lib/constants/key"
 	"github.com/rshelekhov/reframed/internal/lib/constants/le"
 	"github.com/rshelekhov/reframed/internal/lib/logger"
@@ -24,39 +22,16 @@ type authController struct {
 	usecase port.AuthUsecase
 }
 
-func NewAuthRoutes(
-	r *chi.Mux,
+func newAuthController(
 	log *slog.Logger,
 	jwt *jwtoken.TokenService,
 	usecase port.AuthUsecase,
-) {
-	c := &authController{
+) *authController {
+	return &authController{
 		logger:  log,
 		jwt:     jwt,
 		usecase: usecase,
 	}
-
-	// Public routes
-	r.Group(func(r chi.Router) {
-		r.Post("/login", c.LoginWithPassword())
-		r.Post("/register", c.Register())
-		// TODO: add handler for RequestResetPassword
-		r.Post("/refresh-tokens", c.RefreshJWTokens())
-	})
-
-	// Protected routes
-	r.Group(func(r chi.Router) {
-		r.Use(jwtoken.Verifier(jwt))
-		r.Use(jwtoken.Authenticator())
-
-		r.Post("/logout", c.Logout())
-
-		r.Route("/user", func(r chi.Router) {
-			r.Get("/", c.GetUser())
-			r.Put("/", c.UpdateUser())
-			r.Delete("/", c.DeleteUser())
-		})
-	})
 }
 
 // Register creates a new user
