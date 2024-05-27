@@ -13,17 +13,15 @@ import (
 )
 
 type TagUsecase struct {
-	tagStorage port.TagStorage
+	storage port.TagStorage
 }
 
 func NewTagUsecase(storage port.TagStorage) *TagUsecase {
-	return &TagUsecase{
-		tagStorage: storage,
-	}
+	return &TagUsecase{storage: storage}
 }
 
 func (u *TagUsecase) CreateTagIfNotExists(ctx context.Context, data model.TagRequestData) error {
-	_, err := u.tagStorage.GetTagIDByTitle(ctx, data.Title, data.UserID)
+	_, err := u.storage.GetTagIDByTitle(ctx, data.Title, data.UserID)
 	if errors.Is(err, le.ErrTagNotFound) {
 		newTag := model.Tag{
 			ID:        ksuid.New().String(),
@@ -32,7 +30,7 @@ func (u *TagUsecase) CreateTagIfNotExists(ctx context.Context, data model.TagReq
 			UpdatedAt: time.Now(),
 		}
 
-		return u.tagStorage.CreateTag(ctx, newTag)
+		return u.storage.CreateTag(ctx, newTag)
 	}
 	if err != nil {
 		return err
@@ -42,15 +40,15 @@ func (u *TagUsecase) CreateTagIfNotExists(ctx context.Context, data model.TagReq
 }
 
 func (u *TagUsecase) LinkTagsToTask(ctx context.Context, taskID string, tags []string) error {
-	return u.tagStorage.LinkTagsToTask(ctx, taskID, tags)
+	return u.storage.LinkTagsToTask(ctx, taskID, tags)
 }
 
 func (u *TagUsecase) UnlinkTagsFromTask(ctx context.Context, taskID string, tagsToRemove []string) error {
-	return u.tagStorage.UnlinkTagsFromTask(ctx, taskID, tagsToRemove)
+	return u.storage.UnlinkTagsFromTask(ctx, taskID, tagsToRemove)
 }
 
 func (u *TagUsecase) GetTagsByUserID(ctx context.Context, userID string) ([]model.TagResponseData, error) {
-	tags, err := u.tagStorage.GetTagsByUserID(ctx, userID)
+	tags, err := u.storage.GetTagsByUserID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +63,7 @@ func (u *TagUsecase) GetTagsByUserID(ctx context.Context, userID string) ([]mode
 }
 
 func (u *TagUsecase) GetTagsByTaskID(ctx context.Context, taskID string) ([]model.TagResponseData, error) {
-	tags, err := u.tagStorage.GetTagsByTaskID(ctx, taskID)
+	tags, err := u.storage.GetTagsByTaskID(ctx, taskID)
 	if err != nil {
 		return nil, err
 	}

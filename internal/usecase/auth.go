@@ -18,21 +18,17 @@ import (
 type AuthUsecase struct {
 	ssoClient      *ssogrpc.Client
 	jwt            *jwtoken.TokenService
-	listUsecase    port.ListUsecase
-	headingUsecase port.HeadingUsecase
+	ListUsecase    port.ListUsecase
+	HeadingUsecase port.HeadingUsecase
 }
 
 func NewAuthUsecase(
 	ssoClient *ssogrpc.Client,
 	jwt *jwtoken.TokenService,
-	listUsecase port.ListUsecase,
-	headingUsecase port.HeadingUsecase,
 ) *AuthUsecase {
 	return &AuthUsecase{
-		ssoClient:      ssoClient,
-		jwt:            jwt,
-		listUsecase:    listUsecase,
-		headingUsecase: headingUsecase,
+		ssoClient: ssoClient,
+		jwt:       jwt,
 	}
 }
 

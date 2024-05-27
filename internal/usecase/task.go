@@ -12,29 +12,19 @@ import (
 )
 
 type TaskUsecase struct {
-	taskStorage    port.TaskStorage
-	headingUsecase port.HeadingUsecase
-	tagUsecase     port.TagUsecase
-	listUsecase    port.ListUsecase
+	storage        port.TaskStorage
+	HeadingUsecase port.HeadingUsecase
+	TagUsecase     port.TagUsecase
+	ListUsecase    port.ListUsecase
 }
 
-func NewTaskUsecase(
-	storage port.TaskStorage,
-	headingUsecase port.HeadingUsecase,
-	tagUsecase port.TagUsecase,
-	listUsecase port.ListUsecase,
-) *TaskUsecase {
-	return &TaskUsecase{
-		taskStorage:    storage,
-		headingUsecase: headingUsecase,
-		tagUsecase:     tagUsecase,
-		listUsecase:    listUsecase,
-	}
+func NewTaskUsecase(storage port.TaskStorage) *TaskUsecase {
+	return &TaskUsecase{storage: storage}
 }
 
 func (u *TaskUsecase) CreateTask(ctx context.Context, data *model.TaskRequestData) (model.TaskResponseData, error) {
 	if data.ListID == "" {
-		defaultListID, err := u.listUsecase.GetDefaultListID(ctx, data.UserID)
+		defaultListID, err := u.ListUsecase.GetDefaultListID(ctx, data.UserID)
 		if err != nil {
 			return model.TaskResponseData{}, err
 		}
@@ -43,7 +33,7 @@ func (u *TaskUsecase) CreateTask(ctx context.Context, data *model.TaskRequestDat
 	}
 
 	if data.HeadingID == "" {
-		defaultHeadingID, err := u.headingUsecase.GetDefaultHeadingID(ctx, model.HeadingRequestData{
+		defaultHeadingID, err := u.HeadingUsecase.GetDefaultHeadingID(ctx, model.HeadingRequestData{
 			ListID: data.ListID,
 			UserID: data.UserID,
 		})
@@ -54,7 +44,7 @@ func (u *TaskUsecase) CreateTask(ctx context.Context, data *model.TaskRequestDat
 		data.HeadingID = defaultHeadingID
 	}
 
-	statusNotStarted, err := u.taskStorage.GetTaskStatusID(ctx, model.StatusNotStarted)
+	statusNotStarted, err := u.storage.GetTaskStatusID(ctx, model.StatusNotStarted)
 	if err != nil {
 		return model.TaskResponseData{}, err
 	}
@@ -76,19 +66,19 @@ func (u *TaskUsecase) CreateTask(ctx context.Context, data *model.TaskRequestDat
 		UpdatedAt:   time.Now(),
 	}
 
-	if err = u.taskStorage.Transaction(ctx, func(_ port.TaskStorage) error {
+	if err = u.storage.Transaction(ctx, func(_ port.TaskStorage) error {
 		for _, tag := range newTask.Tags {
-			if err = u.tagUsecase.CreateTagIfNotExists(ctx, model.TagRequestData{
+			if err = u.TagUsecase.CreateTagIfNotExists(ctx, model.TagRequestData{
 				Title:  tag,
 				UserID: newTask.UserID,
 			}); err != nil {
 				return err
 			}
 		}
-		if err = u.taskStorage.CreateTask(ctx, newTask); err != nil {
+		if err = u.storage.CreateTask(ctx, newTask); err != nil {
 			return err
 		}
-		if err = u.tagUsecase.LinkTagsToTask(ctx, newTask.ID, newTask.Tags); err != nil {
+		if err = u.TagUsecase.LinkTagsToTask(ctx, newTask.ID, newTask.Tags); err != nil {
 			return err
 		}
 		return nil
@@ -113,7 +103,7 @@ func (u *TaskUsecase) CreateTask(ctx context.Context, data *model.TaskRequestDat
 }
 
 func (u *TaskUsecase) GetTaskByID(ctx context.Context, data model.TaskRequestData) (model.TaskResponseData, error) {
-	task, err := u.taskStorage.GetTaskByID(ctx, data.ID, data.UserID)
+	task, err := u.storage.GetTaskByID(ctx, data.ID, data.UserID)
 	if err != nil {
 		return model.TaskResponseData{}, err
 	}
@@ -134,7 +124,7 @@ func (u *TaskUsecase) GetTaskByID(ctx context.Context, data model.TaskRequestDat
 }
 
 func (u *TaskUsecase) GetTasksByUserID(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskResponseData, error) {
-	tasks, err := u.taskStorage.GetTasksByUserID(ctx, userID, pgn)
+	tasks, err := u.storage.GetTasksByUserID(ctx, userID, pgn)
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +138,7 @@ func (u *TaskUsecase) GetTasksByUserID(ctx context.Context, userID string, pgn m
 }
 
 func (u *TaskUsecase) GetTasksByListID(ctx context.Context, data model.TaskRequestData) ([]model.TaskResponseData, error) {
-	tasks, err := u.taskStorage.GetTasksByListID(ctx, data.ListID, data.UserID)
+	tasks, err := u.storage.GetTasksByListID(ctx, data.ListID, data.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +168,7 @@ func mapTaskToResponseData(task model.Task) model.TaskResponseData {
 }
 
 func (u *TaskUsecase) GetTasksGroupedByHeadings(ctx context.Context, data model.TaskRequestData) ([]model.TaskGroup, error) {
-	taskGroups, err := u.taskStorage.GetTasksGroupedByHeadings(ctx, data.ListID, data.UserID)
+	taskGroups, err := u.storage.GetTasksGroupedByHeadings(ctx, data.ListID, data.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +177,7 @@ func (u *TaskUsecase) GetTasksGroupedByHeadings(ctx context.Context, data model.
 }
 
 func (u *TaskUsecase) GetTasksForToday(ctx context.Context, userID string) ([]model.TaskGroup, error) {
-	taskGroups, err := u.taskStorage.GetTasksForToday(ctx, userID)
+	taskGroups, err := u.storage.GetTasksForToday(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -196,7 +186,7 @@ func (u *TaskUsecase) GetTasksForToday(ctx context.Context, userID string) ([]mo
 }
 
 func (u *TaskUsecase) GetUpcomingTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error) {
-	taskGroups, err := u.taskStorage.GetUpcomingTasks(ctx, userID, pgn)
+	taskGroups, err := u.storage.GetUpcomingTasks(ctx, userID, pgn)
 	if err != nil {
 		return nil, err
 	}
@@ -205,7 +195,7 @@ func (u *TaskUsecase) GetUpcomingTasks(ctx context.Context, userID string, pgn m
 }
 
 func (u *TaskUsecase) GetOverdueTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error) {
-	taskGroups, err := u.taskStorage.GetOverdueTasks(ctx, userID, pgn)
+	taskGroups, err := u.storage.GetOverdueTasks(ctx, userID, pgn)
 	if err != nil {
 		return nil, err
 	}
@@ -214,7 +204,7 @@ func (u *TaskUsecase) GetOverdueTasks(ctx context.Context, userID string, pgn mo
 }
 
 func (u *TaskUsecase) GetTasksForSomeday(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error) {
-	taskGroups, err := u.taskStorage.GetTasksForSomeday(ctx, userID, pgn)
+	taskGroups, err := u.storage.GetTasksForSomeday(ctx, userID, pgn)
 	if err != nil {
 		return nil, err
 	}
@@ -223,7 +213,7 @@ func (u *TaskUsecase) GetTasksForSomeday(ctx context.Context, userID string, pgn
 }
 
 func (u *TaskUsecase) GetCompletedTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error) {
-	taskGroups, err := u.taskStorage.GetCompletedTasks(ctx, userID, pgn)
+	taskGroups, err := u.storage.GetCompletedTasks(ctx, userID, pgn)
 	if err != nil {
 		return nil, err
 	}
@@ -232,7 +222,7 @@ func (u *TaskUsecase) GetCompletedTasks(ctx context.Context, userID string, pgn 
 }
 
 func (u *TaskUsecase) GetArchivedTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error) {
-	taskGroups, err := u.taskStorage.GetArchivedTasks(ctx, userID, pgn)
+	taskGroups, err := u.storage.GetArchivedTasks(ctx, userID, pgn)
 	if err != nil {
 		return nil, err
 	}
@@ -254,8 +244,8 @@ func (u *TaskUsecase) UpdateTask(ctx context.Context, data *model.TaskRequestDat
 		UpdatedAt: time.Now(),
 	}
 
-	if err := u.taskStorage.Transaction(ctx, func(_ port.TaskStorage) error {
-		currentTags, err := u.tagUsecase.GetTagsByTaskID(ctx, updatedTask.ID)
+	if err := u.storage.Transaction(ctx, func(_ port.TaskStorage) error {
+		currentTags, err := u.TagUsecase.GetTagsByTaskID(ctx, updatedTask.ID)
 		if err != nil {
 			return err
 		}
@@ -263,7 +253,7 @@ func (u *TaskUsecase) UpdateTask(ctx context.Context, data *model.TaskRequestDat
 		tagsToAdd, tagsToRemove := findTagsToAddAndRemove(currentTags, updatedTask.Tags)
 
 		for _, tag := range updatedTask.Tags {
-			if err = u.tagUsecase.CreateTagIfNotExists(ctx, model.TagRequestData{
+			if err = u.TagUsecase.CreateTagIfNotExists(ctx, model.TagRequestData{
 				Title:  tag,
 				UserID: updatedTask.UserID,
 			}); err != nil {
@@ -271,13 +261,13 @@ func (u *TaskUsecase) UpdateTask(ctx context.Context, data *model.TaskRequestDat
 			}
 		}
 
-		if err = u.taskStorage.UpdateTask(ctx, updatedTask); err != nil {
+		if err = u.storage.UpdateTask(ctx, updatedTask); err != nil {
 			return err
 		}
-		if err = u.tagUsecase.UnlinkTagsFromTask(ctx, updatedTask.ID, tagsToRemove); err != nil {
+		if err = u.TagUsecase.UnlinkTagsFromTask(ctx, updatedTask.ID, tagsToRemove); err != nil {
 			return err
 		}
-		if err = u.tagUsecase.LinkTagsToTask(ctx, updatedTask.ID, tagsToAdd); err != nil {
+		if err = u.TagUsecase.LinkTagsToTask(ctx, updatedTask.ID, tagsToAdd); err != nil {
 			return err
 		}
 		return nil
@@ -328,13 +318,13 @@ func (u *TaskUsecase) UpdateTaskTime(ctx context.Context, data *model.TaskReques
 
 	switch {
 	case !data.StartTime.IsZero() && !data.EndTime.IsZero():
-		taskStatusID, err := u.taskStorage.GetTaskStatusID(ctx, model.StatusPlanned)
+		taskStatusID, err := u.storage.GetTaskStatusID(ctx, model.StatusPlanned)
 		if err != nil {
 			return model.TaskResponseTimeData{}, err
 		}
 		statusID = taskStatusID
 	case data.StartTime.IsZero() && data.EndTime.IsZero():
-		taskStatusID, err := u.taskStorage.GetTaskStatusID(ctx, model.StatusNotStarted)
+		taskStatusID, err := u.storage.GetTaskStatusID(ctx, model.StatusNotStarted)
 		if err != nil {
 			return model.TaskResponseTimeData{}, err
 		}
@@ -352,7 +342,7 @@ func (u *TaskUsecase) UpdateTaskTime(ctx context.Context, data *model.TaskReques
 		UpdatedAt: time.Now(),
 	}
 
-	if err := u.taskStorage.UpdateTaskTime(ctx, updatedTaskTime); err != nil {
+	if err := u.storage.UpdateTaskTime(ctx, updatedTaskTime); err != nil {
 		return model.TaskResponseTimeData{}, err
 	}
 
@@ -366,7 +356,7 @@ func (u *TaskUsecase) UpdateTaskTime(ctx context.Context, data *model.TaskReques
 }
 
 func (u *TaskUsecase) MoveTaskToAnotherList(ctx context.Context, data model.TaskRequestData) error {
-	defaultHeadingID, err := u.headingUsecase.GetDefaultHeadingID(ctx, model.HeadingRequestData{
+	defaultHeadingID, err := u.HeadingUsecase.GetDefaultHeadingID(ctx, model.HeadingRequestData{
 		ListID: data.ListID,
 		UserID: data.UserID,
 	})
@@ -376,7 +366,7 @@ func (u *TaskUsecase) MoveTaskToAnotherList(ctx context.Context, data model.Task
 
 	data.HeadingID = defaultHeadingID
 
-	return u.taskStorage.MoveTaskToAnotherList(ctx, model.Task{
+	return u.storage.MoveTaskToAnotherList(ctx, model.Task{
 		ID:        data.ID,
 		ListID:    data.ListID,
 		HeadingID: data.HeadingID,
@@ -386,14 +376,14 @@ func (u *TaskUsecase) MoveTaskToAnotherList(ctx context.Context, data model.Task
 }
 
 func (u *TaskUsecase) CompleteTask(ctx context.Context, data model.TaskRequestData) error {
-	statusCompleted, err := u.taskStorage.GetTaskStatusID(ctx, model.StatusCompleted)
+	statusCompleted, err := u.storage.GetTaskStatusID(ctx, model.StatusCompleted)
 	if err != nil {
 		return err
 	}
 
 	data.StatusID = statusCompleted
 
-	return u.taskStorage.MarkAsCompleted(ctx, model.Task{
+	return u.storage.MarkAsCompleted(ctx, model.Task{
 		ID:        data.ID,
 		StatusID:  data.StatusID,
 		UserID:    data.UserID,
@@ -402,14 +392,14 @@ func (u *TaskUsecase) CompleteTask(ctx context.Context, data model.TaskRequestDa
 }
 
 func (u *TaskUsecase) ArchiveTask(ctx context.Context, data model.TaskRequestData) error {
-	statusArchived, err := u.taskStorage.GetTaskStatusID(ctx, model.StatusArchived)
+	statusArchived, err := u.storage.GetTaskStatusID(ctx, model.StatusArchived)
 	if err != nil {
 		return err
 	}
 
 	data.StatusID = statusArchived
 
-	return u.taskStorage.MarkAsArchived(ctx, model.Task{
+	return u.storage.MarkAsArchived(ctx, model.Task{
 		ID:        data.ID,
 		StatusID:  data.StatusID,
 		UserID:    data.UserID,
