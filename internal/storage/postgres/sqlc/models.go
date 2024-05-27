@@ -30,15 +30,6 @@ type List struct {
 	DeletedAt pgtype.Timestamptz `db:"deleted_at"`
 }
 
-type RefreshSession struct {
-	ID           int32     `db:"id"`
-	UserID       string    `db:"user_id"`
-	DeviceID     string    `db:"device_id"`
-	RefreshToken string    `db:"refresh_token"`
-	LastVisitAt  time.Time `db:"last_visit_at"`
-	ExpiresAt    time.Time `db:"expires_at"`
-}
-
 type Reminder struct {
 	ID        string             `db:"id"`
 	Content   string             `db:"content"`
@@ -91,22 +82,4 @@ type TaskTagsView struct {
 type TasksTag struct {
 	TaskID string `db:"task_id"`
 	TagID  string `db:"tag_id"`
-}
-
-type User struct {
-	ID           string             `db:"id"`
-	Email        string             `db:"email"`
-	PasswordHash string             `db:"password_hash"`
-	UpdatedAt    time.Time          `db:"updated_at"`
-	DeletedAt    pgtype.Timestamptz `db:"deleted_at"`
-}
-
-type UserDevice struct {
-	ID            string             `db:"id"`
-	UserID        string             `db:"user_id"`
-	UserAgent     string             `db:"user_agent"`
-	Ip            string             `db:"ip"`
-	Detached      bool               `db:"detached"`
-	LatestLoginAt time.Time          `db:"latest_login_at"`
-	DetachedAt    pgtype.Timestamptz `db:"detached_at"`
 }

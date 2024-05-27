@@ -11,15 +11,12 @@ import (
 )
 
 type ListUsecase struct {
-	listStorage    port.ListStorage
-	headingUsecase port.HeadingUsecase
+	storage        port.ListStorage
+	HeadingUsecase port.HeadingUsecase
 }
 
-func NewListUsecase(listStorage port.ListStorage, headingUsecase port.HeadingUsecase) *ListUsecase {
-	return &ListUsecase{
-		listStorage:    listStorage,
-		headingUsecase: headingUsecase,
-	}
+func NewListUsecase(listStorage port.ListStorage) *ListUsecase {
+	return &ListUsecase{storage: listStorage}
 }
 
 func (u *ListUsecase) CreateList(ctx context.Context, data *model.ListRequestData) (model.ListResponseData, error) {
@@ -31,7 +28,7 @@ func (u *ListUsecase) CreateList(ctx context.Context, data *model.ListRequestDat
 		UpdatedAt: time.Now(),
 	}
 
-	if err := u.listStorage.CreateList(ctx, newList); err != nil {
+	if err := u.storage.CreateList(ctx, newList); err != nil {
 		return model.ListResponseData{}, err
 	}
 
@@ -44,7 +41,7 @@ func (u *ListUsecase) CreateList(ctx context.Context, data *model.ListRequestDat
 		UpdatedAt: time.Now(),
 	}
 
-	if err := u.headingUsecase.CreateDefaultHeading(ctx, defaultHeading); err != nil {
+	if err := u.HeadingUsecase.CreateDefaultHeading(ctx, defaultHeading); err != nil {
 		return model.ListResponseData{}, err
 	}
 
@@ -65,7 +62,7 @@ func (u *ListUsecase) CreateDefaultList(ctx context.Context, userID string) erro
 		UpdatedAt: time.Now(),
 	}
 
-	if err := u.listStorage.CreateList(ctx, defaultList); err != nil {
+	if err := u.storage.CreateList(ctx, defaultList); err != nil {
 		return err
 	}
 
@@ -78,7 +75,7 @@ func (u *ListUsecase) CreateDefaultList(ctx context.Context, userID string) erro
 		UpdatedAt: time.Now(),
 	}
 
-	if err := u.headingUsecase.CreateDefaultHeading(ctx, defaultHeading); err != nil {
+	if err := u.HeadingUsecase.CreateDefaultHeading(ctx, defaultHeading); err != nil {
 		return err
 	}
 
@@ -86,7 +83,7 @@ func (u *ListUsecase) CreateDefaultList(ctx context.Context, userID string) erro
 }
 
 func (u *ListUsecase) GetListByID(ctx context.Context, data model.ListRequestData) (model.ListResponseData, error) {
-	list, err := u.listStorage.GetListByID(ctx, data.ID, data.UserID)
+	list, err := u.storage.GetListByID(ctx, data.ID, data.UserID)
 	if err != nil {
 		return model.ListResponseData{}, err
 	}
@@ -100,7 +97,7 @@ func (u *ListUsecase) GetListByID(ctx context.Context, data model.ListRequestDat
 }
 
 func (u *ListUsecase) GetListsByUserID(ctx context.Context, userID string) ([]model.ListResponseData, error) {
-	lists, err := u.listStorage.GetListsByUserID(ctx, userID)
+	lists, err := u.storage.GetListsByUserID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +112,7 @@ func (u *ListUsecase) GetListsByUserID(ctx context.Context, userID string) ([]mo
 }
 
 func (u *ListUsecase) GetDefaultListID(ctx context.Context, userID string) (string, error) {
-	listID, err := u.listStorage.GetDefaultListID(ctx, userID)
+	listID, err := u.storage.GetDefaultListID(ctx, userID)
 	if err != nil {
 		return "", err
 	}
@@ -140,7 +137,7 @@ func (u *ListUsecase) UpdateList(ctx context.Context, data *model.ListRequestDat
 		UpdatedAt: time.Now(),
 	}
 
-	if err := u.listStorage.UpdateList(ctx, updatedList); err != nil {
+	if err := u.storage.UpdateList(ctx, updatedList); err != nil {
 		return model.ListResponseData{}, err
 	}
 
@@ -159,5 +156,5 @@ func (u *ListUsecase) DeleteList(ctx context.Context, data model.ListRequestData
 		DeletedAt: time.Now(),
 	}
 
-	return u.listStorage.DeleteList(ctx, deletedList)
+	return u.storage.DeleteList(ctx, deletedList)
 }

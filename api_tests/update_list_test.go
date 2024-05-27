@@ -28,7 +28,6 @@ func TestUpdateList_HappyPath(t *testing.T) {
 		JSON().Object()
 
 	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
-	t.Log(accessToken)
 
 	// Create list
 	c := e.POST("/user/lists/").
@@ -72,10 +71,9 @@ func TestUpdateList_NotFound(t *testing.T) {
 		JSON().Object()
 
 	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
-	t.Log(accessToken)
 
 	// Create list
-	c := e.POST("/user/lists/").
+	l := e.POST("/user/lists/").
 		WithHeader("Authorization", "Bearer "+accessToken).
 		WithJSON(model.ListRequestData{
 			Title: gofakeit.Word(),
@@ -84,7 +82,7 @@ func TestUpdateList_NotFound(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	listID := c.Value("data").Object().Value("id").String().Raw()
+	listID := l.Value("data").Object().Value("id").String().Raw()
 
 	// Delete list
 	e.DELETE("/user/lists/{list_id}").
@@ -101,8 +99,7 @@ func TestUpdateList_NotFound(t *testing.T) {
 			Title: gofakeit.Word(),
 		}).
 		Expect().
-		Status(http.StatusOK).
-		JSON().Object().NotEmpty()
+		Status(http.StatusNotFound)
 }
 
 func TestUpdateList_EmptyTitle(t *testing.T) {
@@ -123,10 +120,9 @@ func TestUpdateList_EmptyTitle(t *testing.T) {
 		JSON().Object()
 
 	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
-	t.Log(accessToken)
 
 	// Create list
-	c := e.POST("/user/lists/").
+	l := e.POST("/user/lists/").
 		WithHeader("Authorization", "Bearer "+accessToken).
 		WithJSON(model.ListRequestData{
 			Title: gofakeit.Word(),
@@ -135,7 +131,7 @@ func TestUpdateList_EmptyTitle(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	listID := c.Value("data").Object().Value("id").String().Raw()
+	listID := l.Value("data").Object().Value("id").String().Raw()
 
 	// Update list
 	e.PUT("/user/lists/{list_id}").

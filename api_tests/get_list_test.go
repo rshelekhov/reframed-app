@@ -30,7 +30,7 @@ func TestGetListByID_HappyPath(t *testing.T) {
 	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	// Create list
-	c := e.POST("/user/lists/").
+	l := e.POST("/user/lists/").
 		WithHeader("Authorization", "Bearer "+accessToken).
 		WithJSON(model.ListRequestData{
 			Title: gofakeit.Word(),
@@ -39,7 +39,7 @@ func TestGetListByID_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	listID := c.Value("data").Object().Value("id").String().Raw()
+	listID := l.Value("data").Object().Value("id").String().Raw()
 
 	// Get list by ID
 	e.GET("/user/lists/{list_id}").
@@ -70,7 +70,7 @@ func TestGetListByID_NotFound(t *testing.T) {
 	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	// Create list
-	c := e.POST("/user/lists/").
+	l := e.POST("/user/lists/").
 		WithHeader("Authorization", "Bearer "+accessToken).
 		WithJSON(model.ListRequestData{
 			Title: gofakeit.Word(),
@@ -79,7 +79,7 @@ func TestGetListByID_NotFound(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	listID := c.Value("data").Object().Value("id").String().Raw()
+	listID := l.Value("data").Object().Value("id").String().Raw()
 
 	// Delete list
 	e.DELETE("/user/lists/{list_id}").
@@ -93,8 +93,7 @@ func TestGetListByID_NotFound(t *testing.T) {
 		WithPath("list_id", listID).
 		WithHeader("Authorization", "Bearer "+accessToken).
 		Expect().
-		Status(http.StatusOK).
-		JSON().Object().NotEmpty()
+		Status(http.StatusNotFound)
 }
 
 func TestGetListsByUserID_HappyPath(t *testing.T) {

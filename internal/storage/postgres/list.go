@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -100,7 +101,7 @@ func (s *ListStorage) GetDefaultListID(ctx context.Context, userID string) (stri
 func (s *ListStorage) UpdateList(ctx context.Context, list model.List) error {
 	const op = "list.storage.UpdateList"
 
-	err := s.Queries.UpdateList(ctx, sqlc.UpdateListParams{
+	_, err := s.Queries.UpdateList(ctx, sqlc.UpdateListParams{
 		Title:     list.Title,
 		UpdatedAt: list.UpdatedAt,
 		ID:        list.ID,
@@ -121,6 +122,10 @@ func (s *ListStorage) DeleteList(ctx context.Context, list model.List) error {
 	err := s.Queries.DeleteList(ctx, sqlc.DeleteListParams{
 		ID:     list.ID,
 		UserID: list.UserID,
+		DeletedAt: pgtype.Timestamptz{
+			Time:  list.DeletedAt,
+			Valid: true,
+		},
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return le.ErrListNotFound
