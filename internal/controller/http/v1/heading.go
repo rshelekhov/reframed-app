@@ -232,6 +232,9 @@ func (c *headingController) MoveHeadingToAnotherList() http.HandlerFunc {
 		case errors.Is(err, le.ErrHeadingNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrHeadingNotFound)
 			return
+		case errors.Is(err, le.ErrListNotFound):
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrListNotFound)
+			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToMoveHeading, err)
 			return

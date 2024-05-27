@@ -2,6 +2,8 @@ package usecase
 
 import (
 	"context"
+	"errors"
+	"github.com/rshelekhov/reframed/internal/lib/constants/le"
 	"time"
 
 	"github.com/segmentio/ksuid"
@@ -11,13 +13,12 @@ import (
 )
 
 type HeadingUsecase struct {
-	headingStorage port.HeadingStorage
+	storage     port.HeadingStorage
+	ListUsecase port.ListUsecase
 }
 
 func NewHeadingUsecase(storage port.HeadingStorage) *HeadingUsecase {
-	return &HeadingUsecase{
-		headingStorage: storage,
-	}
+	return &HeadingUsecase{storage: storage}
 }
 
 func (u *HeadingUsecase) CreateHeading(ctx context.Context, data *model.HeadingRequestData) (model.HeadingResponseData, error) {
@@ -30,7 +31,7 @@ func (u *HeadingUsecase) CreateHeading(ctx context.Context, data *model.HeadingR
 		UpdatedAt: time.Now(),
 	}
 
-	if err := u.headingStorage.CreateHeading(ctx, newHeading); err != nil {
+	if err := u.storage.CreateHeading(ctx, newHeading); err != nil {
 		return model.HeadingResponseData{}, err
 	}
 
@@ -44,11 +45,11 @@ func (u *HeadingUsecase) CreateHeading(ctx context.Context, data *model.HeadingR
 }
 
 func (u *HeadingUsecase) CreateDefaultHeading(ctx context.Context, heading model.Heading) error {
-	return u.headingStorage.CreateHeading(ctx, heading)
+	return u.storage.CreateHeading(ctx, heading)
 }
 
 func (u *HeadingUsecase) GetHeadingByID(ctx context.Context, data model.HeadingRequestData) (model.HeadingResponseData, error) {
-	heading, err := u.headingStorage.GetHeadingByID(ctx, data.ID, data.UserID)
+	heading, err := u.storage.GetHeadingByID(ctx, data.ID, data.UserID)
 	if err != nil {
 		return model.HeadingResponseData{}, err
 	}
@@ -63,11 +64,11 @@ func (u *HeadingUsecase) GetHeadingByID(ctx context.Context, data model.HeadingR
 }
 
 func (u *HeadingUsecase) GetDefaultHeadingID(ctx context.Context, data model.HeadingRequestData) (string, error) {
-	return u.headingStorage.GetDefaultHeadingID(ctx, data.ListID, data.UserID)
+	return u.storage.GetDefaultHeadingID(ctx, data.ListID, data.UserID)
 }
 
 func (u *HeadingUsecase) GetHeadingsByListID(ctx context.Context, data model.HeadingRequestData) ([]model.HeadingResponseData, error) {
-	headings, err := u.headingStorage.GetHeadingsByListID(ctx, data.ListID, data.UserID)
+	headings, err := u.storage.GetHeadingsByListID(ctx, data.ListID, data.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +101,7 @@ func (u *HeadingUsecase) UpdateHeading(ctx context.Context, data *model.HeadingR
 		UpdatedAt: time.Now(),
 	}
 
-	if err := u.headingStorage.UpdateHeading(ctx, updatedHeading); err != nil {
+	if err := u.storage.UpdateHeading(ctx, updatedHeading); err != nil {
 		return model.HeadingResponseData{}, err
 	}
 
@@ -128,7 +129,21 @@ func (u *HeadingUsecase) MoveHeadingToAnotherList(ctx context.Context, data mode
 		UpdatedAt: time.Now(),
 	}
 
-	if err := u.headingStorage.MoveHeadingToAnotherList(ctx, updatedHeading, updatedTasks); err != nil {
+	listRequestData := model.ListRequestData{
+		ID:     data.ListID,
+		UserID: data.UserID,
+	}
+
+	// Check if list exists
+	if _, err := u.ListUsecase.GetListByID(ctx, listRequestData); err != nil {
+		if errors.Is(err, le.ErrListNotFound) {
+			return model.HeadingResponseData{}, le.ErrListNotFound
+
+		}
+		return model.HeadingResponseData{}, err
+	}
+
+	if err := u.storage.MoveHeadingToAnotherList(ctx, updatedHeading, updatedTasks); err != nil {
 		return model.HeadingResponseData{}, err
 	}
 
@@ -148,5 +163,5 @@ func (u *HeadingUsecase) DeleteHeading(ctx context.Context, data model.HeadingRe
 		DeletedAt: time.Now(),
 	}
 
-	return u.headingStorage.DeleteHeading(ctx, deletedHeading)
+	return u.storage.DeleteHeading(ctx, deletedHeading)
 }
