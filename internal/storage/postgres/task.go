@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -77,6 +78,19 @@ func (s *TaskStorage) CreateTask(ctx context.Context, task model.Task) error {
 	if !task.Deadline.IsZero() {
 		taskParams.Deadline = pgtype.Timestamptz{
 			Time:  task.Deadline,
+			Valid: true,
+		}
+	}
+
+	if !task.StartTime.IsZero() {
+		taskParams.StartTime = sql.NullTime{
+			Time:  task.StartTime,
+			Valid: true,
+		}
+	}
+	if !task.EndTime.IsZero() {
+		taskParams.EndTime = sql.NullTime{
+			Time:  task.EndTime,
 			Valid: true,
 		}
 	}
