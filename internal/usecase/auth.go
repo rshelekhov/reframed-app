@@ -85,6 +85,10 @@ func (u *AuthUsecase) RegisterNewUser(
 
 	userID = claims[key.UserID].(string)
 
+	if err = u.ListUsecase.CreateDefaultList(ctx, userID); err != nil {
+		return nil, "", err
+	}
+
 	return tokenData, userID, nil
 }
 
