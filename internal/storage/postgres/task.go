@@ -50,7 +50,6 @@ func (s *TaskStorage) Transaction(ctx context.Context, fn func(storage port.Task
 	return fn(s)
 }
 
-// TODO: make all storage methods with custom struct instead of default types like this
 func (s *TaskStorage) CreateTask(ctx context.Context, task model.Task) error {
 	const op = "task.storage.CreateTask"
 
