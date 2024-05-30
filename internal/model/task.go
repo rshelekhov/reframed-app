@@ -25,7 +25,7 @@ type (
 	}
 
 	TaskRequestData struct {
-		ID          string    `json:"id"`
+		ID          string    `json:"task_id"`
 		Title       string    `json:"title" validate:"required"`
 		Description string    `json:"description"`
 		StartDate   time.Time `json:"start_date"`
@@ -40,7 +40,7 @@ type (
 	}
 
 	TaskResponseData struct {
-		ID          string    `json:"id,omitempty"`
+		ID          string    `json:"task_id,omitempty"`
 		Title       string    `json:"title,omitempty"`
 		Description string    `json:"description,omitempty"`
 		StartDate   time.Time `json:"start_date"`
@@ -57,14 +57,14 @@ type (
 	}
 
 	TaskRequestTimeData struct {
-		ID        string    `json:"id"`
+		ID        string    `json:"task_id"`
 		StartTime time.Time `json:"start_time"`
 		EndTime   time.Time `json:"end_time"`
 		UserID    string    `json:"user_id"`
 	}
 
 	TaskResponseTimeData struct {
-		ID        string    `json:"id"`
+		ID        string    `json:"task_id"`
 		StartTime time.Time `json:"start_time"`
 		EndTime   time.Time `json:"end_time"`
 		UserID    string    `json:"user_id"`

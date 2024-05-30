@@ -20,7 +20,7 @@ type (
 	}
 
 	TagResponseData struct {
-		ID        string    `json:"id"`
+		ID        string    `json:"tag_id"`
 		Title     string    `json:"title"`
 		UpdatedAt time.Time `json:"updated_at"`
 	}

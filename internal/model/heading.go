@@ -17,14 +17,14 @@ type (
 	}
 
 	HeadingRequestData struct {
-		ID     string `json:"id"`
+		ID     string `json:"heading_id"`
 		Title  string `json:"title" validate:"required"`
 		ListID string `json:"list_id"`
 		UserID string `json:"user_id"`
 	}
 
 	HeadingResponseData struct {
-		ID        string    `json:"id,omitempty"`
+		ID        string    `json:"heading_id,omitempty"`
 		Title     string    `json:"title,omitempty"`
 		ListID    string    `json:"list_id,omitempty"`
 		UserID    string    `json:"user_id,omitempty"`
