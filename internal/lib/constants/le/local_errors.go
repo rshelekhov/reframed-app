@@ -66,6 +66,7 @@ const (
 
 	ErrNoHeadingsFound             LocalError = "no headings found"
 	ErrHeadingNotFound             LocalError = "heading not found"
+	ErrDefaultHeadingNotFound      LocalError = "default heading not found"
 	ErrFailedToCreateHeading       LocalError = "failed to create heading"
 	ErrFailedToGetHeadingsByListID LocalError = "failed to get headings by list ID"
 	ErrFailedToUpdateHeading       LocalError = "failed to update heading"

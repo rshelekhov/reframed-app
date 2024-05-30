@@ -50,7 +50,7 @@ func (s *HeadingStorage) GetDefaultHeadingID(ctx context.Context, listID, userID
 		UserID: userID,
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
-		return "", le.ErrHeadingNotFound
+		return "", le.ErrDefaultHeadingNotFound
 	}
 	if err != nil {
 		return "", fmt.Errorf("%s: failed to get default heading: %w", op, err)

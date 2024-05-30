@@ -102,7 +102,7 @@ func (c *taskController) CreateTaskInDefaultList() http.HandlerFunc {
 		taskResponse, err := c.usecase.CreateTask(ctx, taskInput)
 
 		switch {
-		case errors.Is(err, le.ErrHeadingNotFound):
+		case errors.Is(err, le.ErrDefaultHeadingNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrHeadingNotFound)
 			return
 		case err != nil:
