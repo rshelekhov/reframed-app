@@ -5,7 +5,6 @@
 package sqlc
 
 import (
-	"database/sql"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -64,8 +63,8 @@ type Task struct {
 	Description pgtype.Text        `db:"description"`
 	StartDate   pgtype.Timestamptz `db:"start_date"`
 	Deadline    pgtype.Timestamptz `db:"deadline"`
-	StartTime   sql.NullTime       `db:"start_time"`
-	EndTime     sql.NullTime       `db:"end_time"`
+	StartTime   pgtype.Timestamptz `db:"start_time"`
+	EndTime     pgtype.Timestamptz `db:"end_time"`
 	StatusID    int32              `db:"status_id"`
 	ListID      string             `db:"list_id"`
 	HeadingID   string             `db:"heading_id"`
