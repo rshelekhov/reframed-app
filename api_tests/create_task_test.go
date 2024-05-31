@@ -30,10 +30,12 @@ func TestCreateTaskInDefaultList_HappyPath(t *testing.T) {
 
 	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
 
+	fakeTask := randomFakeTask(true, true, true, true, true, "", "")
+
 	// Create task
 	e.POST("/user/lists/default").
 		WithHeader("Authorization", "Bearer "+accessToken).
-		WithJSON(randomFakeTask(true, true, true, true, true, "", "")).
+		WithJSON(fakeTask).
 		Expect().
 		Status(http.StatusCreated).
 		JSON().Object()
@@ -69,11 +71,13 @@ func TestCreateTaskOnSpecificList_HappyPath(t *testing.T) {
 
 	listID := l.Value("data").Object().Value("id").String().Raw()
 
+	fakeTask := randomFakeTask(true, true, true, true, true, "", "")
+
 	// Create task
 	task := e.POST("/user/lists/{list_id}/tasks/").
 		WithPath("list_id", listID).
 		WithHeader("Authorization", "Bearer "+accessToken).
-		WithJSON(randomFakeTask(true, true, true, true, true, "", "")).
+		WithJSON(fakeTask).
 		Expect().
 		Status(http.StatusCreated).
 		JSON().Object()
