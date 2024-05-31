@@ -55,10 +55,10 @@ func (u *TaskUsecase) CreateTask(ctx context.Context, data *model.TaskRequestDat
 		ID:          ksuid.New().String(),
 		Title:       data.Title,
 		Description: data.Description,
-		StartDate:   data.StartDate,
-		Deadline:    data.Deadline,
-		StartTime:   data.StartTime,
-		EndTime:     data.EndTime,
+		StartDate:   data.StartDateParsed,
+		Deadline:    data.DeadlineParsed,
+		StartTime:   data.StartTimeParsed,
+		EndTime:     data.EndTimeParsed,
 		StatusID:    data.StatusID,
 		ListID:      data.ListID,
 		HeadingID:   data.HeadingID,
@@ -241,10 +241,10 @@ func (u *TaskUsecase) UpdateTask(ctx context.Context, data *model.TaskRequestDat
 	updatedTask := model.Task{
 		ID:        data.ID,
 		Title:     data.Title,
-		StartDate: data.StartDate,
-		Deadline:  data.Deadline,
-		StartTime: data.StartTime,
-		EndTime:   data.EndTime,
+		StartDate: data.StartDateParsed,
+		Deadline:  data.DeadlineParsed,
+		StartTime: data.StartTimeParsed,
+		EndTime:   data.EndTimeParsed,
 		ListID:    data.ListID,
 		HeadingID: data.HeadingID,
 		UserID:    data.UserID,
@@ -327,13 +327,13 @@ func (u *TaskUsecase) UpdateTaskTime(ctx context.Context, data *model.TaskReques
 	var statusID int
 
 	switch {
-	case !data.StartTime.IsZero() && !data.EndTime.IsZero():
+	case !data.StartTimeParsed.IsZero() && !data.EndTimeParsed.IsZero():
 		taskStatusID, err := u.storage.GetTaskStatusID(ctx, model.StatusPlanned)
 		if err != nil {
 			return model.TaskResponseTimeData{}, err
 		}
 		statusID = taskStatusID
-	case data.StartTime.IsZero() && data.EndTime.IsZero():
+	case data.StartTimeParsed.IsZero() && data.EndTimeParsed.IsZero():
 		taskStatusID, err := u.storage.GetTaskStatusID(ctx, model.StatusNotStarted)
 		if err != nil {
 			return model.TaskResponseTimeData{}, err
@@ -345,8 +345,8 @@ func (u *TaskUsecase) UpdateTaskTime(ctx context.Context, data *model.TaskReques
 
 	updatedTaskTime := model.Task{
 		ID:        data.ID,
-		StartTime: data.StartTime,
-		EndTime:   data.EndTime,
+		StartTime: data.StartTimeParsed,
+		EndTime:   data.EndTimeParsed,
 		StatusID:  statusID,
 		UserID:    data.UserID,
 		UpdatedAt: time.Now(),

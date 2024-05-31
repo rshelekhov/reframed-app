@@ -25,18 +25,24 @@ type (
 	}
 
 	TaskRequestData struct {
-		ID          string    `json:"task_id"`
-		Title       string    `json:"title" validate:"required"`
-		Description string    `json:"description"`
-		StartDate   time.Time `json:"start_date"`
-		Deadline    time.Time `json:"deadline"`
-		StartTime   time.Time `json:"start_time"`
-		EndTime     time.Time `json:"end_time"`
-		StatusID    int       `json:"status_id"`
-		ListID      string    `json:"list_id"`
-		HeadingID   string    `json:"heading_id"`
-		UserID      string    `json:"user_id"`
-		Tags        []string  `json:"tags"`
+		ID          string `json:"task_id"`
+		Title       string `json:"title" validate:"required"`
+		Description string `json:"description"`
+		StartDate   string `json:"start_date"`
+		Deadline    string `json:"deadline"`
+		StartTime   string `json:"start_time"`
+		EndTime     string `json:"end_time"`
+
+		StartDateParsed time.Time
+		DeadlineParsed  time.Time
+		StartTimeParsed time.Time
+		EndTimeParsed   time.Time
+
+		StatusID  int      `json:"status_id"`
+		ListID    string   `json:"list_id"`
+		HeadingID string   `json:"heading_id"`
+		UserID    string   `json:"user_id"`
+		Tags      []string `json:"tags"`
 	}
 
 	TaskResponseData struct {
@@ -57,10 +63,14 @@ type (
 	}
 
 	TaskRequestTimeData struct {
-		ID        string    `json:"task_id"`
-		StartTime time.Time `json:"start_time"`
-		EndTime   time.Time `json:"end_time"`
-		UserID    string    `json:"user_id"`
+		ID        string `json:"task_id"`
+		StartTime string `json:"start_time"`
+		EndTime   string `json:"end_time"`
+
+		StartTimeParsed time.Time
+		EndTimeParsed   time.Time
+
+		UserID string `json:"user_id"`
 	}
 
 	TaskResponseTimeData struct {
