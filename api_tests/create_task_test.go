@@ -69,7 +69,7 @@ func TestCreateTaskOnSpecificList_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	listID := l.Value("data").Object().Value("id").String().Raw()
+	listID := l.Value("data").Object().Value("list_id").String().Raw()
 
 	fakeTask := randomFakeTask(true, true, true, true, true, "", "")
 

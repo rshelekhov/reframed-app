@@ -39,7 +39,7 @@ func TestUpdateHeading_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	listID := l.Value("data").Object().Value("id").String().Raw()
+	listID := l.Value("data").Object().Value("list_id").String().Raw()
 
 	// Create heading
 	h := e.POST("/user/lists/{list_id}/headings/").
@@ -53,7 +53,7 @@ func TestUpdateHeading_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	headingID := h.Value("data").Object().Value("id").String().Raw()
+	headingID := h.Value("data").Object().Value("heading_id").String().Raw()
 
 	// Update heading
 	e.PUT("/user/lists/{list_id}/headings/{heading_id}").
@@ -97,7 +97,7 @@ func TestUpdateHeading_NotFound(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	listID := l.Value("data").Object().Value("id").String().Raw()
+	listID := l.Value("data").Object().Value("list_id").String().Raw()
 
 	// Create heading
 	h := e.POST("/user/lists/{list_id}/headings/").
@@ -111,7 +111,7 @@ func TestUpdateHeading_NotFound(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	headingID := h.Value("data").Object().Value("id").String().Raw()
+	headingID := h.Value("data").Object().Value("heading_id").String().Raw()
 
 	// Delete heading
 	e.DELETE("/user/lists/{list_id}/headings/{heading_id}").
@@ -163,7 +163,7 @@ func TestMoveHeadingToAnotherList_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	initialListID := initialList.Value("data").Object().Value("id").String().Raw()
+	initialListID := initialList.Value("data").Object().Value("list_id").String().Raw()
 
 	// Create second list
 	otherList := e.POST("/user/lists/").
@@ -175,7 +175,7 @@ func TestMoveHeadingToAnotherList_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	otherListID := otherList.Value("data").Object().Value("id").String().Raw()
+	otherListID := otherList.Value("data").Object().Value("list_id").String().Raw()
 
 	// Create heading
 	h := e.POST("/user/lists/{list_id}/headings/").
@@ -189,7 +189,7 @@ func TestMoveHeadingToAnotherList_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	headingID := h.Value("data").Object().Value("id").String().Raw()
+	headingID := h.Value("data").Object().Value("heading_id").String().Raw()
 
 	// Move heading
 	e.PUT("/user/lists/{list_id}/headings/{heading_id}/move").
@@ -231,7 +231,7 @@ func TestMoveHadingToAnotherList_FailCases(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	initialListID := initialList.Value("data").Object().Value("id").String().Raw()
+	initialListID := initialList.Value("data").Object().Value("list_id").String().Raw()
 
 	// Create second list
 	otherList := e.POST("/user/lists/").
@@ -243,7 +243,7 @@ func TestMoveHadingToAnotherList_FailCases(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	otherListID := otherList.Value("data").Object().Value("id").String().Raw()
+	otherListID := otherList.Value("data").Object().Value("list_id").String().Raw()
 
 	// Create heading
 	h := e.POST("/user/lists/{list_id}/headings/").
@@ -257,7 +257,7 @@ func TestMoveHadingToAnotherList_FailCases(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	headingID := h.Value("data").Object().Value("id").String().Raw()
+	headingID := h.Value("data").Object().Value("heading_id").String().Raw()
 
 	testCases := []struct {
 		name        string

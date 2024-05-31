@@ -39,7 +39,7 @@ func TestGetListByID_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	listID := l.Value("data").Object().Value("id").String().Raw()
+	listID := l.Value("data").Object().Value("list_id").String().Raw()
 
 	// Get list by ID
 	e.GET("/user/lists/{list_id}").
@@ -79,7 +79,7 @@ func TestGetListByID_NotFound(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	listID := l.Value("data").Object().Value("id").String().Raw()
+	listID := l.Value("data").Object().Value("list_id").String().Raw()
 
 	// Delete list
 	e.DELETE("/user/lists/{list_id}").
@@ -114,7 +114,6 @@ func TestGetListsByUserID_HappyPath(t *testing.T) {
 		JSON().Object()
 
 	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
-	t.Log(accessToken)
 
 	// Create lists
 	for i := 0; i < 5; i++ {

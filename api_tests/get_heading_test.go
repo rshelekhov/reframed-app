@@ -39,7 +39,7 @@ func TestGetHeadingByID_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	listID := l.Value("data").Object().Value("id").String().Raw()
+	listID := l.Value("data").Object().Value("list_id").String().Raw()
 
 	// Create heading
 	h := e.POST("/user/lists/{list_id}/headings/").
@@ -53,7 +53,7 @@ func TestGetHeadingByID_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	headingID := h.Value("data").Object().Value("id").String().Raw()
+	headingID := h.Value("data").Object().Value("heading_id").String().Raw()
 
 	// Get heading
 	e.GET("/user/lists/{list_id}/headings/{heading_id}").
@@ -94,7 +94,7 @@ func TestGetHeadingByID_NotFound(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	listID := l.Value("data").Object().Value("id").String().Raw()
+	listID := l.Value("data").Object().Value("list_id").String().Raw()
 
 	// Create heading
 	h := e.POST("/user/lists/{list_id}/headings/").
@@ -108,7 +108,7 @@ func TestGetHeadingByID_NotFound(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	headingID := h.Value("data").Object().Value("id").String().Raw()
+	headingID := h.Value("data").Object().Value("heading_id").String().Raw()
 
 	// Delete heading
 	e.DELETE("/user/lists/{list_id}/headings/{heading_id}").

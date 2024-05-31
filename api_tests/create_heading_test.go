@@ -39,7 +39,7 @@ func TestCreateHeading_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	listID := l.Value("data").Object().Value("id").String().Raw()
+	listID := l.Value("data").Object().Value("list_id").String().Raw()
 
 	// Create heading
 	e.POST("/user/lists/{list_id}/headings/").
@@ -105,7 +105,7 @@ func TestCreateHeading_FailCases(t *testing.T) {
 				Status(http.StatusCreated).
 				JSON().Object()
 
-			listID := c.Value("data").Object().Value("id").String().Raw()
+			listID := c.Value("data").Object().Value("list_id").String().Raw()
 
 			// Create heading
 			e.POST("/user/lists/{list_id}/headings/").

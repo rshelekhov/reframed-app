@@ -39,7 +39,7 @@ func TestUpdateList_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	listID := c.Value("data").Object().Value("id").String().Raw()
+	listID := c.Value("data").Object().Value("list_id").String().Raw()
 
 	// Update list
 	e.PUT("/user/lists/{list_id}").
@@ -82,7 +82,7 @@ func TestUpdateList_NotFound(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	listID := l.Value("data").Object().Value("id").String().Raw()
+	listID := l.Value("data").Object().Value("list_id").String().Raw()
 
 	// Delete list
 	e.DELETE("/user/lists/{list_id}").
@@ -131,7 +131,7 @@ func TestUpdateList_EmptyTitle(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	listID := l.Value("data").Object().Value("id").String().Raw()
+	listID := l.Value("data").Object().Value("list_id").String().Raw()
 
 	// Update list
 	e.PUT("/user/lists/{list_id}").
