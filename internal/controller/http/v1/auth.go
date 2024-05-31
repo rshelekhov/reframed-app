@@ -98,24 +98,27 @@ func (c *authController) LoginWithPassword() http.HandlerFunc {
 			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrUserNotFound,
 				slog.String(key.Email, userInput.Email),
 			)
+			return
 		case errors.Is(err, le.ErrUserUnauthenticated):
 			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrUserUnauthenticated,
 				slog.String(key.Email, userInput.Email),
 			)
+			return
 		case err != nil:
 			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrFailedToLoginUser,
 				slog.String(key.Email, userInput.Email),
 				slog.String(key.Error, err.Error()),
 			)
-		default:
-			log.Info(
-				"user logged in, tokens created",
-				slog.String(key.UserID, userID),
-				slog.Any(key.AccessToken, tokenData.AccessToken),
-				slog.Any(key.RefreshToken, tokenData.RefreshToken),
-			)
-			jwtoken.SendTokensToWeb(w, tokenData, http.StatusOK)
+			return
 		}
+
+		log.Info(
+			"user logged in, tokens created",
+			slog.String(key.UserID, userID),
+			slog.Any(key.AccessToken, tokenData.AccessToken),
+			slog.Any(key.RefreshToken, tokenData.RefreshToken),
+		)
+		jwtoken.SendTokensToWeb(w, tokenData, http.StatusOK)
 	}
 }
 
@@ -145,13 +148,15 @@ func (c *authController) RefreshJWTokens() http.HandlerFunc {
 				slog.String(key.UserID, userID), // TODO: check if can return userID when error is here
 				slog.String(key.Error, err.Error()),
 			)
-		default:
-			log.Info("tokens created",
-				slog.Any(key.UserID, userID),
-				slog.Any(key.AccessToken, tokenData.AccessToken),
-				slog.Any(key.RefreshToken, tokenData.RefreshToken))
-			jwtoken.SendTokensToWeb(w, tokenData, http.StatusOK)
+
+			return
 		}
+
+		log.Info("tokens created",
+			slog.Any(key.UserID, userID),
+			slog.Any(key.AccessToken, tokenData.AccessToken),
+			slog.Any(key.RefreshToken, tokenData.RefreshToken))
+		jwtoken.SendTokensToWeb(w, tokenData, http.StatusOK)
 	}
 }
 
@@ -215,9 +220,9 @@ func (c *authController) GetUser() http.HandlerFunc {
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
 			return
-		default:
-			handleResponseSuccess(w, r, log, "user received", user, slog.String(key.UserID, userID))
 		}
+
+		handleResponseSuccess(w, r, log, "user received", user, slog.String(key.UserID, userID))
 	}
 }
 
@@ -260,12 +265,12 @@ func (c *authController) UpdateUser() http.HandlerFunc {
 				slog.String(key.UserID, userID),
 			)
 			return
-		default:
-			handleResponseSuccess(w, r, log, "user updated",
-				model.UserResponseData{ID: userID},
-				slog.String(key.UserID, userID),
-			)
 		}
+
+		handleResponseSuccess(w, r, log, "user updated",
+			model.UserResponseData{ID: userID},
+			slog.String(key.UserID, userID),
+		)
 	}
 }
 
@@ -304,11 +309,11 @@ func (c *authController) DeleteUser() http.HandlerFunc {
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToDeleteUser, err)
 			return
-		default:
-			handleResponseSuccess(w, r, log, "user deleted",
-				model.UserResponseData{ID: userID},
-				slog.String(key.UserID, userID),
-			)
 		}
+
+		handleResponseSuccess(w, r, log, "user deleted",
+			model.UserResponseData{ID: userID},
+			slog.String(key.UserID, userID),
+		)
 	}
 }
