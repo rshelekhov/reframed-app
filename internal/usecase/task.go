@@ -108,14 +108,11 @@ func (u *TaskUsecase) GetTaskByID(ctx context.Context, data model.TaskRequestDat
 		return model.TaskResponseData{}, err
 	}
 
-	startDate := time.Date(task.StartDate.Year(), task.StartDate.Month(), task.StartDate.Day(), 0, 0, 0, 0, time.UTC)
-	deadline := time.Date(task.Deadline.Year(), task.Deadline.Month(), task.Deadline.Day(), 0, 0, 0, 0, time.UTC)
-
 	return model.TaskResponseData{
 		ID:        task.ID,
 		Title:     task.Title,
-		StartDate: startDate,
-		Deadline:  deadline,
+		StartDate: task.StartDate,
+		Deadline:  task.Deadline,
 		StartTime: task.StartTime,
 		EndTime:   task.EndTime,
 		StatusID:  task.StatusID,
@@ -155,14 +152,11 @@ func (u *TaskUsecase) GetTasksByListID(ctx context.Context, data model.TaskReque
 }
 
 func mapTaskToResponseData(task model.Task) model.TaskResponseData {
-	startDate := time.Date(task.StartDate.Year(), task.StartDate.Month(), task.StartDate.Day(), 0, 0, 0, 0, time.UTC)
-	deadline := time.Date(task.Deadline.Year(), task.Deadline.Month(), task.Deadline.Day(), 0, 0, 0, 0, time.UTC)
-
 	return model.TaskResponseData{
 		ID:        task.ID,
 		Title:     task.Title,
-		StartDate: startDate,
-		Deadline:  deadline,
+		StartDate: task.StartDate,
+		Deadline:  task.Deadline,
 		StartTime: task.StartTime,
 		EndTime:   task.EndTime,
 		StatusID:  task.StatusID,
@@ -282,14 +276,11 @@ func (u *TaskUsecase) UpdateTask(ctx context.Context, data *model.TaskRequestDat
 		return model.TaskResponseData{}, err
 	}
 
-	startDate := time.Date(updatedTask.StartDate.Year(), updatedTask.StartDate.Month(), updatedTask.StartDate.Day(), 0, 0, 0, 0, time.UTC)
-	deadline := time.Date(updatedTask.Deadline.Year(), updatedTask.Deadline.Month(), updatedTask.Deadline.Day(), 0, 0, 0, 0, time.UTC)
-
 	return model.TaskResponseData{
 		ID:        updatedTask.ID,
 		Title:     updatedTask.Title,
-		StartDate: startDate,
-		Deadline:  deadline,
+		StartDate: updatedTask.StartDate,
+		Deadline:  updatedTask.Deadline,
 		StartTime: updatedTask.StartTime,
 		EndTime:   updatedTask.EndTime,
 		StatusID:  updatedTask.StatusID,
