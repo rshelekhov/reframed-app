@@ -69,7 +69,7 @@ func (s *TaskStorage) CreateTask(ctx context.Context, task model.Task) error {
 	}
 	if !task.StartDate.IsZero() {
 		taskParams.StartDate = pgtype.Timestamptz{
-			Time:  task.StartTime,
+			Time:  task.StartDate,
 			Valid: true,
 		}
 	}
