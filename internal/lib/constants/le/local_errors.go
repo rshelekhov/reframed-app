@@ -21,6 +21,7 @@ const (
 	ErrFailedToGetTokenData       LocalError = "failed to get token data"
 	ErrFailedToGetUserIDFromToken LocalError = "failed to get user id from token"
 	ErrFailedToGetRefreshToken    LocalError = "failed to get refresh token from context"
+	ErrFailedToRefreshTokens      LocalError = "failed to refresh tokens"
 	ErrFailedGoGetClaimsFromToken LocalError = "failed to get claims from token"
 	ErrFailedToLogout             LocalError = "failed to logout"
 

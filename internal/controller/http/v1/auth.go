@@ -93,26 +93,29 @@ func (c *authController) LoginWithPassword() http.HandlerFunc {
 		}
 
 		tokenData, userID, err := c.usecase.LoginUser(ctx, userInput, userDevice)
-		if err != nil {
-			if errors.Is(err, le.ErrUserNotFound) {
-				handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrUserNotFound,
-					slog.String(key.Email, userInput.Email),
-				)
-				return
-			}
+		switch {
+		case errors.Is(err, le.ErrUserNotFound):
+			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrUserNotFound,
+				slog.String(key.Email, userInput.Email),
+			)
+		case errors.Is(err, le.ErrUserUnauthenticated):
+			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrUserUnauthenticated,
+				slog.String(key.Email, userInput.Email),
+			)
+		case err != nil:
 			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrFailedToLoginUser,
 				slog.String(key.Email, userInput.Email),
 				slog.String(key.Error, err.Error()),
 			)
+		default:
+			log.Info(
+				"user logged in, tokens created",
+				slog.String(key.UserID, userID),
+				slog.Any(key.AccessToken, tokenData.AccessToken),
+				slog.Any(key.RefreshToken, tokenData.RefreshToken),
+			)
+			jwtoken.SendTokensToWeb(w, tokenData, http.StatusOK)
 		}
-
-		log.Info(
-			"user logged in, tokens created",
-			slog.String(key.UserID, userID),
-			slog.Any(key.AccessToken, tokenData.AccessToken),
-			slog.Any(key.RefreshToken, tokenData.RefreshToken),
-		)
-		jwtoken.SendTokensToWeb(w, tokenData, http.StatusOK)
 	}
 }
 
@@ -136,18 +139,19 @@ func (c *authController) RefreshJWTokens() http.HandlerFunc {
 		}
 
 		tokenData, userID, err := c.usecase.Refresh(ctx, refreshToken, userDevice)
-		if err != nil {
-			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrFailedToLoginUser,
+		switch {
+		case err != nil:
+			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrFailedToRefreshTokens,
 				slog.String(key.UserID, userID), // TODO: check if can return userID when error is here
 				slog.String(key.Error, err.Error()),
 			)
+		default:
+			log.Info("tokens created",
+				slog.Any(key.UserID, userID),
+				slog.Any(key.AccessToken, tokenData.AccessToken),
+				slog.Any(key.RefreshToken, tokenData.RefreshToken))
+			jwtoken.SendTokensToWeb(w, tokenData, http.StatusOK)
 		}
-
-		log.Info("tokens created",
-			slog.Any(key.UserID, userID),
-			slog.Any(key.AccessToken, tokenData.AccessToken),
-			slog.Any(key.RefreshToken, tokenData.RefreshToken))
-		jwtoken.SendTokensToWeb(w, tokenData, http.StatusOK)
 	}
 }
 
