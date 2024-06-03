@@ -61,21 +61,21 @@ func decodeTaskRequestData(r *http.Request, data *model.TaskRequestData) error {
 		return time.Parse(time.DateOnly, v)
 	})
 	if err != nil {
-		return errors.New("invalid deadline format")
+		return fmt.Errorf("invalid deadline format, got %s, need to use the following format: %s", data.StartDate, time.DateOnly)
 	}
 
 	data.StartTimeParsed, err = parseIfNotEmpty(data.StartTime, func(v string) (time.Time, error) {
 		return time.Parse(time.DateTime, v)
 	})
 	if err != nil {
-		return errors.New("invalid start_time format")
+		return fmt.Errorf("invalid start_time format, got %s, need to use the following format: %s", data.StartDate, time.DateTime)
 	}
 
 	data.EndTimeParsed, err = parseIfNotEmpty(data.EndTime, func(v string) (time.Time, error) {
 		return time.Parse(time.DateTime, v)
 	})
 	if err != nil {
-		return errors.New("invalid end_time format")
+		return fmt.Errorf("invalid end_time forma, got %s, need to use the following format: %s", data.StartDate, time.DateTime)
 	}
 
 	return nil
@@ -94,14 +94,14 @@ func decodeTaskRequestTimeData(r *http.Request, data *model.TaskRequestTimeData)
 		return time.Parse(time.DateTime, v)
 	})
 	if err != nil {
-		return errors.New("invalid start_time format")
+		return fmt.Errorf("invalid start_time format, got %s, need to use the following format: %s", data.StartTime, time.DateTime)
 	}
 
 	data.EndTimeParsed, err = parseIfNotEmpty(data.EndTime, func(v string) (time.Time, error) {
 		return time.Parse(time.DateTime, v)
 	})
 	if err != nil {
-		return errors.New("invalid end_time format")
+		return fmt.Errorf("invalid end_time forma, got %s, need to use the following format: %s", data.EndTime, time.DateTime)
 	}
 
 	return nil
