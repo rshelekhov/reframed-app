@@ -17,39 +17,21 @@ import (
 )
 
 type headingController struct {
-	logger  logger.Interface
+	logger  *slog.Logger
 	jwt     *jwtoken.TokenService
 	usecase port.HeadingUsecase
 }
 
-func NewHeadingRoutes(
-	r *chi.Mux,
-	log logger.Interface,
+func newHeadingController(
+	log *slog.Logger,
 	jwt *jwtoken.TokenService,
 	usecase port.HeadingUsecase,
-) {
-	c := &headingController{
+) *headingController {
+	return &headingController{
 		logger:  log,
 		jwt:     jwt,
 		usecase: usecase,
 	}
-
-	r.Group(func(r chi.Router) {
-		r.Use(jwtoken.Verifier(jwt))
-		r.Use(jwtoken.Authenticator())
-
-		r.Route("/user/lists/{list_id}/headings", func(r chi.Router) {
-			r.Post("/", c.CreateHeading())
-			r.Get("/", c.GetHeadingsByListID())
-
-			r.Route("/{heading_id}", func(r chi.Router) {
-				r.Get("/", c.GetHeadingByID())
-				r.Put("/", c.UpdateHeading())
-				r.Put("/move/", c.MoveHeadingToAnotherList())
-				r.Delete("/", c.DeleteHeading())
-			})
-		})
-	})
 }
 
 func (c *headingController) CreateHeading() http.HandlerFunc {
@@ -59,7 +41,7 @@ func (c *headingController) CreateHeading() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
 
-		userID, err := jwtoken.GetUserID(ctx)
+		userID, err := c.jwt.GetUserID(ctx)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 			return
@@ -100,7 +82,7 @@ func (c *headingController) GetHeadingByID() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
 
-		userID, err := jwtoken.GetUserID(ctx)
+		userID, err := c.jwt.GetUserID(ctx)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 			return
@@ -139,7 +121,7 @@ func (c *headingController) GetHeadingsByListID() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
 
-		userID, err := jwtoken.GetUserID(ctx)
+		userID, err := c.jwt.GetUserID(ctx)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 			return
@@ -178,7 +160,7 @@ func (c *headingController) UpdateHeading() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
 
-		userID, err := jwtoken.GetUserID(ctx)
+		userID, err := c.jwt.GetUserID(ctx)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 			return
@@ -220,7 +202,7 @@ func (c *headingController) MoveHeadingToAnotherList() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
 
-		userID, err := jwtoken.GetUserID(ctx)
+		userID, err := c.jwt.GetUserID(ctx)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 			return
@@ -250,6 +232,9 @@ func (c *headingController) MoveHeadingToAnotherList() http.HandlerFunc {
 		case errors.Is(err, le.ErrHeadingNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrHeadingNotFound)
 			return
+		case errors.Is(err, le.ErrListNotFound):
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrListNotFound)
+			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToMoveHeading, err)
 			return
@@ -266,7 +251,7 @@ func (c *headingController) DeleteHeading() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
 
-		userID, err := jwtoken.GetUserID(ctx)
+		userID, err := c.jwt.GetUserID(ctx)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 			return

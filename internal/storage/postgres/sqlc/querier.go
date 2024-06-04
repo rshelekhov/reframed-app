@@ -38,11 +38,11 @@ type Querier interface {
 	LinkTagToTask(ctx context.Context, arg LinkTagToTaskParams) error
 	MarkTaskAsArchived(ctx context.Context, arg MarkTaskAsArchivedParams) error
 	MarkTaskAsCompleted(ctx context.Context, arg MarkTaskAsCompletedParams) error
-	MoveHeadingToAnotherList(ctx context.Context, arg MoveHeadingToAnotherListParams) error
+	MoveHeadingToAnotherList(ctx context.Context, arg MoveHeadingToAnotherListParams) (string, error)
 	MoveTaskToAnotherList(ctx context.Context, arg MoveTaskToAnotherListParams) error
 	UnlinkTagFromTask(ctx context.Context, arg UnlinkTagFromTaskParams) error
-	UpdateHeading(ctx context.Context, arg UpdateHeadingParams) error
-	UpdateList(ctx context.Context, arg UpdateListParams) error
+	UpdateHeading(ctx context.Context, arg UpdateHeadingParams) (string, error)
+	UpdateList(ctx context.Context, arg UpdateListParams) (string, error)
 	UpdateTasksListID(ctx context.Context, arg UpdateTasksListIDParams) error
 }
 

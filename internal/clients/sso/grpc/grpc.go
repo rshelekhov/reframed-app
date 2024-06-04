@@ -5,7 +5,6 @@ import (
 	"fmt"
 	grpclog "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	grpcretry "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/retry"
-	"github.com/rshelekhov/reframed/internal/lib/logger"
 	ssov1 "github.com/rshelekhov/sso-protos/gen/go/sso"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -16,12 +15,12 @@ import (
 
 type Client struct {
 	Api    ssov1.AuthClient
-	logger logger.Interface
+	logger *slog.Logger
 }
 
 func New(
 	ctx context.Context,
-	log logger.Interface,
+	log *slog.Logger,
 	addr string,
 	timeout time.Duration,
 	retriesCount int,
@@ -56,7 +55,7 @@ func New(
 	}, nil
 }
 
-func interceptorLogger(l logger.Interface) grpclog.Logger {
+func interceptorLogger(l *slog.Logger) grpclog.Logger {
 	return grpclog.LoggerFunc(func(ctx context.Context, lvl grpclog.Level, msg string, fields ...any) {
 		l.Log(ctx, slog.Level(lvl), msg, fields...)
 	})

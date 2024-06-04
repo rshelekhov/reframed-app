@@ -6,32 +6,24 @@ func (l LocalError) Error() string {
 	return string(l)
 }
 
+// TODO: add unwrapping
+
 const (
 	// ===========================================================================
 	//   auth errors
 	// ===========================================================================
 
+	ErrAppIDDoesNotExists         LocalError = "app_id does not exists"
 	ErrUserNotFound               LocalError = "user not found"
-	ErrInvalidCredentials         LocalError = "invalid credentials"
-	ErrPasswordsDoNotMatch        LocalError = "passwords do not match"
-	ErrUserHasNoPassword          LocalError = "user has no password"
-	ErrUserDeviceNotFound         LocalError = "user device not found"
-	ErrSessionNotFound            LocalError = "session not found"
+	ErrUserUnauthenticated        LocalError = "user is not authenticated"
 	ErrFailedToLoginUser          LocalError = "failed to login user"
 	ErrFailedToCreateUser         LocalError = "failed to create user"
-	ErrFailedToRegisterDevice     LocalError = "failed to register device"
-	ErrFailedToCheckDevice        LocalError = "failed to check device"
-	ErrFailedToDeleteRefreshToken LocalError = "failed to delete refresh token"
-	ErrFailedToCreateSession      LocalError = "failed to create session"
-	ErrFailedToRemoveSession      LocalError = "failed to remove session"
 	ErrFailedToGetTokenData       LocalError = "failed to get token data"
 	ErrFailedToGetUserIDFromToken LocalError = "failed to get user id from token"
-	ErrFailedToGetAccessToken     LocalError = "failed to get token from context"
 	ErrFailedToGetRefreshToken    LocalError = "failed to get refresh token from context"
 	ErrFailedToRefreshTokens      LocalError = "failed to refresh tokens"
 	ErrFailedGoGetClaimsFromToken LocalError = "failed to get claims from token"
 	ErrFailedToLogout             LocalError = "failed to logout"
-	ErrSessionExpired             LocalError = "session expired"
 
 	// ===========================================================================
 	//   controller errors
@@ -49,8 +41,6 @@ const (
 	//   user errors
 	// ===========================================================================
 
-	ErrNoUsersFound              LocalError = "no users found"
-	ErrFailedToGetUsers          LocalError = "failed to get users"
 	ErrUserAlreadyExists         LocalError = "user with this email already exists"
 	ErrEmailAlreadyTaken         LocalError = "this email already taken"
 	ErrNoChangesDetected         LocalError = "no changes detected"
@@ -64,11 +54,13 @@ const (
 
 	ErrNoListsFound             LocalError = "no lists found"
 	ErrListNotFound             LocalError = "list not found"
+	ErrDefaultListNotFound      LocalError = "default list not found"
 	ErrFailedToCreateList       LocalError = "failed to create list"
 	ErrFailedToGetLists         LocalError = "failed to get lists"
 	ErrFailedToGetDefaultListID LocalError = "failed to get default list ID"
 	ErrFailedToUpdateList       LocalError = "failed to update list"
 	ErrFailedToDeleteList       LocalError = "failed to delete list"
+	ErrCannotDeleteDefaultList  LocalError = "cannot delete default list"
 	ErrEmptyQueryListID         LocalError = "list ID is empty in query"
 
 	// ===========================================================================
@@ -77,6 +69,7 @@ const (
 
 	ErrNoHeadingsFound             LocalError = "no headings found"
 	ErrHeadingNotFound             LocalError = "heading not found"
+	ErrDefaultHeadingNotFound      LocalError = "default heading not found"
 	ErrFailedToCreateHeading       LocalError = "failed to create heading"
 	ErrFailedToGetHeadingsByListID LocalError = "failed to get headings by list ID"
 	ErrFailedToUpdateHeading       LocalError = "failed to update heading"

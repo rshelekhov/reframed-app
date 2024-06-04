@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -57,6 +58,7 @@ func (s *ListStorage) GetListByID(ctx context.Context, listID, userID string) (m
 	return model.List{
 		ID:        list.ID,
 		Title:     list.Title,
+		IsDefault: list.IsDefault,
 		UpdatedAt: list.UpdatedAt,
 	}, nil
 }
@@ -89,7 +91,7 @@ func (s *ListStorage) GetDefaultListID(ctx context.Context, userID string) (stri
 
 	listID, err := s.Queries.GetDefaultListID(ctx, userID)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return "", le.ErrNoListsFound
+		return "", le.ErrDefaultListNotFound
 	}
 	if err != nil {
 		return "", fmt.Errorf("%s: failed to get default list: %w", op, err)
@@ -100,7 +102,7 @@ func (s *ListStorage) GetDefaultListID(ctx context.Context, userID string) (stri
 func (s *ListStorage) UpdateList(ctx context.Context, list model.List) error {
 	const op = "list.storage.UpdateList"
 
-	err := s.Queries.UpdateList(ctx, sqlc.UpdateListParams{
+	_, err := s.Queries.UpdateList(ctx, sqlc.UpdateListParams{
 		Title:     list.Title,
 		UpdatedAt: list.UpdatedAt,
 		ID:        list.ID,
@@ -121,6 +123,10 @@ func (s *ListStorage) DeleteList(ctx context.Context, list model.List) error {
 	err := s.Queries.DeleteList(ctx, sqlc.DeleteListParams{
 		ID:     list.ID,
 		UserID: list.UserID,
+		DeletedAt: pgtype.Timestamptz{
+			Time:  list.DeletedAt,
+			Valid: true,
+		},
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return le.ErrListNotFound

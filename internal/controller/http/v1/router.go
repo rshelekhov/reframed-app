@@ -1,64 +1,44 @@
 package v1
 
 import (
-	"time"
-
-	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
-	mwlogger "github.com/rshelekhov/reframed/internal/lib/middleware/logger"
-
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/httprate"
-	"github.com/go-chi/render"
-
-	"github.com/rshelekhov/reframed/internal/lib/logger"
+	"github.com/rshelekhov/reframed/internal/config"
+	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
 	"github.com/rshelekhov/reframed/internal/port"
+	"log/slog"
 )
 
+type AppRouter struct {
+	*config.ServerSettings
+	*slog.Logger
+	*jwtoken.TokenService
+	*authController
+	*listController
+	*headingController
+	*taskController
+	*tagController
+}
+
 func NewRouter(
-	log logger.Interface,
+	cfg *config.ServerSettings,
+	log *slog.Logger,
 	jwt *jwtoken.TokenService,
-	a port.AuthUsecase,
-	l port.ListUsecase,
-	h port.HeadingUsecase,
-	t port.TaskUsecase,
-	tag port.TagUsecase,
+	authUsecase port.AuthUsecase,
+	listUsecase port.ListUsecase,
+	headingUsecase port.HeadingUsecase,
+	taskUsecase port.TaskUsecase,
+	tagUsecase port.TagUsecase,
 ) *chi.Mux {
-	r := chi.NewRouter()
+	ar := &AppRouter{
+		ServerSettings:    cfg,
+		Logger:            log,
+		TokenService:      jwt,
+		authController:    newAuthController(log, jwt, authUsecase),
+		listController:    newListController(log, jwt, listUsecase),
+		headingController: newHeadingController(log, jwt, headingUsecase),
+		taskController:    newTaskController(log, jwt, taskUsecase),
+		tagController:     newTagController(log, jwt, tagUsecase),
+	}
 
-	// Add request_id to each request, for tracing purposes
-	r.Use(middleware.RequestID)
-
-	// Logging of all requests
-	r.Use(middleware.Logger)
-
-	// By default, middleware.logger uses its own internal logger,
-	// which should be overridden to use ours. Otherwise, problems
-	// may arise - for example, with log collection. We can use
-	// our own middleware to log requests:
-	r.Use(mwlogger.New(log))
-
-	// If a panic happens somewhere inside the httpserver (request controller),
-	// the application should not crash.
-	r.Use(middleware.Recoverer)
-
-	// Parser of incoming request URLs
-	r.Use(middleware.URLFormat)
-
-	// Set the content type to application/json
-	r.Use(render.SetContentType(render.ContentTypeJSON))
-
-	// Enable httprate request limiter of 100 requests per minute per IP
-	r.Use(httprate.LimitByIP(100, 1*time.Minute))
-
-	// Health check
-	r.Get("/health", HealthRead())
-
-	NewAuthRoutes(r, log, jwt, a)
-	NewListRoutes(r, log, jwt, l)
-	NewHeadingRoutes(r, log, jwt, h)
-	NewTaskRoutes(r, log, jwt, t)
-	NewTagRoutes(r, log, jwt, tag)
-
-	return r
+	return ar.initRoutes()
 }

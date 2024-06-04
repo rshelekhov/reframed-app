@@ -7,8 +7,6 @@ import (
 
 	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
 
-	"github.com/go-chi/chi/v5"
-
 	"github.com/rshelekhov/reframed/internal/lib/constants/key"
 	"github.com/rshelekhov/reframed/internal/lib/constants/le"
 	"github.com/rshelekhov/reframed/internal/lib/logger"
@@ -16,30 +14,21 @@ import (
 )
 
 type tagController struct {
-	logger  logger.Interface
+	logger  *slog.Logger
 	jwt     *jwtoken.TokenService
 	usecase port.TagUsecase
 }
 
-func NewTagRoutes(
-	r *chi.Mux,
-	log logger.Interface,
+func newTagController(
+	log *slog.Logger,
 	jwt *jwtoken.TokenService,
 	usecase port.TagUsecase,
-) {
-	c := &tagController{
+) *tagController {
+	return &tagController{
 		logger:  log,
 		jwt:     jwt,
 		usecase: usecase,
 	}
-
-	// Protected routes
-	r.Group(func(r chi.Router) {
-		r.Use(jwtoken.Verifier(jwt))
-		r.Use(jwtoken.Authenticator())
-
-		r.Get("/user/tags", c.GetTagsByUserID())
-	})
 }
 
 func (c *tagController) GetTagsByUserID() http.HandlerFunc {
@@ -49,7 +38,7 @@ func (c *tagController) GetTagsByUserID() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
 
-		userID, err := jwtoken.GetUserID(ctx)
+		userID, err := c.jwt.GetUserID(ctx)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 			return

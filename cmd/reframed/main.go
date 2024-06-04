@@ -32,7 +32,7 @@ func main() {
 
 	ssoClient, err := ssogrpc.New(
 		context.Background(),
-		log,
+		log.Logger,
 		cfg.Clients.SSO.Address,
 		cfg.Clients.SSO.Timeout,
 		cfg.Clients.SSO.RetriesCount,
@@ -40,7 +40,8 @@ func main() {
 
 	// TODO: research where and how to set appID
 	var appID int32
-	tokenAuth := jwtoken.NewJWTokenService(ssoClient, appID)
+	appID = 1
+	tokenAuth := jwtoken.NewService(ssoClient, appID)
 
 	// Storage
 	pg, err := postgres.NewStorage(cfg)
@@ -56,17 +57,26 @@ func main() {
 	tagStorage := postgres.NewTagStorage(pg)
 
 	// Usecases
+	authUsecase := usecase.NewAuthUsecase(ssoClient, tokenAuth)
 	headingUsecase := usecase.NewHeadingUsecase(headingStorage)
-	listUsecase := usecase.NewListUsecase(listStorage, headingUsecase)
-	authUsecase := usecase.NewAuthUsecase(ssoClient, tokenAuth, listUsecase, headingUsecase)
+	listUsecase := usecase.NewListUsecase(listStorage)
 	tagUsecase := usecase.NewTagUsecase(tagStorage)
-	taskUsecase := usecase.NewTaskUsecase(taskStorage, headingUsecase, tagUsecase, listUsecase)
+	taskUsecase := usecase.NewTaskUsecase(taskStorage)
+
+	authUsecase.ListUsecase = listUsecase
+	authUsecase.HeadingUsecase = headingUsecase
+	headingUsecase.ListUsecase = listUsecase
+	listUsecase.HeadingUsecase = headingUsecase
+	taskUsecase.HeadingUsecase = headingUsecase
+	taskUsecase.TagUsecase = tagUsecase
+	taskUsecase.ListUsecase = listUsecase
 
 	// HTTP Server
 	log.Info("starting httpserver", slog.String("address", cfg.HTTPServer.Address))
 
 	router := v1.NewRouter(
-		log,
+		cfg,
+		log.Logger,
 		tokenAuth,
 		authUsecase,
 		listUsecase,
@@ -75,6 +85,6 @@ func main() {
 		tagUsecase,
 	)
 
-	srv := httpserver.NewServer(cfg, log, tokenAuth, router)
+	srv := httpserver.NewServer(cfg, log.Logger, tokenAuth, router)
 	srv.Start()
 }

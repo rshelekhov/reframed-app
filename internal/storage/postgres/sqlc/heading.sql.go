@@ -159,11 +159,13 @@ func (q *Queries) GetHeadingsByListID(ctx context.Context, arg GetHeadingsByList
 	return items, nil
 }
 
-const moveHeadingToAnotherList = `-- name: MoveHeadingToAnotherList :exec
+const moveHeadingToAnotherList = `-- name: MoveHeadingToAnotherList :one
 UPDATE headings
 SET list_id = $1, updated_at = $2
 WHERE id = $3
   AND user_id = $4
+  AND deleted_at IS NULL
+RETURNING id
 `
 
 type MoveHeadingToAnotherListParams struct {
@@ -173,21 +175,25 @@ type MoveHeadingToAnotherListParams struct {
 	UserID    string    `db:"user_id"`
 }
 
-func (q *Queries) MoveHeadingToAnotherList(ctx context.Context, arg MoveHeadingToAnotherListParams) error {
-	_, err := q.db.Exec(ctx, moveHeadingToAnotherList,
+func (q *Queries) MoveHeadingToAnotherList(ctx context.Context, arg MoveHeadingToAnotherListParams) (string, error) {
+	row := q.db.QueryRow(ctx, moveHeadingToAnotherList,
 		arg.ListID,
 		arg.UpdatedAt,
 		arg.ID,
 		arg.UserID,
 	)
-	return err
+	var id string
+	err := row.Scan(&id)
+	return id, err
 }
 
-const updateHeading = `-- name: UpdateHeading :exec
+const updateHeading = `-- name: UpdateHeading :one
 UPDATE headings
 SET title = $1, updated_at = $2
 WHERE id = $3
   AND user_id = $4
+  AND deleted_at IS NULL
+RETURNING id
 `
 
 type UpdateHeadingParams struct {
@@ -197,14 +203,16 @@ type UpdateHeadingParams struct {
 	UserID    string    `db:"user_id"`
 }
 
-func (q *Queries) UpdateHeading(ctx context.Context, arg UpdateHeadingParams) error {
-	_, err := q.db.Exec(ctx, updateHeading,
+func (q *Queries) UpdateHeading(ctx context.Context, arg UpdateHeadingParams) (string, error) {
+	row := q.db.QueryRow(ctx, updateHeading,
 		arg.Title,
 		arg.UpdatedAt,
 		arg.ID,
 		arg.UserID,
 	)
-	return err
+	var id string
+	err := row.Scan(&id)
+	return id, err
 }
 
 const updateTasksListID = `-- name: UpdateTasksListID :exec

@@ -6,11 +6,9 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/middleware"
-
-	"github.com/rshelekhov/reframed/internal/lib/logger"
 )
 
-func New(log logger.Interface) func(http.Handler) http.Handler {
+func New(log *slog.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		log = log.With(slog.String("component", "middleware/logger"))
 
