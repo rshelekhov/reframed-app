@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"github.com/rshelekhov/reframed/internal/lib/constants/le"
 	"time"
 
 	"github.com/segmentio/ksuid"
@@ -150,6 +151,15 @@ func (u *ListUsecase) UpdateList(ctx context.Context, data *model.ListRequestDat
 }
 
 func (u *ListUsecase) DeleteList(ctx context.Context, data model.ListRequestData) error {
+	// Check if list is not default list
+	list, err := u.storage.GetListByID(ctx, data.ID, data.UserID)
+	if err != nil {
+		return err
+	}
+	if list.IsDefault {
+		return le.ErrCannotDeleteDefaultList
+	}
+
 	deletedList := model.List{
 		ID:        data.ID,
 		UserID:    data.UserID,

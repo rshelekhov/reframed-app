@@ -244,6 +244,9 @@ func (c *listController) DeleteList() http.HandlerFunc {
 		case errors.Is(err, le.ErrListNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrListNotFound)
 			return
+		case errors.Is(err, le.ErrCannotDeleteDefaultList):
+			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrCannotDeleteDefaultList)
+			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToDeleteList, err)
 			return

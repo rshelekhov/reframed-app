@@ -60,6 +60,7 @@ const (
 	ErrFailedToGetDefaultListID LocalError = "failed to get default list ID"
 	ErrFailedToUpdateList       LocalError = "failed to update list"
 	ErrFailedToDeleteList       LocalError = "failed to delete list"
+	ErrCannotDeleteDefaultList  LocalError = "cannot delete default list"
 	ErrEmptyQueryListID         LocalError = "list ID is empty in query"
 
 	// ===========================================================================

@@ -70,7 +70,7 @@ func (q *Queries) GetDefaultListID(ctx context.Context, userID string) (string, 
 }
 
 const getListByID = `-- name: GetListByID :one
-SELECT id, title, user_id, updated_at
+SELECT id, title, user_id, is_default, updated_at
 FROM lists
 WHERE id = $1
   AND user_id = $2
@@ -86,6 +86,7 @@ type GetListByIDRow struct {
 	ID        string    `db:"id"`
 	Title     string    `db:"title"`
 	UserID    string    `db:"user_id"`
+	IsDefault bool      `db:"is_default"`
 	UpdatedAt time.Time `db:"updated_at"`
 }
 
@@ -96,6 +97,7 @@ func (q *Queries) GetListByID(ctx context.Context, arg GetListByIDParams) (GetLi
 		&i.ID,
 		&i.Title,
 		&i.UserID,
+		&i.IsDefault,
 		&i.UpdatedAt,
 	)
 	return i, err

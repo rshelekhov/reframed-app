@@ -58,6 +58,7 @@ func (s *ListStorage) GetListByID(ctx context.Context, listID, userID string) (m
 	return model.List{
 		ID:        list.ID,
 		Title:     list.Title,
+		IsDefault: list.IsDefault,
 		UpdatedAt: list.UpdatedAt,
 	}, nil
 }
