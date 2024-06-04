@@ -15,11 +15,13 @@ const (
 
 	ErrAppIDDoesNotExists         LocalError = "app_id does not exists"
 	ErrUserNotFound               LocalError = "user not found"
+	ErrUserUnauthenticated        LocalError = "user is not authenticated"
 	ErrFailedToLoginUser          LocalError = "failed to login user"
 	ErrFailedToCreateUser         LocalError = "failed to create user"
 	ErrFailedToGetTokenData       LocalError = "failed to get token data"
 	ErrFailedToGetUserIDFromToken LocalError = "failed to get user id from token"
 	ErrFailedToGetRefreshToken    LocalError = "failed to get refresh token from context"
+	ErrFailedToRefreshTokens      LocalError = "failed to refresh tokens"
 	ErrFailedGoGetClaimsFromToken LocalError = "failed to get claims from token"
 	ErrFailedToLogout             LocalError = "failed to logout"
 
@@ -52,11 +54,13 @@ const (
 
 	ErrNoListsFound             LocalError = "no lists found"
 	ErrListNotFound             LocalError = "list not found"
+	ErrDefaultListNotFound      LocalError = "default list not found"
 	ErrFailedToCreateList       LocalError = "failed to create list"
 	ErrFailedToGetLists         LocalError = "failed to get lists"
 	ErrFailedToGetDefaultListID LocalError = "failed to get default list ID"
 	ErrFailedToUpdateList       LocalError = "failed to update list"
 	ErrFailedToDeleteList       LocalError = "failed to delete list"
+	ErrCannotDeleteDefaultList  LocalError = "cannot delete default list"
 	ErrEmptyQueryListID         LocalError = "list ID is empty in query"
 
 	// ===========================================================================
@@ -65,6 +69,7 @@ const (
 
 	ErrNoHeadingsFound             LocalError = "no headings found"
 	ErrHeadingNotFound             LocalError = "heading not found"
+	ErrDefaultHeadingNotFound      LocalError = "default heading not found"
 	ErrFailedToCreateHeading       LocalError = "failed to create heading"
 	ErrFailedToGetHeadingsByListID LocalError = "failed to get headings by list ID"
 	ErrFailedToUpdateHeading       LocalError = "failed to update heading"

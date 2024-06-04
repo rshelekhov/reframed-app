@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -49,7 +50,7 @@ func (s *HeadingStorage) GetDefaultHeadingID(ctx context.Context, listID, userID
 		UserID: userID,
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
-		return "", le.ErrHeadingNotFound
+		return "", le.ErrDefaultHeadingNotFound
 	}
 	if err != nil {
 		return "", fmt.Errorf("%s: failed to get default heading: %w", op, err)
@@ -113,7 +114,7 @@ func (s *HeadingStorage) GetHeadingsByListID(ctx context.Context, listID, userID
 func (s *HeadingStorage) UpdateHeading(ctx context.Context, heading model.Heading) error {
 	const op = "heading.storage.UpdateHeading"
 
-	err := s.Queries.UpdateHeading(ctx, sqlc.UpdateHeadingParams{
+	_, err := s.Queries.UpdateHeading(ctx, sqlc.UpdateHeadingParams{
 		Title:     heading.Title,
 		UpdatedAt: heading.UpdatedAt,
 		ID:        heading.ID,
@@ -132,7 +133,7 @@ func (s *HeadingStorage) UpdateHeading(ctx context.Context, heading model.Headin
 func (s *HeadingStorage) MoveHeadingToAnotherList(ctx context.Context, heading model.Heading, task model.Task) error {
 	const op = "heading.storage.MoveTaskToAnotherList"
 
-	err := s.Queries.MoveHeadingToAnotherList(ctx, sqlc.MoveHeadingToAnotherListParams{
+	_, err := s.Queries.MoveHeadingToAnotherList(ctx, sqlc.MoveHeadingToAnotherListParams{
 		ListID:    heading.ListID,
 		UpdatedAt: heading.UpdatedAt,
 		ID:        heading.ID,
@@ -151,9 +152,6 @@ func (s *HeadingStorage) MoveHeadingToAnotherList(ctx context.Context, heading m
 		HeadingID: task.HeadingID,
 		UserID:    task.UserID,
 	})
-	if errors.Is(err, pgx.ErrNoRows) {
-		return le.ErrHeadingNotFound
-	}
 	if err != nil {
 		return fmt.Errorf("%s: failed to update tasks: %w", op, err)
 	}
@@ -167,6 +165,10 @@ func (s *HeadingStorage) DeleteHeading(ctx context.Context, heading model.Headin
 	err := s.Queries.DeleteHeading(ctx, sqlc.DeleteHeadingParams{
 		ID:     heading.ID,
 		UserID: heading.UserID,
+		DeletedAt: pgtype.Timestamptz{
+			Time:  heading.DeletedAt,
+			Valid: true,
+		},
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return le.ErrHeadingNotFound

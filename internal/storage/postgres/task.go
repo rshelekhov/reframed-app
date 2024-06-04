@@ -49,7 +49,6 @@ func (s *TaskStorage) Transaction(ctx context.Context, fn func(storage port.Task
 	return fn(s)
 }
 
-// TODO: make all storage methods with custom struct instead of default types like this
 func (s *TaskStorage) CreateTask(ctx context.Context, task model.Task) error {
 	const op = "task.storage.CreateTask"
 
@@ -70,13 +69,26 @@ func (s *TaskStorage) CreateTask(ctx context.Context, task model.Task) error {
 	}
 	if !task.StartDate.IsZero() {
 		taskParams.StartDate = pgtype.Timestamptz{
-			Time:  task.StartTime,
+			Time:  task.StartDate,
 			Valid: true,
 		}
 	}
 	if !task.Deadline.IsZero() {
 		taskParams.Deadline = pgtype.Timestamptz{
 			Time:  task.Deadline,
+			Valid: true,
+		}
+	}
+
+	if !task.StartTime.IsZero() {
+		taskParams.StartTime = pgtype.Timestamptz{
+			Time:  task.StartTime,
+			Valid: true,
+		}
+	}
+	if !task.EndTime.IsZero() {
+		taskParams.EndTime = pgtype.Timestamptz{
+			Time:  task.EndTime,
 			Valid: true,
 		}
 	}

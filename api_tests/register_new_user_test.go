@@ -3,6 +3,7 @@ package api_tests
 import (
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/gavv/httpexpect/v2"
+	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
 	"github.com/rshelekhov/reframed/internal/model"
 	"net/http"
 	"net/url"
@@ -15,7 +16,6 @@ func TestRegisterNewUser_HappyPath(t *testing.T) {
 		Scheme: "http",
 		Host:   host,
 	}
-
 	e := httpexpect.Default(t, u.String())
 
 	// Check if access token is returned
@@ -23,24 +23,22 @@ func TestRegisterNewUser_HappyPath(t *testing.T) {
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
-			AppID:    appID,
 		}).
 		Expect().
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	at.Value("accessToken").String().NotEmpty()
+	at.Value(jwtoken.AccessTokenKey).String().NotEmpty()
 
 	// Check cookies
 	c := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
-			AppID:    appID,
 		}).
 		Expect().
 		Status(http.StatusCreated).
-		Cookie("refreshToken")
+		Cookie(jwtoken.RefreshTokenKey)
 
 	c.Value().NotEmpty()
 	c.Domain().IsEqual("localhost")
@@ -53,49 +51,30 @@ func TestRegisterNewUser_FailCases(t *testing.T) {
 		name     string
 		email    string
 		password string
-		appID    int32
 		status   int
 	}{
 		{
 			name:     "Register user with empty email",
 			email:    "",
 			password: randomFakePassword(),
-			appID:    appID,
 			status:   http.StatusBadRequest,
 		},
 		{
 			name:     "Register user with empty password",
 			email:    gofakeit.Email(),
 			password: "",
-			appID:    appID,
-			status:   http.StatusBadRequest,
-		},
-		{
-			name:     "Register user with empty app id",
-			email:    gofakeit.Email(),
-			password: randomFakePassword(),
-			appID:    emptyAppID,
 			status:   http.StatusBadRequest,
 		},
 		{
 			name:     "Register user with invalid email",
 			email:    "invalid",
 			password: randomFakePassword(),
-			appID:    appID,
-			status:   http.StatusBadRequest,
-		},
-		{
-			name:     "Register user with invalid app id",
-			email:    gofakeit.Email(),
-			password: randomFakePassword(),
-			appID:    invalidAppID,
 			status:   http.StatusBadRequest,
 		},
 		{
 			name:     "Register user when user already exists",
 			email:    gofakeit.Email(),
 			password: randomFakePassword(),
-			appID:    appID,
 			status:   http.StatusConflict,
 		},
 	}
@@ -106,7 +85,6 @@ func TestRegisterNewUser_FailCases(t *testing.T) {
 				Scheme: "http",
 				Host:   host,
 			}
-
 			e := httpexpect.Default(t, u.String())
 
 			if tc.name == "Register user when user already exists" {
@@ -114,7 +92,6 @@ func TestRegisterNewUser_FailCases(t *testing.T) {
 					WithJSON(model.UserRequestData{
 						Email:    tc.email,
 						Password: tc.password,
-						AppID:    tc.appID,
 					}).
 					Expect().
 					Status(http.StatusCreated)
@@ -124,7 +101,6 @@ func TestRegisterNewUser_FailCases(t *testing.T) {
 				WithJSON(model.UserRequestData{
 					Email:    tc.email,
 					Password: tc.password,
-					AppID:    tc.appID,
 				}).
 				Expect().
 				Status(tc.status)

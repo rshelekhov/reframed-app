@@ -24,17 +24,21 @@ WHERE list_id = $1
   AND user_id = $2
   AND deleted_at IS NULL;
 
--- name: UpdateHeading :exec
+-- name: UpdateHeading :one
 UPDATE headings
 SET title = $1, updated_at = $2
 WHERE id = $3
-  AND user_id = $4;
+  AND user_id = $4
+  AND deleted_at IS NULL
+RETURNING id;
 
--- name: MoveHeadingToAnotherList :exec
+-- name: MoveHeadingToAnotherList :one
 UPDATE headings
 SET list_id = $1, updated_at = $2
 WHERE id = $3
-  AND user_id = $4;
+  AND user_id = $4
+  AND deleted_at IS NULL
+RETURNING id;
 
 -- name: UpdateTasksListID :exec
 UPDATE tasks

@@ -10,6 +10,7 @@ import (
 	ssogrpc "github.com/rshelekhov/reframed/internal/clients/sso/grpc"
 	"github.com/rshelekhov/reframed/internal/lib/cache"
 	"github.com/rshelekhov/reframed/internal/lib/constants/key"
+	"google.golang.org/grpc/metadata"
 	"math/big"
 	"net/http"
 	"strings"
@@ -26,7 +27,7 @@ type TokenService struct {
 	mu        sync.RWMutex
 	AppID     int32
 	Cookie    cookie
-	// TODO: добавить jwt data из переменных окружения
+	// TODO: добавить jwt data из переменных окружения (?)
 }
 
 type cookie struct {
@@ -61,22 +62,23 @@ type ContextKey struct {
 type ClaimCTXKey string
 
 var (
-	TokenCtxKey = ContextKey{"token"}
-
 	ErrUnauthorized             = errors.New("unauthorized")
 	ErrNoTokenFound             = errors.New("no token found")
 	ErrInvalidToken             = errors.New("invalid token")
 	ErrUnexpectedSigningMethod  = errors.New("unexpected signing method")
-	ErrNoTokenFoundInCtx        = errors.New("token not found in context")
+	ErrTokenNotFoundInCtx       = errors.New("token not found in context")
 	ErrUserIDNotFoundInCtx      = errors.New("user id not found in context")
+	ErrAccessTokenNotFoundInCtx = errors.New("access token not found in context")
 	ErrFailedToParseTokenClaims = errors.New("failed to parse token claims from context")
 	ErrKidNotFoundInTokenHeader = errors.New("kid not found in token header")
 	ErrKidIsNotAString          = errors.New("kid is not a string")
 )
 
 const (
-	ContextUserID = "user_id"
-	CacheJWKS     = "jwks"
+	AccessTokenKey  = "access_token"
+	RefreshTokenKey = "refresh_token"
+	ContextUserID   = "user_id"
+	CacheJWKS       = "jwks"
 )
 
 func Verifier(j *TokenService) func(http.Handler) http.Handler {
@@ -86,21 +88,25 @@ func Verifier(j *TokenService) func(http.Handler) http.Handler {
 func (j *TokenService) Verify(findTokenFns ...func(r *http.Request) string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			token, err := j.FindToken(r, findTokenFns...)
-			if errors.Is(err, ErrNoTokenFound) {
-				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			accessToken, err := j.FindToken(r, findTokenFns...)
+			if err != nil {
+				if errors.Is(err, ErrNoTokenFound) {
+					http.Error(w, ErrNoTokenFound.Error(), http.StatusUnauthorized)
+					return
+				}
+				http.Error(w, err.Error(), http.StatusUnauthorized)
 				return
 			}
 
 			ctx := r.Context()
-			ctx = context.WithValue(ctx, TokenCtxKey, token)
+			ctx = context.WithValue(ctx, AccessTokenKey, accessToken)
 
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 }
 
-func (j *TokenService) FindToken(r *http.Request, findTokenFns ...func(r *http.Request) string) (*jwt.Token, error) {
+func (j *TokenService) FindToken(r *http.Request, findTokenFns ...func(r *http.Request) string) (string, error) {
 	var accessTokenString string
 
 	for _, fn := range findTokenFns {
@@ -111,10 +117,14 @@ func (j *TokenService) FindToken(r *http.Request, findTokenFns ...func(r *http.R
 	}
 
 	if accessTokenString == "" {
-		return nil, ErrNoTokenFound
+		return "", ErrNoTokenFound
 	}
 
-	return j.VerifyToken(r.Context(), accessTokenString)
+	if err := j.VerifyToken(r.Context(), accessTokenString); err != nil {
+		return "", err
+	}
+
+	return accessTokenString, nil
 }
 
 func FindRefreshToken(r *http.Request) (string, error) {
@@ -133,17 +143,17 @@ func FindRefreshToken(r *http.Request) (string, error) {
 	return refreshToken, nil
 }
 
-func (j *TokenService) VerifyToken(ctx context.Context, accessTokenString string) (*jwt.Token, error) {
+func (j *TokenService) VerifyToken(ctx context.Context, accessTokenString string) error {
 	token, err := j.ParseToken(ctx, accessTokenString)
 	if err != nil {
-		return nil, Errors(err)
+		return Errors(err)
 	}
 
 	if !token.Valid {
-		return nil, ErrInvalidToken
+		return ErrInvalidToken
 	}
 
-	return token, nil
+	return nil
 }
 
 func (j *TokenService) ParseToken(ctx context.Context, accessTokenString string) (*jwt.Token, error) {
@@ -250,7 +260,7 @@ func Authenticator() func(http.Handler) http.Handler {
 				return
 			}
 
-			if token == nil {
+			if len(token) == 0 {
 				http.Error(w, ErrNoTokenFound.Error(), http.StatusUnauthorized)
 				return
 			}
@@ -273,7 +283,7 @@ func GetTokenFromHeader(r *http.Request) string {
 }
 
 func GetRefreshTokenFromHeader(r *http.Request) (string, error) {
-	refreshToken := r.Header.Get("RefreshToken")
+	refreshToken := r.Header.Get(RefreshTokenKey)
 	if refreshToken == "" {
 		// If the refreshToken is not in the headers, we try to extract it from the request body
 		err := r.ParseForm()
@@ -281,14 +291,14 @@ func GetRefreshTokenFromHeader(r *http.Request) (string, error) {
 			return "", err
 		}
 
-		refreshToken = r.FormValue("RefreshToken")
+		refreshToken = r.FormValue(refreshToken)
 	}
 
 	return refreshToken, nil
 }
 
 func GetTokenFromCookie(r *http.Request) string {
-	cookie, err := r.Cookie("jwtoken")
+	cookie, err := r.Cookie(AccessTokenKey)
 	if err != nil {
 		return ""
 	}
@@ -297,7 +307,7 @@ func GetTokenFromCookie(r *http.Request) string {
 }
 
 func GetRefreshTokenFromCookie(r *http.Request) (string, error) {
-	cookie, err := r.Cookie("refreshToken")
+	cookie, err := r.Cookie(RefreshTokenKey)
 	if err != nil {
 		return "", err
 	}
@@ -307,22 +317,27 @@ func GetRefreshTokenFromCookie(r *http.Request) (string, error) {
 
 func GetTokenFromQuery(r *http.Request) string {
 	// Get token from query param named "jwtoken".
-	return r.URL.Query().Get("jwtoken")
+	return r.URL.Query().Get(AccessTokenKey)
 }
 
-func GetTokenFromContext(ctx context.Context) (*jwt.Token, error) {
-	token, ok := ctx.Value(TokenCtxKey).(*jwt.Token)
+func GetTokenFromContext(ctx context.Context) (string, error) {
+	token, ok := ctx.Value(AccessTokenKey).(string)
 	if !ok {
-		return nil, ErrNoTokenFoundInCtx
+		return "", ErrTokenNotFoundInCtx
 	}
 
 	return token, nil
 }
 
-func GetClaimsFromToken(ctx context.Context) (map[string]interface{}, error) {
-	token, err := GetTokenFromContext(ctx)
+func (j *TokenService) GetClaimsFromToken(ctx context.Context) (map[string]interface{}, error) {
+	accessToken, err := GetTokenFromContext(ctx)
 	if err != nil {
 		return nil, err
+	}
+
+	token, err := j.ParseToken(ctx, accessToken)
+	if err != nil {
+		return nil, Errors(err)
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
@@ -333,8 +348,8 @@ func GetClaimsFromToken(ctx context.Context) (map[string]interface{}, error) {
 	return claims, nil
 }
 
-func GetUserID(ctx context.Context) (string, error) {
-	claims, err := GetClaimsFromToken(ctx)
+func (j *TokenService) GetUserID(ctx context.Context) (string, error) {
+	claims, err := j.GetClaimsFromToken(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -347,6 +362,19 @@ func GetUserID(ctx context.Context) (string, error) {
 	return userID.(string), nil
 }
 
+func AddAccessTokenToMetadata(ctx context.Context) (context.Context, error) {
+	accessToken, ok := ctx.Value(AccessTokenKey).(string)
+	if !ok {
+		return nil, ErrAccessTokenNotFoundInCtx
+	}
+
+	md := metadata.Pairs(AccessTokenKey, accessToken)
+
+	newCtx := metadata.NewOutgoingContext(ctx, md)
+
+	return newCtx, nil
+}
+
 func SetTokenCookie(w http.ResponseWriter, name, value, domain, path string, expiresAt time.Time, httpOnly bool) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     name,
@@ -356,12 +384,10 @@ func SetTokenCookie(w http.ResponseWriter, name, value, domain, path string, exp
 		Expires:  expiresAt,
 		HttpOnly: httpOnly,
 	})
-	fmt.Printf("\n- - - - - - - DOMAIN - - - - - - -\n")
-	fmt.Printf("%s\n\n", domain)
 }
 
 func SetRefreshTokenCookie(w http.ResponseWriter, refreshToken, domain, path string, expiresAt time.Time, httpOnly bool) {
-	SetTokenCookie(w, "refreshToken", refreshToken, domain, path, expiresAt, httpOnly)
+	SetTokenCookie(w, RefreshTokenKey, refreshToken, domain, path, expiresAt, httpOnly)
 }
 
 func SendTokensToWeb(w http.ResponseWriter, data *ssov1.TokenData, httpStatus int) {
@@ -375,7 +401,7 @@ func SendTokensToWeb(w http.ResponseWriter, data *ssov1.TokenData, httpStatus in
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(httpStatus)
 
-	responseBody := map[string]string{"accessToken": data.AccessToken}
+	responseBody := map[string]string{AccessTokenKey: data.AccessToken}
 
 	if len(data.AdditionalFields) > 0 {
 		for key, value := range data.AdditionalFields {
@@ -392,7 +418,7 @@ func SendTokensToMobileApp(w http.ResponseWriter, data *ssov1.TokenData, httpSta
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(httpStatus)
 
-	responseBody := map[string]string{"accessToken": data.AccessToken, "refreshToken": data.RefreshToken}
+	responseBody := map[string]string{AccessTokenKey: data.AccessToken, RefreshTokenKey: data.RefreshToken}
 
 	if len(data.AdditionalFields) > 0 {
 		for key, value := range data.AdditionalFields {

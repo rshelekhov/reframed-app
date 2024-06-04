@@ -1,62 +1,14 @@
 package v1
 
 import (
-	"errors"
 	"fmt"
-	"io"
-	"log/slog"
-	"net/http"
-	"reflect"
-
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator/v10"
 	"github.com/rshelekhov/reframed/internal/lib/constants/le"
-	"github.com/rshelekhov/reframed/internal/lib/logger"
+	"github.com/rshelekhov/reframed/internal/model"
+	"log/slog"
+	"net/http"
 )
-
-// validateData validates the request
-func validateData(w http.ResponseWriter, r *http.Request, log *slog.Logger, data any) error {
-	if data == nil || reflect.DeepEqual(data, reflect.Zero(reflect.TypeOf(data)).Interface()) {
-		handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyData)
-		return le.ErrEmptyData
-	}
-
-	v := validator.New()
-
-	var ve validator.ValidationErrors
-
-	err := v.Struct(data)
-	if errors.As(err, &ve) {
-		log.Error(le.ErrInvalidData.Error(), logger.Err(err))
-		responseValidationErrors(w, r, ve)
-		return le.ErrInvalidData
-	}
-	if err != nil {
-		handleResponseError(w, r, log, http.StatusInternalServerError, le.ErrFailedToValidateData, err)
-		return le.ErrFailedToValidateData
-	}
-	return nil
-}
-
-// decodeJSON decodes the request body
-func decodeJSON(w http.ResponseWriter, r *http.Request, log *slog.Logger, data any) error {
-	// Decode the request body
-	err := render.DecodeJSON(r.Body, &data)
-	if errors.Is(err, io.EOF) {
-		log.Error(le.ErrEmptyRequestBody.Error())
-		responseError(w, r, http.StatusBadRequest, le.ErrEmptyRequestBody)
-		return le.ErrEmptyRequestBody
-	}
-	if err != nil {
-		log.Error(le.ErrInvalidJSON.Error(), logger.Err(err))
-		responseError(w, r, http.StatusBadRequest, le.ErrInvalidJSON)
-		return le.ErrInvalidJSON
-	}
-
-	log.Info("request body decoded", slog.Any("user", data))
-
-	return nil
-}
 
 func decodeAndValidateJSON(w http.ResponseWriter, r *http.Request, log *slog.Logger, data any) error {
 	if err := decodeJSON(w, r, log, data); err != nil {
@@ -107,12 +59,7 @@ func responseSuccess(
 	message string,
 	data any,
 ) {
-	response := struct {
-		Code        int    `json:"code"`
-		StatusText  string `json:"status_text"`
-		Description string `json:"description"`
-		Data        any    `json:"data"`
-	}{
+	response := model.Response{
 		Code:        statusCode,
 		StatusText:  http.StatusText(statusCode),
 		Description: message,

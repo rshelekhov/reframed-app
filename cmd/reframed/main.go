@@ -57,16 +57,25 @@ func main() {
 	tagStorage := postgres.NewTagStorage(pg)
 
 	// Usecases
+	authUsecase := usecase.NewAuthUsecase(ssoClient, tokenAuth)
 	headingUsecase := usecase.NewHeadingUsecase(headingStorage)
-	listUsecase := usecase.NewListUsecase(listStorage, headingUsecase)
-	authUsecase := usecase.NewAuthUsecase(ssoClient, tokenAuth, listUsecase, headingUsecase)
+	listUsecase := usecase.NewListUsecase(listStorage)
 	tagUsecase := usecase.NewTagUsecase(tagStorage)
-	taskUsecase := usecase.NewTaskUsecase(taskStorage, headingUsecase, tagUsecase, listUsecase)
+	taskUsecase := usecase.NewTaskUsecase(taskStorage)
+
+	authUsecase.ListUsecase = listUsecase
+	authUsecase.HeadingUsecase = headingUsecase
+	headingUsecase.ListUsecase = listUsecase
+	listUsecase.HeadingUsecase = headingUsecase
+	taskUsecase.HeadingUsecase = headingUsecase
+	taskUsecase.TagUsecase = tagUsecase
+	taskUsecase.ListUsecase = listUsecase
 
 	// HTTP Server
 	log.Info("starting httpserver", slog.String("address", cfg.HTTPServer.Address))
 
 	router := v1.NewRouter(
+		cfg,
 		log.Logger,
 		tokenAuth,
 		authUsecase,

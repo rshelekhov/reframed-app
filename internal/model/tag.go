@@ -7,11 +7,11 @@ import (
 // Tag DB model
 type (
 	Tag struct {
-		ID        string
-		Title     string
-		UserID    string
-		UpdatedAt time.Time
-		DeletedAt time.Time
+		ID        string    `db:"id"`
+		Title     string    `db:"title"`
+		UserID    string    `db:"user_id"`
+		UpdatedAt time.Time `db:"updated_at"`
+		DeletedAt time.Time `db:"deleted_at"`
 	}
 
 	TagRequestData struct {
@@ -20,7 +20,7 @@ type (
 	}
 
 	TagResponseData struct {
-		ID        string    `json:"id"`
+		ID        string    `json:"tag_id"`
 		Title     string    `json:"title"`
 		UpdatedAt time.Time `json:"updated_at"`
 	}

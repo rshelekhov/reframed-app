@@ -8,7 +8,7 @@ import (
 type (
 	List struct {
 		ID        string    `db:"id"`
-		Title     string    `db:"headingTitle"`
+		Title     string    `db:"title"`
 		UserID    string    `db:"user_id"`
 		IsDefault bool      `db:"is_default"`
 		UpdatedAt time.Time `db:"updated_at"`
@@ -16,13 +16,13 @@ type (
 	}
 
 	ListRequestData struct {
-		ID     string `json:"id"`
+		ID     string `json:"list_id"`
 		Title  string `json:"title" validate:"required"`
 		UserID string `json:"user_id"`
 	}
 
 	ListResponseData struct {
-		ID        string    `json:"id"`
+		ID        string    `json:"list_id"`
 		Title     string    `json:"title"`
 		UserID    string    `json:"user_id"`
 		UpdatedAt time.Time `json:"updated_at"`

@@ -18,21 +18,17 @@ import (
 type AuthUsecase struct {
 	ssoClient      *ssogrpc.Client
 	jwt            *jwtoken.TokenService
-	listUsecase    port.ListUsecase
-	headingUsecase port.HeadingUsecase
+	ListUsecase    port.ListUsecase
+	HeadingUsecase port.HeadingUsecase
 }
 
 func NewAuthUsecase(
 	ssoClient *ssogrpc.Client,
 	jwt *jwtoken.TokenService,
-	listUsecase port.ListUsecase,
-	headingUsecase port.HeadingUsecase,
 ) *AuthUsecase {
 	return &AuthUsecase{
-		ssoClient:      ssoClient,
-		jwt:            jwt,
-		listUsecase:    listUsecase,
-		headingUsecase: headingUsecase,
+		ssoClient: ssoClient,
+		jwt:       jwt,
 	}
 }
 
@@ -50,7 +46,7 @@ func (u *AuthUsecase) RegisterNewUser(
 	resp, err := u.ssoClient.Api.Register(ctx, &ssov1.RegisterRequest{
 		Email:    userData.Email,
 		Password: userData.Password,
-		AppId:    userData.AppID,
+		AppId:    u.jwt.AppID,
 		UserDeviceData: &ssov1.UserDeviceData{
 			UserAgent: userDevice.UserAgent,
 			Ip:        userDevice.IP,
@@ -89,6 +85,10 @@ func (u *AuthUsecase) RegisterNewUser(
 
 	userID = claims[key.UserID].(string)
 
+	if err = u.ListUsecase.CreateDefaultList(ctx, userID); err != nil {
+		return nil, "", err
+	}
+
 	return tokenData, userID, nil
 }
 
@@ -104,14 +104,26 @@ func (u *AuthUsecase) LoginUser(
 	resp, err := u.ssoClient.Api.Login(ctx, &ssov1.LoginRequest{
 		Email:    userData.Email,
 		Password: userData.Password,
-		AppId:    userData.AppID,
+		AppId:    u.jwt.AppID,
 		UserDeviceData: &ssov1.UserDeviceData{
 			UserAgent: userDevice.UserAgent,
 			Ip:        userDevice.IP,
 		},
 	})
 	if err != nil {
-		return nil, "", err
+		st, ok := status.FromError(err)
+		if !ok {
+			return nil, "", err
+		}
+
+		switch st.Code() {
+		case codes.NotFound:
+			return nil, "", le.ErrUserNotFound
+		case codes.Unauthenticated:
+			return nil, "", le.ErrUserUnauthenticated
+		default:
+			return nil, "", err
+		}
 	}
 
 	tokenData = resp.GetTokenData()
@@ -177,7 +189,13 @@ func (u *AuthUsecase) Refresh(
 }
 
 func (u *AuthUsecase) LogoutUser(ctx context.Context, data model.UserDeviceRequestData) error {
-	_, err := u.ssoClient.Api.Logout(ctx, &ssov1.LogoutRequest{
+	ctx, err := jwtoken.AddAccessTokenToMetadata(ctx)
+	if err != nil {
+		return err
+	}
+
+	_, err = u.ssoClient.Api.Logout(ctx, &ssov1.LogoutRequest{
+		AppId: u.jwt.AppID,
 		UserDeviceData: &ssov1.UserDeviceData{
 			UserAgent: data.UserAgent,
 			Ip:        data.IP,
@@ -191,36 +209,74 @@ func (u *AuthUsecase) LogoutUser(ctx context.Context, data model.UserDeviceReque
 }
 
 func (u *AuthUsecase) GetUserByID(ctx context.Context) (model.UserResponseData, error) {
-	user, err := u.ssoClient.Api.GetUser(ctx, &ssov1.GetUserRequest{
-		AppId: u.jwt.AppID,
-	})
+	ctx, err := jwtoken.AddAccessTokenToMetadata(ctx)
 	if err != nil {
 		return model.UserResponseData{}, err
 	}
 
+	user, err := u.ssoClient.Api.GetUser(ctx, &ssov1.GetUserRequest{
+		AppId: u.jwt.AppID,
+	})
+	if err != nil {
+		st, ok := status.FromError(err)
+		if !ok {
+			return model.UserResponseData{}, err
+		}
+
+		if st.Code() == codes.NotFound {
+			return model.UserResponseData{}, le.ErrUserNotFound
+		}
+	}
+
 	userResponse := model.UserResponseData{
-		Email:     user.Email,
-		UpdatedAt: user.UpdatedAt.AsTime(),
+		Email:     user.GetEmail(),
+		UpdatedAt: user.GetUpdatedAt().AsTime(),
 	}
 
 	return userResponse, err
 }
 
 func (u *AuthUsecase) UpdateUser(ctx context.Context, data *model.UserRequestData) error {
-	if _, err := u.ssoClient.Api.UpdateUser(ctx, &ssov1.UpdateUserRequest{
+	ctx, err := jwtoken.AddAccessTokenToMetadata(ctx)
+	if err != nil {
+		return err
+	}
+
+	_, err = u.ssoClient.Api.UpdateUser(ctx, &ssov1.UpdateUserRequest{
 		Email:           data.Email,
 		CurrentPassword: data.Password,
 		UpdatedPassword: data.UpdatedPassword,
 		AppId:           u.jwt.AppID,
-	}); err != nil {
-		return err
+	})
+
+	if err != nil {
+		st, ok := status.FromError(err)
+		if !ok {
+			return err
+		}
+
+		switch st.Code() {
+		case codes.NotFound:
+			return le.ErrUserNotFound
+		case codes.AlreadyExists:
+			return le.ErrEmailAlreadyTaken
+		case codes.InvalidArgument:
+			return le.ErrNoChangesDetected
+		default:
+			return err
+		}
 	}
 
 	return nil
 }
 
 func (u *AuthUsecase) DeleteUser(ctx context.Context, data model.UserDeviceRequestData) error {
-	if _, err := u.ssoClient.Api.DeleteUser(ctx, &ssov1.DeleteUserRequest{
+	ctx, err := jwtoken.AddAccessTokenToMetadata(ctx)
+	if err != nil {
+		return err
+	}
+
+	if _, err = u.ssoClient.Api.DeleteUser(ctx, &ssov1.DeleteUserRequest{
 		AppId: u.jwt.AppID,
 		UserDeviceData: &ssov1.UserDeviceData{
 			UserAgent: data.UserAgent,
