@@ -64,6 +64,44 @@ func (c *listController) CreateList() http.HandlerFunc {
 	}
 }
 
+func (c *listController) GetDefaultList() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		const op = "list.controller.GetDefaultList"
+
+		ctx := r.Context()
+		log := logger.LogWithRequest(c.logger, op, r)
+
+		userID, err := c.jwt.GetUserID(ctx)
+		if err != nil {
+			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+			return
+		}
+
+		listID, err := c.usecase.GetDefaultListID(ctx, userID)
+		switch {
+		case errors.Is(err, le.ErrDefaultListNotFound):
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrDefaultListNotFound)
+			return
+		case err != nil:
+			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
+			return
+		}
+
+		listInput := model.ListRequestData{
+			ID:     listID,
+			UserID: userID,
+		}
+
+		listResp, err := c.usecase.GetListByID(ctx, listInput)
+		if err != nil {
+			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
+			return
+		}
+
+		handleResponseSuccess(w, r, log, "default list received", listResp, slog.String(key.ListID, listID))
+	}
+}
+
 func (c *listController) GetListByID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "list.controller.GetListByID"

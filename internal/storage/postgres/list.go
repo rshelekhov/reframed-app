@@ -90,7 +90,7 @@ func (s *ListStorage) GetDefaultListID(ctx context.Context, userID string) (stri
 
 	listID, err := s.Queries.GetDefaultListID(ctx, userID)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return "", le.ErrNoListsFound
+		return "", le.ErrDefaultListNotFound
 	}
 	if err != nil {
 		return "", fmt.Errorf("%s: failed to get default list: %w", op, err)

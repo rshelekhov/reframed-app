@@ -54,6 +54,7 @@ const (
 
 	ErrNoListsFound             LocalError = "no lists found"
 	ErrListNotFound             LocalError = "list not found"
+	ErrDefaultListNotFound      LocalError = "default list not found"
 	ErrFailedToCreateList       LocalError = "failed to create list"
 	ErrFailedToGetLists         LocalError = "failed to get lists"
 	ErrFailedToGetDefaultListID LocalError = "failed to get default list ID"
