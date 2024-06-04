@@ -67,6 +67,9 @@ func (c *taskController) CreateTask() http.HandlerFunc {
 		taskResponse, err := c.usecase.CreateTask(ctx, taskInput)
 
 		switch {
+		case errors.Is(err, le.ErrDefaultListNotFound):
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrDefaultListNotFound)
+			return
 		case errors.Is(err, le.ErrHeadingNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrHeadingNotFound)
 			return
@@ -102,6 +105,9 @@ func (c *taskController) CreateTaskInDefaultList() http.HandlerFunc {
 		taskResponse, err := c.usecase.CreateTask(ctx, taskInput)
 
 		switch {
+		case errors.Is(err, le.ErrDefaultListNotFound):
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrDefaultListNotFound)
+			return
 		case errors.Is(err, le.ErrDefaultHeadingNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrHeadingNotFound)
 			return
