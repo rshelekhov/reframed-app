@@ -39,7 +39,8 @@ func (ar *AppRouter) initRoutes() *chi.Mux {
 	r.Use(render.SetContentType(render.ContentTypeJSON))
 
 	// Enable httprate request limiter of 100 requests per minute per IP
-	r.Use(httprate.LimitByIP(100, 1*time.Minute))
+	// TODO: move requestLimit to env variable
+	r.Use(httprate.LimitByIP(ar.ServerSettings.HTTPServer.RequestLimitByIP, 1*time.Minute))
 
 	// Health check
 	r.Get("/health", HealthRead())
@@ -57,6 +58,8 @@ func (ar *AppRouter) initRoutes() *chi.Mux {
 		r.Use(jwtoken.Verifier(ar.TokenService))
 		r.Use(jwtoken.Authenticator())
 
+		r.Post("/logout", ar.Logout())
+
 		r.Route("/user", func(r chi.Router) {
 			r.Get("/", ar.GetUser())
 			r.Put("/", ar.UpdateUser())
@@ -65,7 +68,7 @@ func (ar *AppRouter) initRoutes() *chi.Mux {
 			r.Route("/lists", func(r chi.Router) {
 				r.Get("/", ar.GetListsByUserID())
 				r.Post("/", ar.CreateList())
-				// TODO: Add handler for creating task in the inbox list
+				r.Get("/default", ar.GetDefaultList())
 				r.Post("/default", ar.CreateTaskInDefaultList())
 
 				r.Route("/{list_id}", func(r chi.Router) {
@@ -81,13 +84,14 @@ func (ar *AppRouter) initRoutes() *chi.Mux {
 					r.Route("/headings", func(r chi.Router) {
 						r.Post("/", ar.CreateHeading())
 						r.Get("/", ar.GetHeadingsByListID())
+						// TODO: don't forget to add tests for this handlers with tasks
 						r.Get("/tasks", ar.GetTasksGroupedByHeadings())
-						r.Post("/{heading_id}", ar.CreateTask())
 
 						r.Route("/{heading_id}", func(r chi.Router) {
+							r.Post("/", ar.CreateTask())
 							r.Get("/", ar.GetHeadingByID())
 							r.Put("/", ar.UpdateHeading())
-							r.Put("/move/", ar.MoveHeadingToAnotherList())
+							r.Put("/move", ar.MoveHeadingToAnotherList())
 							r.Delete("/", ar.DeleteHeading())
 						})
 					})

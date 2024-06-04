@@ -2,12 +2,14 @@ package v1
 
 import (
 	"github.com/go-chi/chi/v5"
+	"github.com/rshelekhov/reframed/internal/config"
 	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
 	"github.com/rshelekhov/reframed/internal/port"
 	"log/slog"
 )
 
 type AppRouter struct {
+	*config.ServerSettings
 	*slog.Logger
 	*jwtoken.TokenService
 	*authController
@@ -18,6 +20,7 @@ type AppRouter struct {
 }
 
 func NewRouter(
+	cfg *config.ServerSettings,
 	log *slog.Logger,
 	jwt *jwtoken.TokenService,
 	authUsecase port.AuthUsecase,
@@ -27,6 +30,7 @@ func NewRouter(
 	tagUsecase port.TagUsecase,
 ) *chi.Mux {
 	ar := &AppRouter{
+		ServerSettings:    cfg,
 		Logger:            log,
 		TokenService:      jwt,
 		authController:    newAuthController(log, jwt, authUsecase),

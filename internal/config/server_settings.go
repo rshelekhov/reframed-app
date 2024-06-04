@@ -13,9 +13,10 @@ type (
 	}
 
 	HTTPServerConfig struct {
-		Address     string        `mapstructure:"HTTP_SERVER_ADDRESS"`
-		Timeout     time.Duration `mapstructure:"HTTP_SERVER_TIMEOUT" envDefault:"10s"`
-		IdleTimeout time.Duration `mapstructure:"HTTP_SERVER_IDLE_TIMEOUT" envDefault:"60s"`
+		Address          string        `mapstructure:"HTTP_SERVER_ADDRESS"`
+		Timeout          time.Duration `mapstructure:"HTTP_SERVER_TIMEOUT" envDefault:"10s"`
+		IdleTimeout      time.Duration `mapstructure:"HTTP_SERVER_IDLE_TIMEOUT" envDefault:"60s"`
+		RequestLimitByIP int           `mapstructure:"HTTP_SERVER_REQUEST_LIMIT_BY_IP" envDefault:"100"`
 	}
 
 	PostgresConfig struct {

@@ -75,6 +75,7 @@ func main() {
 	log.Info("starting httpserver", slog.String("address", cfg.HTTPServer.Address))
 
 	router := v1.NewRouter(
+		cfg,
 		log.Logger,
 		tokenAuth,
 		authUsecase,
