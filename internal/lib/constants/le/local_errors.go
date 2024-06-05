@@ -88,7 +88,7 @@ const (
 	ErrFailedToUpdateTask   LocalError = "failed to update task"
 	ErrFailedToCompleteTask LocalError = "failed to complete task"
 	ErrFailedToMoveTask     LocalError = "failed to move task"
-	ErrFailedToDeleteTask   LocalError = "failed to delete task"
+	ErrFailedToArchiveTask  LocalError = "failed to archive task"
 	ErrEmptyQueryTaskID     LocalError = "task ID is empty in query"
 	ErrInvalidTaskTimeRange LocalError = "invalid task time range"
 

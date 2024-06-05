@@ -661,7 +661,7 @@ func (c *taskController) ArchiveTask() http.HandlerFunc {
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrTaskNotFound)
 			return
 		case err != nil:
-			handleInternalServerError(w, r, log, le.ErrFailedToDeleteTask, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToArchiveTask, err)
 			return
 		default:
 			handleResponseSuccess(w, r, log, "task archived", taskResponse, slog.String(key.TaskID, taskID))
