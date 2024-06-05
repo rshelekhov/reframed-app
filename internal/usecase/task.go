@@ -392,18 +392,29 @@ func (u *TaskUsecase) CompleteTask(ctx context.Context, data model.TaskRequestDa
 	})
 }
 
-func (u *TaskUsecase) ArchiveTask(ctx context.Context, data model.TaskRequestData) error {
+func (u *TaskUsecase) ArchiveTask(ctx context.Context, data model.TaskRequestData) (model.TaskResponseData, error) {
 	statusArchived, err := u.storage.GetTaskStatusID(ctx, model.StatusArchived)
 	if err != nil {
-		return err
+		return model.TaskResponseData{}, err
 	}
 
 	data.StatusID = statusArchived
 
-	return u.storage.MarkAsArchived(ctx, model.Task{
+	archivedTask := model.Task{
 		ID:        data.ID,
 		StatusID:  data.StatusID,
 		UserID:    data.UserID,
 		UpdatedAt: time.Now(),
-	})
+	}
+
+	if err = u.storage.MarkAsArchived(ctx, archivedTask); err != nil {
+		return model.TaskResponseData{}, err
+	}
+
+	return model.TaskResponseData{
+		ID:        archivedTask.ID,
+		StatusID:  archivedTask.StatusID,
+		UserID:    archivedTask.UserID,
+		UpdatedAt: archivedTask.UpdatedAt,
+	}, nil
 }

@@ -654,7 +654,7 @@ func (c *taskController) ArchiveTask() http.HandlerFunc {
 			UserID: userID,
 		}
 
-		err = c.usecase.ArchiveTask(ctx, taskInput)
+		taskResponse, err := c.usecase.ArchiveTask(ctx, taskInput)
 
 		switch {
 		case errors.Is(err, le.ErrTaskNotFound):
@@ -664,7 +664,7 @@ func (c *taskController) ArchiveTask() http.HandlerFunc {
 			handleInternalServerError(w, r, log, le.ErrFailedToDeleteTask, err)
 			return
 		default:
-			handleResponseSuccess(w, r, log, "task deleted", taskID, slog.String(key.TaskID, taskID))
+			handleResponseSuccess(w, r, log, "task archived", taskResponse, slog.String(key.TaskID, taskID))
 		}
 	}
 }

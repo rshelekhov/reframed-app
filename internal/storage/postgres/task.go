@@ -104,7 +104,7 @@ func (s *TaskStorage) GetTaskStatusID(ctx context.Context, status model.StatusNa
 
 	statusID, err := s.Queries.GetTaskStatusID(ctx, status.String())
 	if errors.Is(err, pgx.ErrNoRows) {
-		return 0, le.ErrTaskStatusNotFound
+		return 0, le.ErrTaskStatusIDNotFound
 	}
 	if err != nil {
 		return 0, fmt.Errorf("%s: failed to get statusID: %w", op, err)
