@@ -39,7 +39,6 @@ func (ar *AppRouter) initRoutes() *chi.Mux {
 	r.Use(render.SetContentType(render.ContentTypeJSON))
 
 	// Enable httprate request limiter of 100 requests per minute per IP
-	// TODO: move requestLimit to env variable
 	r.Use(httprate.LimitByIP(ar.ServerSettings.HTTPServer.RequestLimitByIP, 1*time.Minute))
 
 	// Health check
@@ -107,13 +106,14 @@ func (ar *AppRouter) initRoutes() *chi.Mux {
 				r.Get("/completed", ar.GetCompletedTasks()) // grouped by month
 				r.Get("/archived", ar.GetArchivedTasks())   // grouped by month
 
+				// TODO: replace Put with Patch (here and for other handlers for updating data)
 				r.Route("/{task_id}", func(r chi.Router) {
 					r.Get("/", ar.GetTaskByID())
 					r.Put("/", ar.UpdateTask())
 					r.Put("/time", ar.UpdateTaskTime())
 					r.Put("/move", ar.MoveTaskToAnotherList())
 					r.Put("/complete", ar.CompleteTask())
-					r.Delete("/", ar.ArchiveTask())
+					r.Patch("/archive", ar.ArchiveTask())
 				})
 			})
 
