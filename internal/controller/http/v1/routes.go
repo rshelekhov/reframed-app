@@ -112,10 +112,12 @@ func (ar *AppRouter) initRoutes() *chi.Mux {
 					r.Put("/", ar.UpdateTask())
 					r.Put("/time", ar.UpdateTaskTime())
 					r.Put("/move", ar.MoveTaskToAnotherList())
-					r.Put("/complete", ar.CompleteTask())
+					r.Patch("/complete", ar.CompleteTask())
 					r.Patch("/archive", ar.ArchiveTask())
 				})
 			})
+
+			// TODO: add handlers for getting statuses and statusID
 
 			r.Get("/tags", ar.GetTagsByUserID())
 		})
