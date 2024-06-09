@@ -615,7 +615,7 @@ func (c *taskController) CompleteTask() http.HandlerFunc {
 			UserID: userID,
 		}
 
-		err = c.usecase.CompleteTask(ctx, taskInput)
+		taskResponse, err := c.usecase.CompleteTask(ctx, taskInput)
 
 		switch {
 		case errors.Is(err, le.ErrTaskNotFound):
@@ -625,7 +625,7 @@ func (c *taskController) CompleteTask() http.HandlerFunc {
 			handleInternalServerError(w, r, log, le.ErrFailedToCompleteTask, err)
 			return
 		default:
-			handleResponseSuccess(w, r, log, "task completed", nil, slog.String(key.TaskID, taskID))
+			handleResponseSuccess(w, r, log, "task completed", taskResponse, slog.String(key.TaskID, taskID))
 		}
 	}
 }

@@ -376,20 +376,32 @@ func (u *TaskUsecase) MoveTaskToAnotherList(ctx context.Context, data model.Task
 	})
 }
 
-func (u *TaskUsecase) CompleteTask(ctx context.Context, data model.TaskRequestData) error {
+func (u *TaskUsecase) CompleteTask(ctx context.Context, data model.TaskRequestData) (model.TaskResponseData, error) {
 	statusCompleted, err := u.storage.GetTaskStatusID(ctx, model.StatusCompleted)
 	if err != nil {
-		return err
+		return model.TaskResponseData{}, err
 	}
 
 	data.StatusID = statusCompleted
 
-	return u.storage.MarkAsCompleted(ctx, model.Task{
+	completedTask := model.Task{
 		ID:        data.ID,
 		StatusID:  data.StatusID,
 		UserID:    data.UserID,
 		DeletedAt: time.Now(),
-	})
+	}
+
+	if err = u.storage.MarkAsCompleted(ctx, completedTask); err != nil {
+		return model.TaskResponseData{}, err
+	}
+
+	return model.TaskResponseData{
+		ID:        completedTask.ID,
+		StatusID:  completedTask.StatusID,
+		UserID:    completedTask.UserID,
+		UpdatedAt: completedTask.UpdatedAt,
+	}, nil
+
 }
 
 func (u *TaskUsecase) ArchiveTask(ctx context.Context, data model.TaskRequestData) (model.TaskResponseData, error) {
