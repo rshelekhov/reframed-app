@@ -118,6 +118,11 @@ func (ar *AppRouter) initRoutes() *chi.Mux {
 			})
 
 			// TODO: add handlers for getting statuses and statusID
+			r.Route("/statuses", func(r chi.Router) {
+				r.Get("/", ar.GetStatuses())
+				r.Get("/{status_name}", ar.GetStatusID())
+				r.Get("/{status_id}", ar.GetStatusName())
+			})
 
 			r.Get("/tags", ar.GetTagsByUserID())
 		})
