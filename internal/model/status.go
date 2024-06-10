@@ -12,3 +12,20 @@ const (
 func (s StatusName) String() string {
 	return string(s)
 }
+
+type (
+	Status struct {
+		ID    string `db:"id"`
+		Title string `db:"title"`
+	}
+
+	StatusRequestData struct {
+		ID    string `json:"status_id"`
+		Title string `json:"title"`
+	}
+
+	StatusResponseData struct {
+		ID    string `json:"status_id"`
+		Title string `json:"title"`
+	}
+)
