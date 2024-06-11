@@ -138,6 +138,6 @@ func handleInternalServerError(
 	err error,
 ) {
 	log = log.With("err", err)
-	log.Error("Internal Server Error: ", err)
+	log.Error("Internal Server Error: ")
 	responseError(w, r, http.StatusInternalServerError, localError)
 }
