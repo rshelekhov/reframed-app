@@ -41,7 +41,6 @@ func TestCompleteTask_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	// TODO: add task_id to constant (and check other similar cases)
 	taskID := task.Value("data").Object().Value("task_id").String().Raw()
 
 	// Complete task
