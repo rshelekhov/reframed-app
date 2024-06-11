@@ -22,8 +22,8 @@ type (
 		UpdateTask(ctx context.Context, data *model.TaskRequestData) (model.TaskResponseData, error)
 		UpdateTaskTime(ctx context.Context, data *model.TaskRequestTimeData) (model.TaskResponseTimeData, error)
 		MoveTaskToAnotherList(ctx context.Context, data model.TaskRequestData) error
-		CompleteTask(ctx context.Context, data model.TaskRequestData) error
-		ArchiveTask(ctx context.Context, data model.TaskRequestData) error
+		CompleteTask(ctx context.Context, data model.TaskRequestData) (model.TaskResponseData, error)
+		ArchiveTask(ctx context.Context, data model.TaskRequestData) (model.TaskResponseData, error)
 	}
 
 	TaskStorage interface {

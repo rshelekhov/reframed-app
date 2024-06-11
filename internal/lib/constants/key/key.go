@@ -22,6 +22,7 @@ const (
 	ListID    = "list_id"
 	TaskID    = "task_id"
 	HeadingID = "heading_id"
+	StatusID  = "status_id"
 
 	// ===========================================================================
 	//  pagination keys

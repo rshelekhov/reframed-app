@@ -357,6 +357,15 @@ func (u *TaskUsecase) UpdateTaskTime(ctx context.Context, data *model.TaskReques
 }
 
 func (u *TaskUsecase) MoveTaskToAnotherList(ctx context.Context, data model.TaskRequestData) error {
+	// Check if list exists
+	_, err := u.ListUsecase.GetListByID(ctx, model.ListRequestData{
+		ID:     data.ListID,
+		UserID: data.UserID,
+	})
+	if err != nil {
+		return err
+	}
+
 	defaultHeadingID, err := u.HeadingUsecase.GetDefaultHeadingID(ctx, model.HeadingRequestData{
 		ListID: data.ListID,
 		UserID: data.UserID,
@@ -376,34 +385,57 @@ func (u *TaskUsecase) MoveTaskToAnotherList(ctx context.Context, data model.Task
 	})
 }
 
-func (u *TaskUsecase) CompleteTask(ctx context.Context, data model.TaskRequestData) error {
+func (u *TaskUsecase) CompleteTask(ctx context.Context, data model.TaskRequestData) (model.TaskResponseData, error) {
 	statusCompleted, err := u.storage.GetTaskStatusID(ctx, model.StatusCompleted)
 	if err != nil {
-		return err
+		return model.TaskResponseData{}, err
 	}
 
 	data.StatusID = statusCompleted
 
-	return u.storage.MarkAsCompleted(ctx, model.Task{
+	completedTask := model.Task{
 		ID:        data.ID,
 		StatusID:  data.StatusID,
 		UserID:    data.UserID,
 		DeletedAt: time.Now(),
-	})
+	}
+
+	if err = u.storage.MarkAsCompleted(ctx, completedTask); err != nil {
+		return model.TaskResponseData{}, err
+	}
+
+	return model.TaskResponseData{
+		ID:        completedTask.ID,
+		StatusID:  completedTask.StatusID,
+		UserID:    completedTask.UserID,
+		UpdatedAt: completedTask.UpdatedAt,
+	}, nil
+
 }
 
-func (u *TaskUsecase) ArchiveTask(ctx context.Context, data model.TaskRequestData) error {
+func (u *TaskUsecase) ArchiveTask(ctx context.Context, data model.TaskRequestData) (model.TaskResponseData, error) {
 	statusArchived, err := u.storage.GetTaskStatusID(ctx, model.StatusArchived)
 	if err != nil {
-		return err
+		return model.TaskResponseData{}, err
 	}
 
 	data.StatusID = statusArchived
 
-	return u.storage.MarkAsArchived(ctx, model.Task{
+	archivedTask := model.Task{
 		ID:        data.ID,
 		StatusID:  data.StatusID,
 		UserID:    data.UserID,
 		UpdatedAt: time.Now(),
-	})
+	}
+
+	if err = u.storage.MarkAsArchived(ctx, archivedTask); err != nil {
+		return model.TaskResponseData{}, err
+	}
+
+	return model.TaskResponseData{
+		ID:        archivedTask.ID,
+		StatusID:  archivedTask.StatusID,
+		UserID:    archivedTask.UserID,
+		UpdatedAt: archivedTask.UpdatedAt,
+	}, nil
 }
