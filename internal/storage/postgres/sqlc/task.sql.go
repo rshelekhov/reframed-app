@@ -999,12 +999,13 @@ func (q *Queries) GetUpcomingTasks(ctx context.Context, arg GetUpcomingTasksPara
 	return items, nil
 }
 
-const markTaskAsArchived = `-- name: MarkTaskAsArchived :exec
+const markTaskAsArchived = `-- name: MarkTaskAsArchived :one
 UPDATE tasks
 SET status_id = $1, deleted_at = $2
 WHERE id = $3
   AND user_id = $4
   AND deleted_at IS NULL
+RETURNING id
 `
 
 type MarkTaskAsArchivedParams struct {
@@ -1014,23 +1015,26 @@ type MarkTaskAsArchivedParams struct {
 	UserID    string             `db:"user_id"`
 }
 
-func (q *Queries) MarkTaskAsArchived(ctx context.Context, arg MarkTaskAsArchivedParams) error {
-	_, err := q.db.Exec(ctx, markTaskAsArchived,
+func (q *Queries) MarkTaskAsArchived(ctx context.Context, arg MarkTaskAsArchivedParams) (string, error) {
+	row := q.db.QueryRow(ctx, markTaskAsArchived,
 		arg.StatusID,
 		arg.DeletedAt,
 		arg.ID,
 		arg.UserID,
 	)
-	return err
+	var id string
+	err := row.Scan(&id)
+	return id, err
 }
 
-const markTaskAsCompleted = `-- name: MarkTaskAsCompleted :exec
+const markTaskAsCompleted = `-- name: MarkTaskAsCompleted :one
 UPDATE tasks
 SET	status_id = $1,
     updated_at = $2
 WHERE id = $3
   AND user_id = $4
   AND deleted_at IS NULL
+RETURNING id
 `
 
 type MarkTaskAsCompletedParams struct {
@@ -1040,14 +1044,16 @@ type MarkTaskAsCompletedParams struct {
 	UserID    string    `db:"user_id"`
 }
 
-func (q *Queries) MarkTaskAsCompleted(ctx context.Context, arg MarkTaskAsCompletedParams) error {
-	_, err := q.db.Exec(ctx, markTaskAsCompleted,
+func (q *Queries) MarkTaskAsCompleted(ctx context.Context, arg MarkTaskAsCompletedParams) (string, error) {
+	row := q.db.QueryRow(ctx, markTaskAsCompleted,
 		arg.StatusID,
 		arg.UpdatedAt,
 		arg.ID,
 		arg.UserID,
 	)
-	return err
+	var id string
+	err := row.Scan(&id)
+	return id, err
 }
 
 const moveTaskToAnotherList = `-- name: MoveTaskToAnotherList :exec

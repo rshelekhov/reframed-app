@@ -17,6 +17,7 @@ type AppRouter struct {
 	*headingController
 	*taskController
 	*tagController
+	*statusController
 }
 
 func NewRouter(
@@ -28,6 +29,7 @@ func NewRouter(
 	headingUsecase port.HeadingUsecase,
 	taskUsecase port.TaskUsecase,
 	tagUsecase port.TagUsecase,
+	statusUsecase port.StatusUsecase,
 ) *chi.Mux {
 	ar := &AppRouter{
 		ServerSettings:    cfg,
@@ -38,6 +40,7 @@ func NewRouter(
 		headingController: newHeadingController(log, jwt, headingUsecase),
 		taskController:    newTaskController(log, jwt, taskUsecase),
 		tagController:     newTagController(log, jwt, tagUsecase),
+		statusController:  newStatusController(log, jwt, statusUsecase),
 	}
 
 	return ar.initRoutes()

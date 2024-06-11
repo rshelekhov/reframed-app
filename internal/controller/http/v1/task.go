@@ -615,7 +615,7 @@ func (c *taskController) CompleteTask() http.HandlerFunc {
 			UserID: userID,
 		}
 
-		err = c.usecase.CompleteTask(ctx, taskInput)
+		taskResponse, err := c.usecase.CompleteTask(ctx, taskInput)
 
 		switch {
 		case errors.Is(err, le.ErrTaskNotFound):
@@ -625,7 +625,7 @@ func (c *taskController) CompleteTask() http.HandlerFunc {
 			handleInternalServerError(w, r, log, le.ErrFailedToCompleteTask, err)
 			return
 		default:
-			handleResponseSuccess(w, r, log, "task completed", nil, slog.String(key.TaskID, taskID))
+			handleResponseSuccess(w, r, log, "task completed", taskResponse, slog.String(key.TaskID, taskID))
 		}
 	}
 }
@@ -654,17 +654,17 @@ func (c *taskController) ArchiveTask() http.HandlerFunc {
 			UserID: userID,
 		}
 
-		err = c.usecase.ArchiveTask(ctx, taskInput)
+		taskResponse, err := c.usecase.ArchiveTask(ctx, taskInput)
 
 		switch {
 		case errors.Is(err, le.ErrTaskNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrTaskNotFound)
 			return
 		case err != nil:
-			handleInternalServerError(w, r, log, le.ErrFailedToDeleteTask, err)
+			handleInternalServerError(w, r, log, le.ErrFailedToArchiveTask, err)
 			return
 		default:
-			handleResponseSuccess(w, r, log, "task deleted", taskID, slog.String(key.TaskID, taskID))
+			handleResponseSuccess(w, r, log, "task archived", taskResponse, slog.String(key.TaskID, taskID))
 		}
 	}
 }

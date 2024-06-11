@@ -78,7 +78,7 @@ func (s *TagStorage) GetTagIDByTitle(ctx context.Context, title, userID string) 
 		return "", le.ErrTagNotFound
 	}
 	if err != nil {
-		return "", fmt.Errorf("%s: failed to check if tag exists: %w", op, err)
+		return "", fmt.Errorf("%s: failed to get tag_id by title: %w", op, err)
 	}
 
 	return tagID, nil

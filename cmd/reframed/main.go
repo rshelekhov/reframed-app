@@ -55,6 +55,7 @@ func main() {
 	listStorage := postgres.NewListStorage(pg)
 	taskStorage := postgres.NewTaskStorage(pg)
 	tagStorage := postgres.NewTagStorage(pg)
+	statusStorage := postgres.NewStatusStorage(pg)
 
 	// Usecases
 	authUsecase := usecase.NewAuthUsecase(ssoClient, tokenAuth)
@@ -62,6 +63,7 @@ func main() {
 	listUsecase := usecase.NewListUsecase(listStorage)
 	tagUsecase := usecase.NewTagUsecase(tagStorage)
 	taskUsecase := usecase.NewTaskUsecase(taskStorage)
+	statusUsecase := usecase.NewStatusUsecase(statusStorage)
 
 	authUsecase.ListUsecase = listUsecase
 	authUsecase.HeadingUsecase = headingUsecase
@@ -83,6 +85,7 @@ func main() {
 		headingUsecase,
 		taskUsecase,
 		tagUsecase,
+		statusUsecase,
 	)
 
 	srv := httpserver.NewServer(cfg, log.Logger, tokenAuth, router)
