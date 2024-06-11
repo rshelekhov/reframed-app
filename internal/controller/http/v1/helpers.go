@@ -134,9 +134,10 @@ func handleInternalServerError(
 	w http.ResponseWriter,
 	r *http.Request,
 	log *slog.Logger,
-	error le.LocalError,
-	addLogData ...interface{}, // TODO: use map instead (avoid !BADKEY in logs)
+	localError le.LocalError,
+	err error,
 ) {
-	log.Error("Internal Server Error: ", addLogData...)
-	responseError(w, r, http.StatusInternalServerError, error)
+	log = log.With("err", err)
+	log.Error("Internal Server Error: ", err)
+	responseError(w, r, http.StatusInternalServerError, localError)
 }
