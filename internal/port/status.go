@@ -8,10 +8,11 @@ import (
 type (
 	StatusUsecase interface {
 		GetStatuses(ctx context.Context) ([]model.StatusResponseData, error)
-		GetStatusID(ctx context.Context, statusName string) (int, error)
-		GetStatusName(ctx context.Context, statusID int) (string, error)
+		GetStatusByID(ctx context.Context, statusID int) (model.StatusResponseData, error)
 	}
 
 	StatusStorage interface {
+		GetStatuses(ctx context.Context) ([]model.Status, error)
+		GetStatusByID(ctx context.Context, statusID int32) (string, error)
 	}
 )
