@@ -357,6 +357,15 @@ func (u *TaskUsecase) UpdateTaskTime(ctx context.Context, data *model.TaskReques
 }
 
 func (u *TaskUsecase) MoveTaskToAnotherList(ctx context.Context, data model.TaskRequestData) error {
+	// Check if list exists
+	_, err := u.ListUsecase.GetListByID(ctx, model.ListRequestData{
+		ID:     data.ListID,
+		UserID: data.UserID,
+	})
+	if err != nil {
+		return err
+	}
+
 	defaultHeadingID, err := u.HeadingUsecase.GetDefaultHeadingID(ctx, model.HeadingRequestData{
 		ListID: data.ListID,
 		UserID: data.UserID,
