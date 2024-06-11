@@ -653,22 +653,7 @@ func (s *TaskStorage) GetArchivedTasks(ctx context.Context, userID string, pgn m
 }
 
 func (s *TaskStorage) UpdateTask(ctx context.Context, task model.Task) error {
-	const (
-		op = "task.storage.UpdateTask"
-
-		queryGetHeadingID = `
-			SELECT heading_id
-			FROM tasks
-			WHERE id = $1
-			  AND user_id = $2`
-	)
-
-	var headingID string
-
-	err := s.QueryRow(ctx, queryGetHeadingID, task.ID, task.UserID).Scan(&headingID)
-	if err != nil {
-		return fmt.Errorf("%s: failed to get heading ID: %w", op, err)
-	}
+	const op = "task.storage.UpdateTask"
 
 	// Prepare the dynamic update query based on the provided fields
 	queryUpdate := "UPDATE tasks SET updated_at = $1"
@@ -690,10 +675,6 @@ func (s *TaskStorage) UpdateTask(ctx context.Context, task model.Task) error {
 	if !task.Deadline.IsZero() {
 		queryUpdate += ", deadline = $" + strconv.Itoa(len(queryParams)+1)
 		queryParams = append(queryParams, task.Deadline)
-	}
-	if task.HeadingID != headingID {
-		queryUpdate += ", heading_id = $" + strconv.Itoa(len(queryParams)+1)
-		queryParams = append(queryParams, task.HeadingID)
 	}
 
 	// Add condition for the specific user ID
