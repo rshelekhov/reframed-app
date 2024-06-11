@@ -103,15 +103,15 @@ func (s *TaskStorage) GetTaskStatusID(ctx context.Context, status model.StatusNa
 	const op = "task.storage.GetTaskStatusID"
 
 	statusID, err := s.Queries.GetTaskStatusID(ctx, status.String())
-	// TODO: update with switch statement
-	if errors.Is(err, pgx.ErrNoRows) {
-		return 0, le.ErrTaskStatusIDNotFound
-	}
-	if err != nil {
-		return 0, fmt.Errorf("%s: failed to get statusID: %w", op, err)
-	}
 
-	return int(statusID), nil
+	switch {
+	case errors.Is(err, pgx.ErrNoRows):
+		return 0, le.ErrTaskStatusIDNotFound
+	case err != nil:
+		return 0, fmt.Errorf("%s: failed to get statusID: %w", op, err)
+	default:
+		return int(statusID), nil
+	}
 }
 
 func (s *TaskStorage) GetTaskByID(ctx context.Context, taskID, userID string) (model.Task, error) {
@@ -121,11 +121,11 @@ func (s *TaskStorage) GetTaskByID(ctx context.Context, taskID, userID string) (m
 		ID:     taskID,
 		UserID: userID,
 	})
-	// TODO: update with switch statement
-	if errors.Is(err, pgx.ErrNoRows) {
+
+	switch {
+	case errors.Is(err, pgx.ErrNoRows):
 		return model.Task{}, le.ErrTaskNotFound
-	}
-	if err != nil {
+	case err != nil:
 		return model.Task{}, fmt.Errorf("%s: failed to get task: %w", op, err)
 	}
 
@@ -791,9 +791,9 @@ func (s *TaskStorage) MarkAsCompleted(ctx context.Context, task model.Task) erro
 		return le.ErrTaskNotFound
 	case err != nil:
 		return fmt.Errorf("%s: failed to mark task as completed: %w", op, err)
+	default:
+		return nil
 	}
-
-	return nil
 }
 
 func (s *TaskStorage) MarkAsArchived(ctx context.Context, task model.Task) error {
@@ -814,7 +814,7 @@ func (s *TaskStorage) MarkAsArchived(ctx context.Context, task model.Task) error
 		return le.ErrTaskNotFound
 	case err != nil:
 		return fmt.Errorf("%s: failed to mark task as archived: %w", op, err)
+	default:
+		return nil
 	}
-
-	return nil
 }
