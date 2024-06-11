@@ -117,7 +117,8 @@ func (s *TagStorage) GetTagsByTaskID(ctx context.Context, taskID string) ([]mode
 		return nil, fmt.Errorf("%s: failed to get tags: %w", op, err)
 	}
 	if len(tagsTitles) == 0 {
-		return nil, le.ErrNoTagsFound
+		// There are no tags, it's ok
+		return nil, nil
 	}
 
 	for _, tag := range tags {
