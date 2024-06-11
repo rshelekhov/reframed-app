@@ -2,12 +2,7 @@
 SELECT id, title
 FROM statuses;
 
--- name: GetStatusID :one
-SELECT id
-FROM statuses
-WHERE title = $1;
-
--- name: GetStatusName :one
+-- name: GetStatusByID :one
 SELECT title
 FROM statuses
 WHERE id = $1;

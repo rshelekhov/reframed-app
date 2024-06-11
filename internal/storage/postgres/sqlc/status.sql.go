@@ -9,27 +9,14 @@ import (
 	"context"
 )
 
-const getStatusID = `-- name: GetStatusID :one
-SELECT id
-FROM statuses
-WHERE title = $1
-`
-
-func (q *Queries) GetStatusID(ctx context.Context, title string) (int32, error) {
-	row := q.db.QueryRow(ctx, getStatusID, title)
-	var id int32
-	err := row.Scan(&id)
-	return id, err
-}
-
-const getStatusName = `-- name: GetStatusName :one
+const getStatusByID = `-- name: GetStatusByID :one
 SELECT title
 FROM statuses
 WHERE id = $1
 `
 
-func (q *Queries) GetStatusName(ctx context.Context, id int32) (string, error) {
-	row := q.db.QueryRow(ctx, getStatusName, id)
+func (q *Queries) GetStatusByID(ctx context.Context, id int32) (string, error) {
+	row := q.db.QueryRow(ctx, getStatusByID, id)
 	var title string
 	err := row.Scan(&title)
 	return title, err
