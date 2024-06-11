@@ -565,17 +565,19 @@ WHERE id = $4
   AND user_id = $5
   AND deleted_at IS NULL;
 
--- name: MarkTaskAsCompleted :exec
+-- name: MarkTaskAsCompleted :one
 UPDATE tasks
 SET	status_id = $1,
     updated_at = $2
 WHERE id = $3
   AND user_id = $4
-  AND deleted_at IS NULL;
+  AND deleted_at IS NULL
+RETURNING id;
 
--- name: MarkTaskAsArchived :exec
+-- name: MarkTaskAsArchived :one
 UPDATE tasks
 SET status_id = $1, deleted_at = $2
 WHERE id = $3
   AND user_id = $4
-  AND deleted_at IS NULL;
+  AND deleted_at IS NULL
+RETURNING id;

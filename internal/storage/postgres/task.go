@@ -103,6 +103,7 @@ func (s *TaskStorage) GetTaskStatusID(ctx context.Context, status model.StatusNa
 	const op = "task.storage.GetTaskStatusID"
 
 	statusID, err := s.Queries.GetTaskStatusID(ctx, status.String())
+	// TODO: update with switch statement
 	if errors.Is(err, pgx.ErrNoRows) {
 		return 0, le.ErrTaskStatusIDNotFound
 	}
@@ -120,6 +121,7 @@ func (s *TaskStorage) GetTaskByID(ctx context.Context, taskID, userID string) (m
 		ID:     taskID,
 		UserID: userID,
 	})
+	// TODO: update with switch statement
 	if errors.Is(err, pgx.ErrNoRows) {
 		return model.Task{}, le.ErrTaskNotFound
 	}
@@ -777,21 +779,27 @@ func (s *TaskStorage) MoveTaskToAnotherList(ctx context.Context, task model.Task
 func (s *TaskStorage) MarkAsCompleted(ctx context.Context, task model.Task) error {
 	const op = "task.storage.MarkAsCompleted"
 
-	if err := s.Queries.MarkTaskAsCompleted(ctx, sqlc.MarkTaskAsCompletedParams{
+	_, err := s.Queries.MarkTaskAsCompleted(ctx, sqlc.MarkTaskAsCompletedParams{
 		StatusID:  int32(task.StatusID),
 		UpdatedAt: task.UpdatedAt,
 		ID:        task.ID,
 		UserID:    task.UserID,
-	}); err != nil {
-		return fmt.Errorf("%s: failed to update task: %w", op, err)
+	})
+
+	switch {
+	case errors.Is(err, pgx.ErrNoRows):
+		return le.ErrTaskNotFound
+	case err != nil:
+		return fmt.Errorf("%s: failed to mark task as completed: %w", op, err)
 	}
+
 	return nil
 }
 
 func (s *TaskStorage) MarkAsArchived(ctx context.Context, task model.Task) error {
 	const op = "task.storage.MarkAsArchived"
 
-	if err := s.Queries.MarkTaskAsArchived(ctx, sqlc.MarkTaskAsArchivedParams{
+	_, err := s.Queries.MarkTaskAsArchived(ctx, sqlc.MarkTaskAsArchivedParams{
 		StatusID: int32(task.StatusID),
 		DeletedAt: pgtype.Timestamptz{
 			Valid: true,
@@ -799,8 +807,14 @@ func (s *TaskStorage) MarkAsArchived(ctx context.Context, task model.Task) error
 		},
 		ID:     task.ID,
 		UserID: task.UserID,
-	}); err != nil {
-		return fmt.Errorf("%s: failed to update task: %w", op, err)
+	})
+
+	switch {
+	case errors.Is(err, pgx.ErrNoRows):
+		return le.ErrTaskNotFound
+	case err != nil:
+		return fmt.Errorf("%s: failed to mark task as archived: %w", op, err)
 	}
+
 	return nil
 }
