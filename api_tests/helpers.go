@@ -15,6 +15,10 @@ const (
 	sentenceDefaultCount      = 5
 	wordDefaultCount          = 10
 	paragraphDefaultSeparator = " "
+
+	statusID      = 1
+	emptyStatusID = 0
+	wrongStatusID = 100
 )
 
 func randomFakePassword() string {
