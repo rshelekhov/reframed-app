@@ -84,16 +84,6 @@ func TestCompleteTask_FailCases(t *testing.T) {
 
 	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
 
-	fakeTask := randomFakeTask(true, true, true, true, true, "", "")
-
-	// Create task
-	e.POST("/user/lists/default").
-		WithHeader("Authorization", "Bearer "+accessToken).
-		WithJSON(fakeTask).
-		Expect().
-		Status(http.StatusCreated).
-		JSON().Object()
-
 	testCases := []struct {
 		name   string
 		taskID string
