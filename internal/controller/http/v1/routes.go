@@ -59,6 +59,11 @@ func (ar *AppRouter) initRoutes() *chi.Mux {
 
 		r.Post("/logout", ar.Logout())
 
+		r.Route("/statuses", func(r chi.Router) {
+			r.Get("/", ar.GetStatuses())
+			r.Get("/{status_id}", ar.GetStatusByID())
+		})
+
 		r.Route("/user", func(r chi.Router) {
 			r.Get("/", ar.GetUser())
 			r.Put("/", ar.UpdateUser())
@@ -115,13 +120,6 @@ func (ar *AppRouter) initRoutes() *chi.Mux {
 					r.Patch("/complete", ar.CompleteTask())
 					r.Patch("/archive", ar.ArchiveTask())
 				})
-			})
-
-			// TODO: add handlers for getting statuses and statusID
-			r.Route("/statuses", func(r chi.Router) {
-				r.Get("/", ar.GetStatuses())
-				r.Get("/{status_name}", ar.GetStatusID())
-				r.Get("/{status_id}", ar.GetStatusName())
 			})
 
 			r.Get("/tags", ar.GetTagsByUserID())
