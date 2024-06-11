@@ -15,17 +15,12 @@ func (s StatusName) String() string {
 
 type (
 	Status struct {
-		ID    string `db:"id"`
+		ID    int32  `db:"id"`
 		Title string `db:"title"`
 	}
 
-	StatusRequestData struct {
-		ID    string `json:"status_id"`
-		Title string `json:"title"`
-	}
-
 	StatusResponseData struct {
-		ID    string `json:"status_id"`
+		ID    int    `json:"status_id"`
 		Title string `json:"title"`
 	}
 )
