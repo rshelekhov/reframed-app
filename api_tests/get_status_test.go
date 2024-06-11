@@ -12,7 +12,6 @@ import (
 
 func TestGetStatuses_HappyPath(t *testing.T) {
 	u := url.URL{
-		// TODO: move scheme to constant
 		Scheme: "http",
 		Host:   host,
 	}
@@ -40,7 +39,6 @@ func TestGetStatuses_HappyPath(t *testing.T) {
 
 func TestGetStatusByID_HappyPath(t *testing.T) {
 	u := url.URL{
-		// TODO: move scheme to constant
 		Scheme: "http",
 		Host:   host,
 	}
