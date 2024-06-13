@@ -114,9 +114,10 @@ func (ar *AppRouter) initRoutes() *chi.Mux {
 				// TODO: replace Put with Patch (here and for other handlers for updating data)
 				r.Route("/{task_id}", func(r chi.Router) {
 					r.Get("/", ar.GetTaskByID())
-					r.Put("/", ar.UpdateTask())
-					r.Put("/time", ar.UpdateTaskTime())
-					r.Put("/move", ar.MoveTaskToAnotherList())
+					r.Patch("/", ar.UpdateTask())
+					r.Patch("/time", ar.UpdateTaskTime())
+					r.Patch("/move/list", ar.MoveTaskToAnotherList())
+					r.Patch("/move/heading", ar.MoveTaskToAnotherHeading())
 					r.Patch("/complete", ar.CompleteTask())
 					r.Patch("/archive", ar.ArchiveTask())
 				})
