@@ -700,9 +700,6 @@ func (s *TaskStorage) UpdateTask(ctx context.Context, task model.Task) error {
 func (s *TaskStorage) UpdateTaskTime(ctx context.Context, task model.Task) error {
 	const op = "task.storage.UpdateTaskTime"
 
-	// Get the statusID ID for the planned status
-	var statusID string
-
 	// Prepare the dynamic update query based on the provided fields
 	queryUpdate := "UPDATE tasks SET updated_at = $1"
 	queryParams := []interface{}{task.UpdatedAt}
@@ -718,7 +715,9 @@ func (s *TaskStorage) UpdateTaskTime(ctx context.Context, task model.Task) error
 		return le.ErrInvalidTaskTimeRange
 	}
 
-	// Add statusID ID to the query
+	// Add statusID to the query
+	statusID := strconv.Itoa(task.StatusID)
+
 	queryUpdate += ", status_id = $" + strconv.Itoa(len(queryParams)+1)
 	queryParams = append(queryParams, statusID)
 
@@ -732,7 +731,7 @@ func (s *TaskStorage) UpdateTaskTime(ctx context.Context, task model.Task) error
 	// Execute the update query
 	result, err := s.Exec(ctx, queryUpdate, queryParams...)
 	if err != nil {
-		return fmt.Errorf("%s: failed to update task: %w", op, err)
+		return fmt.Errorf("%s: failed to update task time: %w", op, err)
 	}
 
 	if result.RowsAffected() == 0 {
