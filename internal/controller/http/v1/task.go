@@ -582,6 +582,9 @@ func (c *taskController) MoveTaskToAnotherList() http.HandlerFunc {
 		case errors.Is(err, le.ErrTaskNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrTaskNotFound)
 			return
+		case errors.Is(err, le.ErrListNotFound):
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrListNotFound)
+			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToMoveTask, err)
 			return
