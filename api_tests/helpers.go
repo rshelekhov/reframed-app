@@ -78,6 +78,21 @@ func randomTimeDuration() time.Duration {
 	return time.Duration(rand.Int63n(int64(max-min))+int64(min)) * time.Second
 }
 
+func randomTimeInterval() (string, string) {
+	gofakeit.Seed(0)
+
+	start := time.Now().AddDate(0, 0, -30)
+	end := time.Now()
+
+	firstTime := gofakeit.DateRange(start, end)
+	secondTime := gofakeit.DateRange(firstTime, end)
+
+	firstFormattedTime := firstTime.Format(time.DateTime)
+	secondFormattedTime := secondTime.Format(time.DateTime)
+
+	return firstFormattedTime, secondFormattedTime
+}
+
 func randomTags(isSet bool) []string {
 	if isSet {
 		tagCount := rand.Intn(5) + 3
