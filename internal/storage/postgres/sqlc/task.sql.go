@@ -1056,6 +1056,35 @@ func (q *Queries) MarkTaskAsCompleted(ctx context.Context, arg MarkTaskAsComplet
 	return id, err
 }
 
+const moveTaskToAnotherHeading = `-- name: MoveTaskToAnotherHeading :one
+UPDATE tasks
+SET	heading_id = $1,
+    updated_at = $2
+WHERE id = $3
+    AND user_id = $4
+    AND deleted_at IS NULL
+RETURNING id
+`
+
+type MoveTaskToAnotherHeadingParams struct {
+	HeadingID string    `db:"heading_id"`
+	UpdatedAt time.Time `db:"updated_at"`
+	ID        string    `db:"id"`
+	UserID    string    `db:"user_id"`
+}
+
+func (q *Queries) MoveTaskToAnotherHeading(ctx context.Context, arg MoveTaskToAnotherHeadingParams) (string, error) {
+	row := q.db.QueryRow(ctx, moveTaskToAnotherHeading,
+		arg.HeadingID,
+		arg.UpdatedAt,
+		arg.ID,
+		arg.UserID,
+	)
+	var id string
+	err := row.Scan(&id)
+	return id, err
+}
+
 const moveTaskToAnotherList = `-- name: MoveTaskToAnotherList :exec
 UPDATE tasks
 SET	list_id = $1,

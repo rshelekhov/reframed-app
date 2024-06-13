@@ -22,6 +22,7 @@ type (
 		UpdateTask(ctx context.Context, data *model.TaskRequestData) (model.TaskResponseData, error)
 		UpdateTaskTime(ctx context.Context, data *model.TaskRequestTimeData) (model.TaskResponseTimeData, error)
 		MoveTaskToAnotherList(ctx context.Context, data model.TaskRequestData) error
+		MoveTaskToAnotherHeading(ctx context.Context, data model.TaskRequestData) (model.TaskResponseData, error)
 		CompleteTask(ctx context.Context, data model.TaskRequestData) (model.TaskResponseData, error)
 		ArchiveTask(ctx context.Context, data model.TaskRequestData) (model.TaskResponseData, error)
 	}
@@ -43,6 +44,7 @@ type (
 		UpdateTask(ctx context.Context, task model.Task) error
 		UpdateTaskTime(ctx context.Context, task model.Task) error
 		MoveTaskToAnotherList(ctx context.Context, task model.Task) error
+		MoveTaskToAnotherHeading(ctx context.Context, task model.Task) error
 		MarkAsCompleted(ctx context.Context, task model.Task) error
 		MarkAsArchived(ctx context.Context, task model.Task) error
 	}

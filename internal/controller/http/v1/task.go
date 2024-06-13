@@ -594,6 +594,55 @@ func (c *taskController) MoveTaskToAnotherList() http.HandlerFunc {
 	}
 }
 
+func (c *taskController) MoveTaskToAnotherHeading() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		const op = "task.controller.MoveTaskToAnotherHeading"
+
+		ctx := r.Context()
+		log := logger.LogWithRequest(c.logger, op, r)
+
+		userID, err := c.jwt.GetUserID(ctx)
+		if err != nil {
+			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+			return
+		}
+
+		taskID := chi.URLParam(r, key.TaskID)
+		if taskID == "" {
+			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryTaskID)
+			return
+		}
+
+		headingID := r.URL.Query().Get(key.HeadingID)
+		if headingID == "" {
+			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryHeadingID)
+			return
+		}
+
+		taskInput := model.TaskRequestData{
+			ID:        taskID,
+			HeadingID: headingID,
+			UserID:    userID,
+		}
+
+		taskResponse, err := c.usecase.MoveTaskToAnotherHeading(ctx, taskInput)
+
+		switch {
+		case errors.Is(err, le.ErrTaskNotFound):
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrTaskNotFound)
+			return
+		case errors.Is(err, le.ErrHeadingNotFound):
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrHeadingNotFound)
+			return
+		case err != nil:
+			handleInternalServerError(w, r, log, le.ErrFailedToMoveTask, err)
+			return
+		default:
+			handleResponseSuccess(w, r, log, "task moved to another heading", taskResponse, slog.String(key.TaskID, taskInput.ID))
+		}
+	}
+}
+
 func (c *taskController) CompleteTask() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "task.controller.CompleteTask"

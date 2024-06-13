@@ -757,6 +757,25 @@ func (s *TaskStorage) MoveTaskToAnotherList(ctx context.Context, task model.Task
 	return nil
 }
 
+func (s *TaskStorage) MoveTaskToAnotherHeading(ctx context.Context, task model.Task) error {
+	const op = "task.storage.MoveTaskToAnotherHeading"
+
+	_, err := s.Queries.MoveTaskToAnotherHeading(ctx, sqlc.MoveTaskToAnotherHeadingParams{
+		HeadingID: task.HeadingID,
+		UpdatedAt: task.UpdatedAt,
+		ID:        task.ID,
+		UserID:    task.UserID,
+	})
+	switch {
+	case errors.Is(err, pgx.ErrNoRows):
+		return le.ErrTaskNotFound
+	case err != nil:
+		return fmt.Errorf("%s: failed to move task: %w", op, err)
+	default:
+		return nil
+	}
+}
+
 func (s *TaskStorage) MarkAsCompleted(ctx context.Context, task model.Task) error {
 	const op = "task.storage.MarkAsCompleted"
 

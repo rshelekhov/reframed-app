@@ -41,6 +41,7 @@ type Querier interface {
 	MarkTaskAsArchived(ctx context.Context, arg MarkTaskAsArchivedParams) (string, error)
 	MarkTaskAsCompleted(ctx context.Context, arg MarkTaskAsCompletedParams) (string, error)
 	MoveHeadingToAnotherList(ctx context.Context, arg MoveHeadingToAnotherListParams) (string, error)
+	MoveTaskToAnotherHeading(ctx context.Context, arg MoveTaskToAnotherHeadingParams) (string, error)
 	MoveTaskToAnotherList(ctx context.Context, arg MoveTaskToAnotherListParams) error
 	UnlinkTagFromTask(ctx context.Context, arg UnlinkTagFromTaskParams) error
 	UpdateHeading(ctx context.Context, arg UpdateHeadingParams) (string, error)

@@ -385,6 +385,35 @@ func (u *TaskUsecase) MoveTaskToAnotherList(ctx context.Context, data model.Task
 	})
 }
 
+func (u *TaskUsecase) MoveTaskToAnotherHeading(ctx context.Context, data model.TaskRequestData) (model.TaskResponseData, error) {
+	// Check if heading exists
+	_, err := u.HeadingUsecase.GetHeadingByID(ctx, model.HeadingRequestData{
+		ID:     data.HeadingID,
+		UserID: data.UserID,
+	})
+	if err != nil {
+		return model.TaskResponseData{}, err
+	}
+
+	updatedTask := model.Task{
+		ID:        data.ID,
+		HeadingID: data.HeadingID,
+		UserID:    data.UserID,
+		UpdatedAt: time.Now(),
+	}
+
+	if err = u.storage.MoveTaskToAnotherHeading(ctx, updatedTask); err != nil {
+		return model.TaskResponseData{}, err
+	}
+
+	return model.TaskResponseData{
+		ID:        updatedTask.ID,
+		HeadingID: updatedTask.HeadingID,
+		UserID:    updatedTask.UserID,
+		UpdatedAt: updatedTask.UpdatedAt,
+	}, nil
+}
+
 func (u *TaskUsecase) CompleteTask(ctx context.Context, data model.TaskRequestData) (model.TaskResponseData, error) {
 	statusCompleted, err := u.storage.GetTaskStatusID(ctx, model.StatusCompleted)
 	if err != nil {
