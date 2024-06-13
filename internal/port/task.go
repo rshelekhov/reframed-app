@@ -21,7 +21,7 @@ type (
 		GetArchivedTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error)
 		UpdateTask(ctx context.Context, data *model.TaskRequestData) (model.TaskResponseData, error)
 		UpdateTaskTime(ctx context.Context, data *model.TaskRequestTimeData) (model.TaskResponseTimeData, error)
-		MoveTaskToAnotherList(ctx context.Context, data model.TaskRequestData) error
+		MoveTaskToAnotherList(ctx context.Context, data model.TaskRequestData) (model.TaskResponseData, error)
 		MoveTaskToAnotherHeading(ctx context.Context, data model.TaskRequestData) (model.TaskResponseData, error)
 		CompleteTask(ctx context.Context, data model.TaskRequestData) (model.TaskResponseData, error)
 		ArchiveTask(ctx context.Context, data model.TaskRequestData) (model.TaskResponseData, error)

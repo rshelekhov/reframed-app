@@ -576,7 +576,7 @@ func (c *taskController) MoveTaskToAnotherList() http.HandlerFunc {
 			UserID: userID,
 		}
 
-		err = c.usecase.MoveTaskToAnotherList(ctx, taskInput)
+		taskResponse, err := c.usecase.MoveTaskToAnotherList(ctx, taskInput)
 
 		switch {
 		case errors.Is(err, le.ErrTaskNotFound):
@@ -589,7 +589,7 @@ func (c *taskController) MoveTaskToAnotherList() http.HandlerFunc {
 			handleInternalServerError(w, r, log, le.ErrFailedToMoveTask, err)
 			return
 		default:
-			handleResponseSuccess(w, r, log, "task moved to another list", taskInput, slog.String(key.TaskID, taskInput.ID))
+			handleResponseSuccess(w, r, log, "task moved to another list", taskResponse, slog.String(key.TaskID, taskInput.ID))
 		}
 	}
 }

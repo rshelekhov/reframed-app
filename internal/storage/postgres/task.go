@@ -745,16 +745,22 @@ func (s *TaskStorage) UpdateTaskTime(ctx context.Context, task model.Task) error
 func (s *TaskStorage) MoveTaskToAnotherList(ctx context.Context, task model.Task) error {
 	const op = "task.storage.MoveTaskToAnotherList"
 
-	if err := s.Queries.MoveTaskToAnotherList(ctx, sqlc.MoveTaskToAnotherListParams{
+	_, err := s.Queries.MoveTaskToAnotherList(ctx, sqlc.MoveTaskToAnotherListParams{
 		ListID:    task.ListID,
 		HeadingID: task.HeadingID,
 		UpdatedAt: task.UpdatedAt,
 		ID:        task.ID,
 		UserID:    task.UserID,
-	}); err != nil {
-		return fmt.Errorf("%s: failed to move task: %w", op, err)
+	})
+
+	switch {
+	case errors.Is(err, pgx.ErrNoRows):
+		return le.ErrTaskNotFound
+	case err != nil:
+		return fmt.Errorf("%s: failed to move task to another list: %w", op, err)
+	default:
+		return nil
 	}
-	return nil
 }
 
 func (s *TaskStorage) MoveTaskToAnotherHeading(ctx context.Context, task model.Task) error {
@@ -766,11 +772,12 @@ func (s *TaskStorage) MoveTaskToAnotherHeading(ctx context.Context, task model.T
 		ID:        task.ID,
 		UserID:    task.UserID,
 	})
+
 	switch {
 	case errors.Is(err, pgx.ErrNoRows):
 		return le.ErrTaskNotFound
 	case err != nil:
-		return fmt.Errorf("%s: failed to move task: %w", op, err)
+		return fmt.Errorf("%s: failed to move task to another heading: %w", op, err)
 	default:
 		return nil
 	}

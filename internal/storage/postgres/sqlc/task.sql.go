@@ -1085,7 +1085,7 @@ func (q *Queries) MoveTaskToAnotherHeading(ctx context.Context, arg MoveTaskToAn
 	return id, err
 }
 
-const moveTaskToAnotherList = `-- name: MoveTaskToAnotherList :exec
+const moveTaskToAnotherList = `-- name: MoveTaskToAnotherList :one
 UPDATE tasks
 SET	list_id = $1,
     heading_id = $2,
@@ -1093,6 +1093,7 @@ SET	list_id = $1,
 WHERE id = $4
   AND user_id = $5
   AND deleted_at IS NULL
+RETURNING id
 `
 
 type MoveTaskToAnotherListParams struct {
@@ -1103,13 +1104,15 @@ type MoveTaskToAnotherListParams struct {
 	UserID    string    `db:"user_id"`
 }
 
-func (q *Queries) MoveTaskToAnotherList(ctx context.Context, arg MoveTaskToAnotherListParams) error {
-	_, err := q.db.Exec(ctx, moveTaskToAnotherList,
+func (q *Queries) MoveTaskToAnotherList(ctx context.Context, arg MoveTaskToAnotherListParams) (string, error) {
+	row := q.db.QueryRow(ctx, moveTaskToAnotherList,
 		arg.ListID,
 		arg.HeadingID,
 		arg.UpdatedAt,
 		arg.ID,
 		arg.UserID,
 	)
-	return err
+	var id string
+	err := row.Scan(&id)
+	return id, err
 }

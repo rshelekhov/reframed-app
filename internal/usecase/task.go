@@ -356,14 +356,14 @@ func (u *TaskUsecase) UpdateTaskTime(ctx context.Context, data *model.TaskReques
 	}, nil
 }
 
-func (u *TaskUsecase) MoveTaskToAnotherList(ctx context.Context, data model.TaskRequestData) error {
+func (u *TaskUsecase) MoveTaskToAnotherList(ctx context.Context, data model.TaskRequestData) (model.TaskResponseData, error) {
 	// Check if list exists
 	_, err := u.ListUsecase.GetListByID(ctx, model.ListRequestData{
 		ID:     data.ListID,
 		UserID: data.UserID,
 	})
 	if err != nil {
-		return err
+		return model.TaskResponseData{}, err
 	}
 
 	defaultHeadingID, err := u.HeadingUsecase.GetDefaultHeadingID(ctx, model.HeadingRequestData{
@@ -371,18 +371,28 @@ func (u *TaskUsecase) MoveTaskToAnotherList(ctx context.Context, data model.Task
 		UserID: data.UserID,
 	})
 	if err != nil {
-		return err
+		return model.TaskResponseData{}, err
 	}
 
-	data.HeadingID = defaultHeadingID
-
-	return u.storage.MoveTaskToAnotherList(ctx, model.Task{
+	updatedTask := model.Task{
 		ID:        data.ID,
 		ListID:    data.ListID,
-		HeadingID: data.HeadingID,
+		HeadingID: defaultHeadingID,
 		UserID:    data.UserID,
 		UpdatedAt: time.Now(),
-	})
+	}
+
+	if err = u.storage.MoveTaskToAnotherList(ctx, updatedTask); err != nil {
+		return model.TaskResponseData{}, err
+	}
+
+	return model.TaskResponseData{
+		ID:        updatedTask.ID,
+		ListID:    updatedTask.ListID,
+		HeadingID: updatedTask.HeadingID,
+		UserID:    updatedTask.UserID,
+		UpdatedAt: updatedTask.UpdatedAt,
+	}, nil
 }
 
 func (u *TaskUsecase) MoveTaskToAnotherHeading(ctx context.Context, data model.TaskRequestData) (model.TaskResponseData, error) {

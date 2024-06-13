@@ -556,14 +556,15 @@ GROUP BY month
 ORDER BY month DESC
 LIMIT $2;
 
--- name: MoveTaskToAnotherList :exec
+-- name: MoveTaskToAnotherList :one
 UPDATE tasks
 SET	list_id = $1,
     heading_id = $2,
     updated_at = $3
 WHERE id = $4
   AND user_id = $5
-  AND deleted_at IS NULL;
+  AND deleted_at IS NULL
+RETURNING id;
 
 -- name: MoveTaskToAnotherHeading :one
 UPDATE tasks
