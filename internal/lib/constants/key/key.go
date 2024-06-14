@@ -17,6 +17,8 @@ const (
 	//  entities keys
 	// ===========================================================================
 
+	Data      = "data"
+	Title     = "title"
 	UserID    = "user_id"
 	Email     = "email"
 	ListID    = "list_id"
