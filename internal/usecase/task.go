@@ -63,6 +63,7 @@ func (u *TaskUsecase) CreateTask(ctx context.Context, data *model.TaskRequestDat
 		ListID:      data.ListID,
 		HeadingID:   data.HeadingID,
 		UserID:      data.UserID,
+		Tags:        data.Tags,
 		UpdatedAt:   time.Now(),
 	}
 
@@ -78,7 +79,7 @@ func (u *TaskUsecase) CreateTask(ctx context.Context, data *model.TaskRequestDat
 		if err = u.storage.CreateTask(ctx, newTask); err != nil {
 			return err
 		}
-		if err = u.TagUsecase.LinkTagsToTask(ctx, newTask.ID, newTask.Tags); err != nil {
+		if err = u.TagUsecase.LinkTagsToTask(ctx, newTask.UserID, newTask.ID, newTask.Tags); err != nil {
 			return err
 		}
 		return nil
@@ -98,6 +99,7 @@ func (u *TaskUsecase) CreateTask(ctx context.Context, data *model.TaskRequestDat
 		ListID:      newTask.ListID,
 		HeadingID:   newTask.HeadingID,
 		UserID:      newTask.UserID,
+		Tags:        newTask.Tags,
 		UpdatedAt:   newTask.UpdatedAt,
 	}, nil
 }
@@ -119,6 +121,7 @@ func (u *TaskUsecase) GetTaskByID(ctx context.Context, data model.TaskRequestDat
 		ListID:    task.ListID,
 		HeadingID: task.HeadingID,
 		UserID:    task.UserID,
+		Tags:      task.Tags,
 		UpdatedAt: task.UpdatedAt,
 	}, nil
 }
@@ -163,6 +166,7 @@ func mapTaskToResponseData(task model.Task) model.TaskResponseData {
 		ListID:    task.ListID,
 		HeadingID: task.HeadingID,
 		UserID:    task.UserID,
+		Tags:      task.Tags,
 		UpdatedAt: task.UpdatedAt,
 	}
 }
@@ -265,10 +269,10 @@ func (u *TaskUsecase) UpdateTask(ctx context.Context, data *model.TaskRequestDat
 		if err = u.storage.UpdateTask(ctx, updatedTask); err != nil {
 			return err
 		}
-		if err = u.TagUsecase.UnlinkTagsFromTask(ctx, updatedTask.ID, tagsToRemove); err != nil {
+		if err = u.TagUsecase.UnlinkTagsFromTask(ctx, updatedTask.UserID, updatedTask.ID, tagsToRemove); err != nil {
 			return err
 		}
-		if err = u.TagUsecase.LinkTagsToTask(ctx, updatedTask.ID, tagsToAdd); err != nil {
+		if err = u.TagUsecase.LinkTagsToTask(ctx, updatedTask.UserID, updatedTask.ID, tagsToAdd); err != nil {
 			return err
 		}
 		return nil

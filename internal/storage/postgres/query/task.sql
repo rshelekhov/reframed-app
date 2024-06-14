@@ -84,7 +84,8 @@ GROUP BY
     t.status_id,
     t.list_id,
     t.heading_id,
-    t.updated_at
+    t.updated_at,
+    ttv.tags
 ORDER BY t.id
 LIMIT $2;
 
