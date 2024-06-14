@@ -62,10 +62,6 @@ func (c *statusController) GetStatusByID() http.HandlerFunc {
 		log := logger.LogWithRequest(c.logger, op, r)
 
 		rawStatusID := chi.URLParam(r, key.StatusID)
-		if rawStatusID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryStatusID)
-			return
-		}
 
 		statusID, err := strconv.Atoi(rawStatusID)
 		if err != nil {

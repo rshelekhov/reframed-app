@@ -117,11 +117,6 @@ func (c *listController) GetListByID() http.HandlerFunc {
 
 		listID := chi.URLParam(r, "list_id")
 
-		if listID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryListID)
-			return
-		}
-
 		listInput := model.ListRequestData{
 			ID:     listID,
 			UserID: userID,
@@ -186,10 +181,6 @@ func (c *listController) UpdateList() http.HandlerFunc {
 		}
 
 		listID := chi.URLParam(r, key.ListID)
-		if listID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryListID)
-			return
-		}
 
 		listInput := &model.ListRequestData{}
 		if err = decodeAndValidateJSON(w, r, log, listInput); err != nil {
@@ -228,10 +219,6 @@ func (c *listController) DeleteList() http.HandlerFunc {
 		}
 
 		listID := chi.URLParam(r, key.ListID)
-		if listID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryListID)
-			return
-		}
 
 		listInput := model.ListRequestData{
 			ID:     listID,

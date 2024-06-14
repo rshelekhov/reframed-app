@@ -48,10 +48,6 @@ func (c *headingController) CreateHeading() http.HandlerFunc {
 		}
 
 		listID := chi.URLParam(r, key.ListID)
-		if listID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryListID)
-			return
-		}
 
 		headingInput := &model.HeadingRequestData{}
 		if err = decodeAndValidateJSON(w, r, log, headingInput); err != nil {
@@ -89,10 +85,6 @@ func (c *headingController) GetHeadingByID() http.HandlerFunc {
 		}
 
 		headingID := chi.URLParam(r, key.HeadingID)
-		if headingID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryHeadingID)
-			return
-		}
 
 		headingInput := model.HeadingRequestData{
 			ID:     headingID,
@@ -128,10 +120,6 @@ func (c *headingController) GetHeadingsByListID() http.HandlerFunc {
 		}
 
 		listID := chi.URLParam(r, key.ListID)
-		if listID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryListID)
-			return
-		}
 
 		headingsInput := model.HeadingRequestData{
 			ListID: listID,
@@ -167,10 +155,6 @@ func (c *headingController) UpdateHeading() http.HandlerFunc {
 		}
 
 		headingID := chi.URLParam(r, key.HeadingID)
-		if headingID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryHeadingID)
-			return
-		}
 
 		headingInput := &model.HeadingRequestData{}
 		if err = decodeAndValidateJSON(w, r, log, headingInput); err != nil {
@@ -209,10 +193,6 @@ func (c *headingController) MoveHeadingToAnotherList() http.HandlerFunc {
 		}
 
 		headingID := chi.URLParam(r, key.HeadingID)
-		if headingID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryHeadingID)
-			return
-		}
 
 		otherListID := r.URL.Query().Get(key.ListID)
 		if otherListID == "" {
@@ -258,10 +238,6 @@ func (c *headingController) DeleteHeading() http.HandlerFunc {
 		}
 
 		headingID := chi.URLParam(r, key.HeadingID)
-		if headingID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryHeadingID)
-			return
-		}
 
 		headingInput := model.HeadingRequestData{
 			ID:     headingID,
