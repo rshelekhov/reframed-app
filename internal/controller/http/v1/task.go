@@ -48,11 +48,6 @@ func (c *taskController) CreateTask() http.HandlerFunc {
 		}
 
 		listID := chi.URLParam(r, key.ListID)
-		if listID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryListID)
-			return
-		}
-
 		headingID := chi.URLParam(r, key.HeadingID)
 
 		taskInput := &model.TaskRequestData{}
@@ -134,10 +129,6 @@ func (c *taskController) GetTaskByID() http.HandlerFunc {
 		}
 
 		taskID := chi.URLParam(r, key.TaskID)
-		if taskID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryTaskID)
-			return
-		}
 
 		taskInput := model.TaskRequestData{
 			ID:     taskID,
@@ -205,10 +196,6 @@ func (c *taskController) GetTasksByListID() http.HandlerFunc {
 		}
 
 		listID := chi.URLParam(r, key.ListID)
-		if listID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryListID)
-			return
-		}
 
 		tasksInput := model.TaskRequestData{
 			ListID: listID,
@@ -246,10 +233,6 @@ func (c *taskController) GetTasksGroupedByHeadings() http.HandlerFunc {
 		}
 
 		listID := chi.URLParam(r, key.ListID)
-		if listID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryListID)
-			return
-		}
 
 		tasksInput := model.TaskRequestData{
 			ListID: listID,
@@ -475,10 +458,6 @@ func (c *taskController) UpdateTask() http.HandlerFunc {
 		}
 
 		taskID := chi.URLParam(r, key.TaskID)
-		if taskID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryTaskID)
-			return
-		}
 
 		taskInput := &model.TaskRequestData{}
 		if err = decodeAndValidateJSON(w, r, log, taskInput); err != nil {
@@ -517,10 +496,6 @@ func (c *taskController) UpdateTaskTime() http.HandlerFunc {
 		}
 
 		taskID := chi.URLParam(r, key.TaskID)
-		if taskID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryTaskID)
-			return
-		}
 
 		taskInput := &model.TaskRequestTimeData{}
 		if err = decodeAndValidateJSON(w, r, log, taskInput); err != nil {
@@ -562,10 +537,6 @@ func (c *taskController) MoveTaskToAnotherList() http.HandlerFunc {
 		}
 
 		taskID := chi.URLParam(r, key.TaskID)
-		if taskID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryTaskID)
-			return
-		}
 
 		listID := r.URL.Query().Get(key.ListID)
 		if listID == "" {
@@ -611,10 +582,6 @@ func (c *taskController) MoveTaskToAnotherHeading() http.HandlerFunc {
 		}
 
 		taskID := chi.URLParam(r, key.TaskID)
-		if taskID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryTaskID)
-			return
-		}
 
 		headingID := r.URL.Query().Get(key.HeadingID)
 		if headingID == "" {
@@ -660,10 +627,6 @@ func (c *taskController) CompleteTask() http.HandlerFunc {
 		}
 
 		taskID := chi.URLParam(r, key.TaskID)
-		if taskID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryTaskID)
-			return
-		}
 
 		taskInput := model.TaskRequestData{
 			ID:     taskID,
@@ -699,10 +662,6 @@ func (c *taskController) ArchiveTask() http.HandlerFunc {
 		}
 
 		taskID := chi.URLParam(r, key.TaskID)
-		if taskID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryTaskID)
-			return
-		}
 
 		taskInput := model.TaskRequestData{
 			ID:     taskID,
