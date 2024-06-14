@@ -43,8 +43,8 @@ func (u *TagUsecase) LinkTagsToTask(ctx context.Context, userID, taskID string, 
 	return u.storage.LinkTagsToTask(ctx, userID, taskID, tags)
 }
 
-func (u *TagUsecase) UnlinkTagsFromTask(ctx context.Context, userID, taskID string, tagsToRemove []string) error {
-	return u.storage.UnlinkTagsFromTask(ctx, userID, taskID, tagsToRemove)
+func (u *TagUsecase) UnlinkTagsFromTask(ctx context.Context, userID, taskID string, tags []string) error {
+	return u.storage.UnlinkTagsFromTask(ctx, userID, taskID, tags)
 }
 
 func (u *TagUsecase) GetTagsByUserID(ctx context.Context, userID string) ([]model.TagResponseData, error) {
