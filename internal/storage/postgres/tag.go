@@ -39,13 +39,14 @@ func (s *TagStorage) CreateTag(ctx context.Context, tag model.Tag) error {
 	return nil
 }
 
-func (s *TagStorage) LinkTagsToTask(ctx context.Context, taskID string, tags []string) error {
+func (s *TagStorage) LinkTagsToTask(ctx context.Context, userID, taskID string, tags []string) error {
 	const op = "tag.storage.LinkTagsToTask"
 
 	for _, tag := range tags {
 		if err := s.Queries.LinkTagToTask(ctx, sqlc.LinkTagToTaskParams{
 			TaskID: taskID,
 			Title:  tag,
+			UserID: userID,
 		}); err != nil {
 			return fmt.Errorf("%s: failed to link tag to task: %w", op, err)
 		}
@@ -53,13 +54,14 @@ func (s *TagStorage) LinkTagsToTask(ctx context.Context, taskID string, tags []s
 	return nil
 }
 
-func (s *TagStorage) UnlinkTagsFromTask(ctx context.Context, taskID string, tags []string) error {
+func (s *TagStorage) UnlinkTagsFromTask(ctx context.Context, userID, taskID string, tags []string) error {
 	const op = "tag.storage.UnlinkTagsFromTask"
 
 	for _, tag := range tags {
 		if err := s.Queries.UnlinkTagFromTask(ctx, sqlc.UnlinkTagFromTaskParams{
 			TaskID: taskID,
 			Title:  tag,
+			UserID: userID,
 		}); err != nil {
 			return fmt.Errorf("%s: failed to unlink tag from task: %w", op, err)
 		}

@@ -39,12 +39,12 @@ func (u *TagUsecase) CreateTagIfNotExists(ctx context.Context, data model.TagReq
 	return nil
 }
 
-func (u *TagUsecase) LinkTagsToTask(ctx context.Context, taskID string, tags []string) error {
-	return u.storage.LinkTagsToTask(ctx, taskID, tags)
+func (u *TagUsecase) LinkTagsToTask(ctx context.Context, userID, taskID string, tags []string) error {
+	return u.storage.LinkTagsToTask(ctx, userID, taskID, tags)
 }
 
-func (u *TagUsecase) UnlinkTagsFromTask(ctx context.Context, taskID string, tagsToRemove []string) error {
-	return u.storage.UnlinkTagsFromTask(ctx, taskID, tagsToRemove)
+func (u *TagUsecase) UnlinkTagsFromTask(ctx context.Context, userID, taskID string, tagsToRemove []string) error {
+	return u.storage.UnlinkTagsFromTask(ctx, userID, taskID, tagsToRemove)
 }
 
 func (u *TagUsecase) GetTagsByUserID(ctx context.Context, userID string) ([]model.TagResponseData, error) {

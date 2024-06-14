@@ -124,17 +124,19 @@ const linkTagToTask = `-- name: LinkTagToTask :exec
 INSERT INTO tasks_tags (task_id, tag_id)
 VALUES ($1, (SELECT id
              FROM tags
-             WHERE title = $2)
+             WHERE title = $2
+             AND user_id = $3)
 )
 `
 
 type LinkTagToTaskParams struct {
 	TaskID string `db:"task_id"`
 	Title  string `db:"title"`
+	UserID string `db:"user_id"`
 }
 
 func (q *Queries) LinkTagToTask(ctx context.Context, arg LinkTagToTaskParams) error {
-	_, err := q.db.Exec(ctx, linkTagToTask, arg.TaskID, arg.Title)
+	_, err := q.db.Exec(ctx, linkTagToTask, arg.TaskID, arg.Title, arg.UserID)
 	return err
 }
 
@@ -144,15 +146,17 @@ WHERE task_id = $1
   AND tag_id = (SELECT id
                 FROM tags
                 WHERE title = $2
+                AND user_id = $3
 )
 `
 
 type UnlinkTagFromTaskParams struct {
 	TaskID string `db:"task_id"`
 	Title  string `db:"title"`
+	UserID string `db:"user_id"`
 }
 
 func (q *Queries) UnlinkTagFromTask(ctx context.Context, arg UnlinkTagFromTaskParams) error {
-	_, err := q.db.Exec(ctx, unlinkTagFromTask, arg.TaskID, arg.Title)
+	_, err := q.db.Exec(ctx, unlinkTagFromTask, arg.TaskID, arg.Title, arg.UserID)
 	return err
 }
