@@ -536,6 +536,9 @@ func (c *taskController) UpdateTaskTime() http.HandlerFunc {
 		case errors.Is(err, le.ErrTaskNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrTaskNotFound)
 			return
+		case errors.Is(err, le.ErrInvalidTaskTimeRange):
+			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrInvalidTaskTimeRange)
+			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToUpdateTask, err)
 			return
