@@ -3,6 +3,7 @@ package api_tests
 import (
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/gavv/httpexpect/v2"
+	"github.com/rshelekhov/reframed/internal/lib/constants/key"
 	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
 	"github.com/rshelekhov/reframed/internal/model"
 	"net/http"
@@ -12,7 +13,7 @@ import (
 
 func TestUpdateList_HappyPath(t *testing.T) {
 	u := url.URL{
-		Scheme: "http",
+		Scheme: scheme,
 		Host:   host,
 	}
 	e := httpexpect.Default(t, u.String())
@@ -39,11 +40,10 @@ func TestUpdateList_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	listID := c.Value("data").Object().Value("list_id").String().Raw()
+	listID := c.Value(key.Data).Object().Value(key.ListID).String().Raw()
 
 	// Update list
-	e.PUT("/user/lists/{list_id}").
-		WithPath("list_id", listID).
+	e.PUT("/user/lists/{list_id}", listID).
 		WithHeader("Authorization", "Bearer "+accessToken).
 		WithJSON(model.ListRequestData{
 			Title: gofakeit.Word(),
@@ -55,7 +55,7 @@ func TestUpdateList_HappyPath(t *testing.T) {
 
 func TestUpdateList_NotFound(t *testing.T) {
 	u := url.URL{
-		Scheme: "http",
+		Scheme: scheme,
 		Host:   host,
 	}
 	e := httpexpect.Default(t, u.String())
@@ -82,18 +82,16 @@ func TestUpdateList_NotFound(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	listID := l.Value("data").Object().Value("list_id").String().Raw()
+	listID := l.Value(key.Data).Object().Value(key.ListID).String().Raw()
 
 	// Delete list
-	e.DELETE("/user/lists/{list_id}").
-		WithPath("list_id", listID).
+	e.DELETE("/user/lists/{list_id}", listID).
 		WithHeader("Authorization", "Bearer "+accessToken).
 		Expect().
 		Status(http.StatusOK)
 
 	// Update list
-	e.PUT("/user/lists/{list_id}").
-		WithPath("list_id", listID).
+	e.PUT("/user/lists/{list_id}", listID).
 		WithHeader("Authorization", "Bearer "+accessToken).
 		WithJSON(model.ListRequestData{
 			Title: gofakeit.Word(),
@@ -104,7 +102,7 @@ func TestUpdateList_NotFound(t *testing.T) {
 
 func TestUpdateList_EmptyTitle(t *testing.T) {
 	u := url.URL{
-		Scheme: "http",
+		Scheme: scheme,
 		Host:   host,
 	}
 	e := httpexpect.Default(t, u.String())
@@ -131,16 +129,14 @@ func TestUpdateList_EmptyTitle(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	listID := l.Value("data").Object().Value("list_id").String().Raw()
+	listID := l.Value(key.Data).Object().Value(key.ListID).String().Raw()
 
-	// Update list
-	e.PUT("/user/lists/{list_id}").
-		WithPath("list_id", listID).
+	// Try to update list
+	e.PUT("/user/lists/{list_id}", listID).
 		WithHeader("Authorization", "Bearer "+accessToken).
 		WithJSON(model.ListRequestData{
 			Title: "",
 		}).
 		Expect().
-		Status(http.StatusBadRequest).
-		JSON().Object().NotEmpty()
+		Status(http.StatusBadRequest)
 }

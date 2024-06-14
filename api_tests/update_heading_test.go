@@ -3,6 +3,7 @@ package api_tests
 import (
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/gavv/httpexpect/v2"
+	"github.com/rshelekhov/reframed/internal/lib/constants/key"
 	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
 	"github.com/rshelekhov/reframed/internal/model"
 	"net/http"
@@ -12,7 +13,7 @@ import (
 
 func TestUpdateHeading_HappyPath(t *testing.T) {
 	u := url.URL{
-		Scheme: "http",
+		Scheme: scheme,
 		Host:   host,
 	}
 	e := httpexpect.Default(t, u.String())
@@ -39,11 +40,10 @@ func TestUpdateHeading_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	listID := l.Value("data").Object().Value("list_id").String().Raw()
+	listID := l.Value(key.Data).Object().Value(key.ListID).String().Raw()
 
 	// Create heading
-	h := e.POST("/user/lists/{list_id}/headings/").
-		WithPath("list_id", listID).
+	h := e.POST("/user/lists/{list_id}/headings/", listID).
 		WithHeader("Authorization", "Bearer "+accessToken).
 		WithJSON(model.HeadingRequestData{
 			Title:  gofakeit.Word(),
@@ -53,12 +53,10 @@ func TestUpdateHeading_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	headingID := h.Value("data").Object().Value("heading_id").String().Raw()
+	headingID := h.Value(key.Data).Object().Value(key.HeadingID).String().Raw()
 
 	// Update heading
-	e.PUT("/user/lists/{list_id}/headings/{heading_id}").
-		WithPath("list_id", listID).
-		WithPath("heading_id", headingID).
+	e.PUT("/user/lists/{list_id}/headings/{heading_id}", listID, headingID).
 		WithHeader("Authorization", "Bearer "+accessToken).
 		WithJSON(model.HeadingRequestData{
 			Title: gofakeit.Word(),
@@ -70,7 +68,7 @@ func TestUpdateHeading_HappyPath(t *testing.T) {
 
 func TestUpdateHeading_NotFound(t *testing.T) {
 	u := url.URL{
-		Scheme: "http",
+		Scheme: scheme,
 		Host:   host,
 	}
 	e := httpexpect.Default(t, u.String())
@@ -97,11 +95,10 @@ func TestUpdateHeading_NotFound(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	listID := l.Value("data").Object().Value("list_id").String().Raw()
+	listID := l.Value(key.Data).Object().Value(key.ListID).String().Raw()
 
 	// Create heading
-	h := e.POST("/user/lists/{list_id}/headings/").
-		WithPath("list_id", listID).
+	h := e.POST("/user/lists/{list_id}/headings/", listID).
 		WithHeader("Authorization", "Bearer "+accessToken).
 		WithJSON(model.HeadingRequestData{
 			Title:  gofakeit.Word(),
@@ -111,21 +108,17 @@ func TestUpdateHeading_NotFound(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	headingID := h.Value("data").Object().Value("heading_id").String().Raw()
+	headingID := h.Value(key.Data).Object().Value(key.HeadingID).String().Raw()
 
 	// Delete heading
-	e.DELETE("/user/lists/{list_id}/headings/{heading_id}").
-		WithPath("list_id", listID).
-		WithPath("heading_id", headingID).
+	e.DELETE("/user/lists/{list_id}/headings/{heading_id}", listID, headingID).
 		WithHeader("Authorization", "Bearer "+accessToken).
 		Expect().
 		Status(http.StatusOK).
 		JSON().Object()
 
-	// Update heading
-	e.PUT("/user/lists/{list_id}/headings/{heading_id}").
-		WithPath("list_id", listID).
-		WithPath("heading_id", headingID).
+	// Try to update heading
+	e.PUT("/user/lists/{list_id}/headings/{heading_id}", listID, headingID).
 		WithHeader("Authorization", "Bearer "+accessToken).
 		WithJSON(model.HeadingRequestData{
 			Title: gofakeit.Word(),
@@ -136,7 +129,7 @@ func TestUpdateHeading_NotFound(t *testing.T) {
 
 func TestMoveHeadingToAnotherList_HappyPath(t *testing.T) {
 	u := url.URL{
-		Scheme: "http",
+		Scheme: scheme,
 		Host:   host,
 	}
 	e := httpexpect.Default(t, u.String())
@@ -163,7 +156,7 @@ func TestMoveHeadingToAnotherList_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	initialListID := initialList.Value("data").Object().Value("list_id").String().Raw()
+	initialListID := initialList.Value(key.Data).Object().Value(key.ListID).String().Raw()
 
 	// Create second list
 	otherList := e.POST("/user/lists/").
@@ -175,11 +168,10 @@ func TestMoveHeadingToAnotherList_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	otherListID := otherList.Value("data").Object().Value("list_id").String().Raw()
+	otherListID := otherList.Value(key.Data).Object().Value(key.ListID).String().Raw()
 
 	// Create heading
-	h := e.POST("/user/lists/{list_id}/headings/").
-		WithPath("list_id", initialListID).
+	h := e.POST("/user/lists/{list_id}/headings/", initialListID).
 		WithHeader("Authorization", "Bearer "+accessToken).
 		WithJSON(model.HeadingRequestData{
 			Title:  gofakeit.Word(),
@@ -189,13 +181,11 @@ func TestMoveHeadingToAnotherList_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	headingID := h.Value("data").Object().Value("heading_id").String().Raw()
+	headingID := h.Value(key.Data).Object().Value(key.HeadingID).String().Raw()
 
 	// Move heading
-	e.PUT("/user/lists/{list_id}/headings/{heading_id}/move").
-		WithPath("list_id", initialListID).
-		WithPath("heading_id", headingID).
-		WithQuery("list_id", otherListID).
+	e.PUT("/user/lists/{list_id}/headings/{heading_id}/move", initialListID, headingID).
+		WithQuery(key.ListID, otherListID).
 		WithHeader("Authorization", "Bearer "+accessToken).
 		Expect().
 		Status(http.StatusOK).
@@ -204,7 +194,7 @@ func TestMoveHeadingToAnotherList_HappyPath(t *testing.T) {
 
 func TestMoveHadingToAnotherList_FailCases(t *testing.T) {
 	u := url.URL{
-		Scheme: "http",
+		Scheme: scheme,
 		Host:   host,
 	}
 	e := httpexpect.Default(t, u.String())
@@ -231,7 +221,7 @@ func TestMoveHadingToAnotherList_FailCases(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	initialListID := initialList.Value("data").Object().Value("list_id").String().Raw()
+	initialListID := initialList.Value(key.Data).Object().Value(key.ListID).String().Raw()
 
 	// Create second list
 	otherList := e.POST("/user/lists/").
@@ -243,11 +233,10 @@ func TestMoveHadingToAnotherList_FailCases(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	otherListID := otherList.Value("data").Object().Value("list_id").String().Raw()
+	otherListID := otherList.Value(key.Data).Object().Value(key.ListID).String().Raw()
 
 	// Create heading
-	h := e.POST("/user/lists/{list_id}/headings/").
-		WithPath("list_id", initialListID).
+	h := e.POST("/user/lists/{list_id}/headings/", initialListID).
 		WithHeader("Authorization", "Bearer "+accessToken).
 		WithJSON(model.HeadingRequestData{
 			Title:  gofakeit.Word(),
@@ -257,7 +246,7 @@ func TestMoveHadingToAnotherList_FailCases(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	headingID := h.Value("data").Object().Value("heading_id").String().Raw()
+	headingID := h.Value(key.Data).Object().Value(key.HeadingID).String().Raw()
 
 	testCases := []struct {
 		name        string
@@ -287,10 +276,8 @@ func TestMoveHadingToAnotherList_FailCases(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			e.PUT("/user/lists/{list_id}/headings/{heading_id}/move").
-				WithPath("list_id", initialListID).
-				WithPath("heading_id", tc.headingID).
-				WithQuery("list_id", tc.otherListID).
+			e.PUT("/user/lists/{list_id}/headings/{heading_id}/move", initialListID, tc.headingID).
+				WithQuery(key.ListID, tc.otherListID).
 				WithHeader("Authorization", "Bearer "+accessToken).
 				Expect().
 				Status(tc.status)

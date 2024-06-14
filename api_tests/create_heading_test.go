@@ -3,6 +3,7 @@ package api_tests
 import (
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/gavv/httpexpect/v2"
+	"github.com/rshelekhov/reframed/internal/lib/constants/key"
 	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
 	"github.com/rshelekhov/reframed/internal/model"
 	"net/http"
@@ -12,7 +13,7 @@ import (
 
 func TestCreateHeading_HappyPath(t *testing.T) {
 	u := url.URL{
-		Scheme: "http",
+		Scheme: scheme,
 		Host:   host,
 	}
 	e := httpexpect.Default(t, u.String())
@@ -39,11 +40,10 @@ func TestCreateHeading_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	listID := l.Value("data").Object().Value("list_id").String().Raw()
+	listID := l.Value(key.Data).Object().Value(key.ListID).String().Raw()
 
 	// Create heading
-	e.POST("/user/lists/{list_id}/headings/").
-		WithPath("list_id", listID).
+	e.POST("/user/lists/{list_id}/headings/", listID).
 		WithHeader("Authorization", "Bearer "+accessToken).
 		WithJSON(model.HeadingRequestData{
 			Title:  gofakeit.Word(),
@@ -56,7 +56,7 @@ func TestCreateHeading_HappyPath(t *testing.T) {
 
 func TestCreateHeading_FailCases(t *testing.T) {
 	u := url.URL{
-		Scheme: "http",
+		Scheme: scheme,
 		Host:   host,
 	}
 	e := httpexpect.Default(t, u.String())
@@ -105,11 +105,10 @@ func TestCreateHeading_FailCases(t *testing.T) {
 				Status(http.StatusCreated).
 				JSON().Object()
 
-			listID := c.Value("data").Object().Value("list_id").String().Raw()
+			listID := c.Value(key.Data).Object().Value(key.ListID).String().Raw()
 
 			// Create heading
-			e.POST("/user/lists/{list_id}/headings/").
-				WithPath("list_id", listID).
+			e.POST("/user/lists/{list_id}/headings/", listID).
 				WithHeader("Authorization", "Bearer "+tc.accessToken).
 				WithJSON(model.HeadingRequestData{
 					Title:  tc.title,

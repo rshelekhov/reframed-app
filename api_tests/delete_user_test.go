@@ -12,7 +12,7 @@ import (
 
 func TestDeleteUser_HappyPath(t *testing.T) {
 	u := url.URL{
-		Scheme: "http",
+		Scheme: scheme,
 		Host:   host,
 	}
 	e := httpexpect.Default(t, u.String())

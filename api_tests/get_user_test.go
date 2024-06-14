@@ -12,7 +12,7 @@ import (
 
 func TestGetUser_HappyPath(t *testing.T) {
 	u := url.URL{
-		Scheme: "http",
+		Scheme: scheme,
 		Host:   host,
 	}
 	e := httpexpect.Default(t, u.String())
@@ -39,7 +39,7 @@ func TestGetUser_HappyPath(t *testing.T) {
 
 func TestGetUser_FailCases(t *testing.T) {
 	u := url.URL{
-		Scheme: "http",
+		Scheme: scheme,
 		Host:   host,
 	}
 	e := httpexpect.Default(t, u.String())
@@ -81,7 +81,7 @@ func TestGetUser_FailCases(t *testing.T) {
 
 func TestGetUser_NotFound(t *testing.T) {
 	u := url.URL{
-		Scheme: "http",
+		Scheme: scheme,
 		Host:   host,
 	}
 	e := httpexpect.Default(t, u.String())
