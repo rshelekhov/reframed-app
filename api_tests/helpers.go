@@ -1,14 +1,23 @@
 package api_tests
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/brianvoe/gofakeit/v6"
+	"github.com/gavv/httpexpect/v2"
+	"github.com/rshelekhov/reframed/internal/lib/constants/key"
 	"github.com/rshelekhov/reframed/internal/model"
 	"math/rand"
+	"net/http"
+	"testing"
 	"time"
 )
 
 const (
+	scheme                    = "http"
 	host                      = "localhost:8082"
+	cookieDomain              = "localhost"
+	cookiePath                = "/"
 	passwordDefaultLength     = 10
 	titleDefaultLength        = 5
 	paragraphDefaultCount     = 1
@@ -103,4 +112,54 @@ func randomTags(isSet bool) []string {
 		return tags
 	}
 	return nil
+}
+
+func createLists(e *httpexpect.Expect, accessToken string, n int) []*httpexpect.Object {
+	var lists []*httpexpect.Object
+
+	for i := 0; i < n; i++ {
+		list := e.POST("/user/lists/").
+			WithHeader("Authorization", "Bearer "+accessToken).
+			WithJSON(model.ListRequestData{
+				Title: gofakeit.Word(),
+			}).
+			Expect().
+			Status(http.StatusCreated).
+			JSON().Object()
+
+		lists = append(lists, list)
+	}
+
+	return lists
+}
+
+func createTasks(e *httpexpect.Expect, accessToken string, lists []*httpexpect.Object, n int) []*httpexpect.Object {
+	var tasks []*httpexpect.Object
+
+	for _, list := range lists {
+		listID := list.Value(key.Data).Object().Value(key.ListID).String().Raw()
+
+		fakeTask := randomFakeTask(true, true, true, true, true, listID, "")
+
+		for i := 0; i < n; i++ {
+			task := e.POST("/user/lists/{list_id}/tasks", listID).
+				WithHeader("Authorization", "Bearer "+accessToken).
+				WithJSON(fakeTask).
+				Expect().
+				Status(http.StatusCreated).
+				JSON().Object()
+
+			tasks = append(tasks, task)
+		}
+	}
+
+	return tasks
+}
+
+func printDataToJSON(t *testing.T, data *httpexpect.Object) {
+	formattedData, err := json.MarshalIndent(data.Raw(), "", "  ")
+	if err != nil {
+		t.Fatalf("Error formatting data to JSON: %v", err)
+	}
+	fmt.Println(string(formattedData))
 }
