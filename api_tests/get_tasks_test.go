@@ -36,13 +36,36 @@ func TestGetTasksByUserID_HappyPath(t *testing.T) {
 	_ = createTasks(e, accessToken, lists, 3)
 
 	// Get tasks
-	tasks := e.GET("/user/tasks").
+	e.GET("/user/tasks").
 		WithHeader("Authorization", "Bearer "+accessToken).
 		Expect().
 		Status(http.StatusOK).
+		JSON().Object().NotEmpty()
+}
+
+func TestGetTasksByUserID_NotFound(t *testing.T) {
+	u := url.URL{
+		Scheme: scheme,
+		Host:   host,
+	}
+	e := httpexpect.Default(t, u.String())
+
+	// Register user
+	r := e.POST("/register").
+		WithJSON(model.UserRequestData{
+			Email:    gofakeit.Email(),
+			Password: randomFakePassword(),
+		}).
+		Expect().
+		Status(http.StatusCreated).
 		JSON().Object()
 
-	// TODO: find out why in the returned data there are no tags!
+	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
 
-	printDataToJSON(t, tasks)
+	// Try to get tasks
+	e.GET("/user/tasks").
+		WithHeader("Authorization", "Bearer "+accessToken).
+		Expect().
+		Status(http.StatusOK).
+		JSON().Object().NotEmpty()
 }
