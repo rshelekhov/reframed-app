@@ -154,7 +154,9 @@ func (c *listController) GetListsByUserID() http.HandlerFunc {
 
 		switch {
 		case errors.Is(err, le.ErrNoListsFound):
-			handleResponseError(w, r, log, http.StatusNotFound, le.ErrNoListsFound)
+			handleResponseSuccess(w, r, log, "no lists found", nil,
+				slog.Int(key.Count, len(listsResp)),
+			)
 			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetLists, err)

@@ -168,8 +168,11 @@ func (c *taskController) GetTasksByUserID() http.HandlerFunc {
 		tasksResp, err := c.usecase.GetTasksByUserID(ctx, userID, pagination)
 
 		switch {
+		// TODO: research what should return in such cases (what http status) and update here and in other places
 		case errors.Is(err, le.ErrNoTasksFound):
-			handleResponseError(w, r, log, http.StatusNotFound, le.ErrNoTasksFound)
+			handleResponseSuccess(w, r, log, "no tasks found", nil,
+				slog.Int(key.Count, len(tasksResp)),
+			)
 			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
@@ -206,13 +209,15 @@ func (c *taskController) GetTasksByListID() http.HandlerFunc {
 
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
-			handleResponseError(w, r, log, http.StatusNotFound, le.ErrNoTasksFound)
+			handleResponseSuccess(w, r, log, "no tasks for the list found", nil,
+				slog.Int(key.Count, len(tasksResp)),
+			)
 			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
 			return
 		default:
-			handleResponseSuccess(w, r, log, "tasks found", tasksResp,
+			handleResponseSuccess(w, r, log, "tasks for the list found", tasksResp,
 				slog.Int(key.Count, len(tasksResp)),
 			)
 		}
@@ -243,7 +248,9 @@ func (c *taskController) GetTasksGroupedByHeadings() http.HandlerFunc {
 
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
-			handleResponseError(w, r, log, http.StatusNotFound, le.ErrNoTasksFound)
+			handleResponseSuccess(w, r, log, "no tasks grouped by headings found", nil,
+				slog.Int(key.Count, len(tasksResp)),
+			)
 			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
@@ -271,7 +278,9 @@ func (c *taskController) GetTasksForToday() http.HandlerFunc {
 
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
-			handleResponseError(w, r, log, http.StatusNotFound, le.ErrNoTasksFound)
+			handleResponseSuccess(w, r, log, "no tasks for today found", nil,
+				slog.Int(key.Count, len(tasksResp)),
+			)
 			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
@@ -305,7 +314,9 @@ func (c *taskController) GetUpcomingTasks() http.HandlerFunc {
 
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
-			handleResponseError(w, r, log, http.StatusNotFound, le.ErrNoTasksFound)
+			handleResponseSuccess(w, r, log, "no upcoming tasks found", nil,
+				slog.Int(key.Count, len(tasksResp)),
+			)
 			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
@@ -335,7 +346,9 @@ func (c *taskController) GetOverdueTasks() http.HandlerFunc {
 
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
-			handleResponseError(w, r, log, http.StatusNotFound, le.ErrNoTasksFound)
+			handleResponseSuccess(w, r, log, "no overdue tasks found", nil,
+				slog.Int(key.Count, len(tasksResp)),
+			)
 			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
@@ -365,7 +378,9 @@ func (c *taskController) GetTasksForSomeday() http.HandlerFunc {
 
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
-			handleResponseError(w, r, log, http.StatusNotFound, le.ErrNoTasksFound)
+			handleResponseSuccess(w, r, log, "no tasks for someday found", nil,
+				slog.Int(key.Count, len(tasksResp)),
+			)
 			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
@@ -399,7 +414,9 @@ func (c *taskController) GetCompletedTasks() http.HandlerFunc {
 
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
-			handleResponseError(w, r, log, http.StatusNotFound, le.ErrNoTasksFound)
+			handleResponseSuccess(w, r, log, "no completed tasks found", nil,
+				slog.Int(key.Count, len(tasksResp)),
+			)
 			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
@@ -433,7 +450,9 @@ func (c *taskController) GetArchivedTasks() http.HandlerFunc {
 
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
-			handleResponseError(w, r, log, http.StatusNotFound, le.ErrNoTasksFound)
+			handleResponseSuccess(w, r, log, "no archived tasks found", nil,
+				slog.Int(key.Count, len(tasksResp)),
+			)
 			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)

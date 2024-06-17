@@ -42,13 +42,15 @@ func (c *statusController) GetStatuses() http.HandlerFunc {
 
 		switch {
 		case errors.Is(err, le.ErrNoStatusesFound):
-			handleResponseError(w, r, log, http.StatusNotFound, le.ErrNoStatusesFound)
+			handleResponseSuccess(w, r, log, "no statuses found", nil,
+				slog.Int(key.Count, len(statuses)),
+			)
 			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
 			return
 		default:
-			handleResponseSuccess(w, r, log, "statuses received", statuses, slog.Int(key.Count, len(statuses)))
+			handleResponseSuccess(w, r, log, "statuses found", statuses, slog.Int(key.Count, len(statuses)))
 			return
 		}
 	}
