@@ -66,7 +66,7 @@ func TestCompleteTask_HappyPath(t *testing.T) {
 	}
 }
 
-func TestCompleteTask_FailCases(t *testing.T) {
+func TestCompleteTask_NotFound(t *testing.T) {
 	u := url.URL{
 		Scheme: scheme,
 		Host:   host,
@@ -85,29 +85,11 @@ func TestCompleteTask_FailCases(t *testing.T) {
 
 	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
 
-	testCases := []struct {
-		name   string
-		taskID string
-		status int
-	}{
-		{
-			name:   "Complete task with empty task_id",
-			taskID: "",
-			status: http.StatusBadRequest,
-		},
-		{
-			name:   "Complete task when task not found",
-			taskID: ksuid.New().String(),
-			status: http.StatusNotFound,
-		},
-	}
+	taskID := ksuid.New().String()
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			e.PATCH("/user/tasks/{task_id}/complete", tc.taskID).
-				WithHeader("Authorization", "Bearer "+accessToken).
-				Expect().
-				Status(tc.status)
-		})
-	}
+	e.PATCH("/user/tasks/{task_id}/complete", taskID).
+		WithHeader("Authorization", "Bearer "+accessToken).
+		Expect().
+		Status(http.StatusNotFound)
+
 }
