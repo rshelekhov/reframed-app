@@ -34,13 +34,13 @@ type (
 		GetTaskByID(ctx context.Context, taskID, userID string) (model.Task, error)
 		GetTasksByUserID(ctx context.Context, userID string, pgn model.Pagination) ([]model.Task, error)
 		GetTasksByListID(ctx context.Context, listID, userID string) ([]model.Task, error)
-		GetTasksGroupedByHeadings(ctx context.Context, listID, userID string) ([]model.TaskGroup, error)
-		GetTasksForToday(ctx context.Context, userID string) ([]model.TaskGroup, error)
-		GetUpcomingTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error)
-		GetOverdueTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error)
-		GetTasksForSomeday(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error)
-		GetCompletedTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error)
-		GetArchivedTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error)
+		GetTasksGroupedByHeadings(ctx context.Context, listID, userID string) ([]model.TaskGroupRaw, error)
+		GetTasksForToday(ctx context.Context, userID string) ([]model.TaskGroupRaw, error)
+		GetUpcomingTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroupRaw, error)
+		GetOverdueTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroupRaw, error)
+		GetTasksForSomeday(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroupRaw, error)
+		GetCompletedTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroupRaw, error)
+		GetArchivedTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroupRaw, error)
 		UpdateTask(ctx context.Context, task model.Task) error
 		UpdateTaskTime(ctx context.Context, task model.Task) error
 		MoveTaskToAnotherList(ctx context.Context, task model.Task) error

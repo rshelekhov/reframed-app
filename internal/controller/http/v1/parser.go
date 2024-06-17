@@ -38,6 +38,10 @@ func ParseLimitAndAfterDate(r *http.Request) (model.Pagination, error) {
 		return model.Pagination{}, err
 	}
 
+	if afterDate.IsZero() {
+		afterDate = time.Now()
+	}
+
 	return model.Pagination{
 		Limit:     int32(limit),
 		AfterDate: afterDate,

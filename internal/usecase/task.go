@@ -2,6 +2,8 @@ package usecase
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/segmentio/ksuid"
@@ -173,63 +175,205 @@ func mapTaskToResponseData(task model.Task) model.TaskResponseData {
 
 // TODO: update this and following usecases — need to match data to models here, not in the storage!
 func (u *TaskUsecase) GetTasksGroupedByHeadings(ctx context.Context, data model.TaskRequestData) ([]model.TaskGroup, error) {
-	taskGroups, err := u.storage.GetTasksGroupedByHeadings(ctx, data.ListID, data.UserID)
+	const op = "task.usecase.GetTasksGroupedByHeadings"
+
+	groupsRaw, err := u.storage.GetTasksGroupedByHeadings(ctx, data.ListID, data.UserID)
 	if err != nil {
 		return nil, err
+	}
+
+	var taskGroups []model.TaskGroup
+
+	for _, group := range groupsRaw {
+		var taskGroup model.TaskGroup
+
+		var tasks []model.TaskResponseData
+
+		err = json.Unmarshal(group.Tasks, &tasks)
+		if err != nil {
+			return nil, fmt.Errorf("%s: failed to unmarshal tasks from postgres json object: %w", op, err)
+		}
+
+		taskGroup.HeadingID = group.HeadingID
+		taskGroup.Tasks = tasks
+
+		taskGroups = append(taskGroups, taskGroup)
 	}
 
 	return taskGroups, nil
 }
 
 func (u *TaskUsecase) GetTasksForToday(ctx context.Context, userID string) ([]model.TaskGroup, error) {
-	taskGroups, err := u.storage.GetTasksForToday(ctx, userID)
+	const op = "task.usecase.GetTasksForToday"
+
+	groupsRaw, err := u.storage.GetTasksForToday(ctx, userID)
 	if err != nil {
 		return nil, err
+	}
+
+	var taskGroups []model.TaskGroup
+
+	for _, group := range groupsRaw {
+		var taskGroup model.TaskGroup
+
+		var tasks []model.TaskResponseData
+
+		err = json.Unmarshal(group.Tasks, &tasks)
+		if err != nil {
+			return nil, fmt.Errorf("%s: failed to unmarshal tasks from postgres json object: %w", op, err)
+		}
+
+		taskGroup.ListID = group.ListID
+		taskGroup.Tasks = tasks
+
+		taskGroups = append(taskGroups, taskGroup)
 	}
 
 	return taskGroups, nil
 }
 
 func (u *TaskUsecase) GetUpcomingTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error) {
-	taskGroups, err := u.storage.GetUpcomingTasks(ctx, userID, pgn)
+	const op = "task.usecase.GetUpcomingTasks"
+
+	groupsRaw, err := u.storage.GetUpcomingTasks(ctx, userID, pgn)
 	if err != nil {
 		return nil, err
+	}
+
+	var taskGroups []model.TaskGroup
+
+	for _, group := range groupsRaw {
+		var taskGroup model.TaskGroup
+
+		var tasks []model.TaskResponseData
+
+		err = json.Unmarshal(group.Tasks, &tasks)
+		if err != nil {
+			return nil, fmt.Errorf("%s: failed to unmarshal tasks from postgres json object: %w", op, err)
+		}
+
+		taskGroup.StartDate = group.StartDate
+		taskGroup.Tasks = tasks
+
+		taskGroups = append(taskGroups, taskGroup)
 	}
 
 	return taskGroups, nil
 }
 
 func (u *TaskUsecase) GetOverdueTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error) {
-	taskGroups, err := u.storage.GetOverdueTasks(ctx, userID, pgn)
+	const op = "task.usecase.GetOverdueTasks"
+
+	groupsRaw, err := u.storage.GetOverdueTasks(ctx, userID, pgn)
 	if err != nil {
 		return nil, err
+	}
+
+	var taskGroups []model.TaskGroup
+
+	for _, group := range groupsRaw {
+		var taskGroup model.TaskGroup
+
+		var tasks []model.TaskResponseData
+
+		err = json.Unmarshal(group.Tasks, &tasks)
+		if err != nil {
+			return nil, fmt.Errorf("%s: failed to unmarshal tasks from postgres json object: %w", op, err)
+		}
+
+		taskGroup.ListID = group.ListID
+		taskGroup.Tasks = tasks
+
+		taskGroups = append(taskGroups, taskGroup)
 	}
 
 	return taskGroups, nil
 }
 
 func (u *TaskUsecase) GetTasksForSomeday(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error) {
-	taskGroups, err := u.storage.GetTasksForSomeday(ctx, userID, pgn)
+	const op = "task.usecase.GetTasksForSomeday"
+
+	groupsRaw, err := u.storage.GetTasksForSomeday(ctx, userID, pgn)
 	if err != nil {
 		return nil, err
+	}
+
+	var taskGroups []model.TaskGroup
+
+	for _, group := range groupsRaw {
+		var taskGroup model.TaskGroup
+
+		var tasks []model.TaskResponseData
+
+		err = json.Unmarshal(group.Tasks, &tasks)
+		if err != nil {
+			return nil, fmt.Errorf("%s: failed to unmarshal tasks from postgres json object: %w", op, err)
+		}
+
+		taskGroup.StartDate = group.StartDate
+		taskGroup.Tasks = tasks
+
+		taskGroups = append(taskGroups, taskGroup)
 	}
 
 	return taskGroups, nil
 }
 
 func (u *TaskUsecase) GetCompletedTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error) {
-	taskGroups, err := u.storage.GetCompletedTasks(ctx, userID, pgn)
+	const op = "task.usecase.GetCompletedTasks"
+
+	groupsRaw, err := u.storage.GetCompletedTasks(ctx, userID, pgn)
 	if err != nil {
 		return nil, err
+	}
+
+	var taskGroups []model.TaskGroup
+
+	for _, group := range groupsRaw {
+		var taskGroup model.TaskGroup
+
+		var tasks []model.TaskResponseData
+
+		err = json.Unmarshal(group.Tasks, &tasks)
+		if err != nil {
+			return nil, fmt.Errorf("%s: failed to unmarshal tasks from postgres json object: %w", op, err)
+		}
+
+		// TODO: check the response for this field
+		taskGroup.Month = group.Month
+		taskGroup.Tasks = tasks
+
+		taskGroups = append(taskGroups, taskGroup)
 	}
 
 	return taskGroups, nil
 }
 
 func (u *TaskUsecase) GetArchivedTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error) {
-	taskGroups, err := u.storage.GetArchivedTasks(ctx, userID, pgn)
+	const op = "task.usecase.GetArchivedTasks"
+
+	groupsRaw, err := u.storage.GetArchivedTasks(ctx, userID, pgn)
 	if err != nil {
 		return nil, err
+	}
+
+	var taskGroups []model.TaskGroup
+
+	for _, group := range groupsRaw {
+		var taskGroup model.TaskGroup
+
+		var tasks []model.TaskResponseData
+
+		err = json.Unmarshal(group.Tasks, &tasks)
+		if err != nil {
+			return nil, fmt.Errorf("%s: failed to unmarshal tasks from postgres json object: %w", op, err)
+		}
+
+		// TODO: check the response for this field
+		taskGroup.Month = group.Month
+		taskGroup.Tasks = tasks
+
+		taskGroups = append(taskGroups, taskGroup)
 	}
 
 	return taskGroups, nil

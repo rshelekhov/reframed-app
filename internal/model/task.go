@@ -81,6 +81,14 @@ type (
 		UpdatedAt time.Time `json:"updated_at"`
 	}
 
+	TaskGroupRaw struct {
+		StartDate time.Time
+		Month     int32
+		ListID    string
+		HeadingID string
+		Tasks     []byte
+	}
+
 	TaskGroup struct {
 		StartDate time.Time          `json:"start_date"`
 		Month     int32              `json:"month,omitempty"`
