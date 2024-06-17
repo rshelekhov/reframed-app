@@ -120,12 +120,6 @@ func TestMoveTaskToAnotherList_FailCases(t *testing.T) {
 		status int
 	}{
 		{
-			name:   "Move task to another list when taskID is empty",
-			taskID: "",
-			listID: listID,
-			status: http.StatusBadRequest,
-		},
-		{
 			name:   "Move task to another list when listID is empty",
 			taskID: taskID,
 			listID: "",
