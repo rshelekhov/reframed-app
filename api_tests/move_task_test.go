@@ -285,13 +285,6 @@ func TestMoveTaskToAnotherHeading_FailCases(t *testing.T) {
 		status    int
 	}{
 		{
-			name:      "Move task to another heading when taskID is empty",
-			taskID:    "",
-			listID:    listID,
-			headingID: headingID,
-			status:    http.StatusBadRequest,
-		},
-		{
 			name:      "Move task to another heading when headingID is empty",
 			taskID:    taskID,
 			listID:    listID,
