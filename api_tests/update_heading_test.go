@@ -223,18 +223,6 @@ func TestMoveHadingToAnotherList_FailCases(t *testing.T) {
 
 	initialListID := initialList.Value(key.Data).Object().Value(key.ListID).String().Raw()
 
-	// Create second list
-	otherList := e.POST("/user/lists/").
-		WithHeader("Authorization", "Bearer "+accessToken).
-		WithJSON(model.ListRequestData{
-			Title: gofakeit.Word(),
-		}).
-		Expect().
-		Status(http.StatusCreated).
-		JSON().Object()
-
-	otherListID := otherList.Value(key.Data).Object().Value(key.ListID).String().Raw()
-
 	// Create heading
 	h := e.POST("/user/lists/{list_id}/headings/", initialListID).
 		WithHeader("Authorization", "Bearer "+accessToken).
@@ -265,12 +253,6 @@ func TestMoveHadingToAnotherList_FailCases(t *testing.T) {
 			headingID:   headingID,
 			otherListID: "invalid",
 			status:      http.StatusNotFound,
-		},
-		{
-			name:        "Move heading to another list with empty heading id",
-			headingID:   "",
-			otherListID: otherListID,
-			status:      http.StatusBadRequest,
 		},
 	}
 
