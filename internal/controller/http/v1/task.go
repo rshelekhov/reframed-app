@@ -168,7 +168,6 @@ func (c *taskController) GetTasksByUserID() http.HandlerFunc {
 		tasksResp, err := c.usecase.GetTasksByUserID(ctx, userID, pagination)
 
 		switch {
-		// TODO: research what should return in such cases (what http status) and update here and in other places
 		case errors.Is(err, le.ErrNoTasksFound):
 			handleResponseSuccess(w, r, log, "no tasks found", nil,
 				slog.Int(key.Count, len(tasksResp)),
