@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	c "github.com/rshelekhov/reframed/internal/lib/constants/key"
+	"github.com/rshelekhov/reframed/internal/lib/constants/key"
 	"github.com/rshelekhov/reframed/internal/model"
 )
 
@@ -14,12 +14,12 @@ const (
 )
 
 func ParseLimitAndAfterID(r *http.Request) model.Pagination {
-	limit, err := strconv.Atoi(r.URL.Query().Get(c.Limit))
+	limit, err := strconv.Atoi(r.URL.Query().Get(key.Limit))
 	if err != nil || limit < 0 {
 		limit = DefaultLimit
 	}
 
-	afterID := r.URL.Query().Get(c.AfterID)
+	afterID := r.URL.Query().Get(key.AfterID)
 
 	return model.Pagination{
 		Limit:   int32(limit),
@@ -28,18 +28,21 @@ func ParseLimitAndAfterID(r *http.Request) model.Pagination {
 }
 
 func ParseLimitAndAfterDate(r *http.Request) (model.Pagination, error) {
-	limit, err := strconv.Atoi(r.URL.Query().Get(c.Limit))
+	limit, err := strconv.Atoi(r.URL.Query().Get(key.Limit))
 	if err != nil || limit < 0 {
 		limit = DefaultLimit
 	}
 
-	afterDate, err := time.Parse(time.DateOnly, r.URL.Query().Get(c.AfterDate))
-	if err != nil {
-		return model.Pagination{}, err
-	}
+	var afterDate time.Time
+	afterDateString := r.URL.Query().Get(key.AfterDate)
 
-	if afterDate.IsZero() {
+	if afterDateString == "" {
 		afterDate = time.Now()
+	} else {
+		afterDate, err = time.Parse(time.DateOnly, afterDateString)
+		if err != nil {
+			return model.Pagination{}, err
+		}
 	}
 
 	return model.Pagination{
