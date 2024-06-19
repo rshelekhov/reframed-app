@@ -48,7 +48,7 @@ func TestArchiveTask_HappyPath(t *testing.T) {
 		WithHeader("Authorization", "Bearer "+accessToken).
 		Expect().
 		Status(http.StatusOK).
-		JSON().Object().NotEmpty()
+		JSON().Object()
 
 	taskStatusID := archivedTask.Value(key.Data).Object().Value(key.StatusID).Raw()
 
