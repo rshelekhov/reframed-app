@@ -6,6 +6,7 @@ import (
 	"github.com/rshelekhov/reframed/internal/lib/constants/key"
 	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
 	"github.com/rshelekhov/reframed/internal/model"
+	"github.com/stretchr/testify/require"
 	"net/http"
 	"net/url"
 	"testing"
@@ -30,11 +31,14 @@ func TestGetArchivedTasks_HappyPath(t *testing.T) {
 
 	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
 
+	numberOfLists := 3
+	numberOfTasks := 3
+
 	// Create three lists
-	lists := createLists(e, accessToken, 3)
+	lists := createLists(e, accessToken, numberOfLists)
 
 	// Create three tasks in each list
-	tasks := createTasks(e, accessToken, lists, 3)
+	tasks := createTasks(e, accessToken, lists, numberOfTasks)
 
 	// Archive tasks
 	for _, task := range tasks {
@@ -47,11 +51,16 @@ func TestGetArchivedTasks_HappyPath(t *testing.T) {
 	}
 
 	// Get archived tasks
-	e.GET("/user/tasks/archived").
+	archivedTasks := e.GET("/user/tasks/archived").
 		WithHeader("Authorization", "Bearer "+accessToken).
 		Expect().
 		Status(http.StatusOK).
-		JSON()
+		JSON().Object()
 
-	// TODO: посчитать, что количество задач соответствует тому, что было заархивировано
+	printDataToJSON(t, archivedTasks)
+
+	// Check that returned the same amount of tasks as was archived
+	totalArchivedTasks := countTasks(t, archivedTasks, false)
+
+	require.Equal(t, numberOfLists*numberOfTasks, totalArchivedTasks)
 }
