@@ -571,6 +571,8 @@ func (s *TaskStorage) GetArchivedTasks(ctx context.Context, userID string, pgn m
 
 		taskGroup.Tasks = group.Tasks
 
+		taskGroup.StartDate = time.Time{}
+
 		taskGroups = append(taskGroups, taskGroup)
 	}
 

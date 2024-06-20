@@ -49,10 +49,10 @@ type (
 		ID          string    `json:"task_id,omitempty"`
 		Title       string    `json:"title,omitempty"`
 		Description string    `json:"description,omitempty"`
-		StartDate   time.Time `json:"start_date"`
-		Deadline    time.Time `json:"deadline"`
-		StartTime   time.Time `json:"start_time"`
-		EndTime     time.Time `json:"end_time"`
+		StartDate   time.Time `json:"start_date,omitempty"`
+		Deadline    time.Time `json:"deadline,omitempty"`
+		StartTime   time.Time `json:"start_time,omitempty"`
+		EndTime     time.Time `json:"end_time,omitempty"`
 		StatusID    int       `json:"status_id,omitempty"`
 		ListID      string    `json:"list_id,omitempty"`
 		HeadingID   string    `json:"heading_id,omitempty"`
@@ -82,18 +82,28 @@ type (
 	}
 
 	TaskGroupRaw struct {
-		StartDate time.Time
-		Month     time.Time
-		ListID    string
-		HeadingID string
-		Tasks     []byte
+		StartDate time.Time `json:"start_date,omitempty"`
+		Month     time.Time `json:"month,omitempty"`
+		ListID    string    `json:"list_id,omitempty"`
+		HeadingID string    `json:"heading_id,omitempty"`
+		Tasks     []byte    `json:"tasks,omitempty"`
 	}
 
 	TaskGroup struct {
-		StartDate time.Time          `json:"start_date"`
+		StartDate time.Time          `json:"start_date,omitempty"`
 		Month     time.Time          `json:"month,omitempty"`
 		ListID    string             `json:"list_id,omitempty"`
 		HeadingID string             `json:"heading_id,omitempty"`
-		Tasks     []TaskResponseData `json:"tasks"`
+		Tasks     []TaskResponseData `json:"tasks,omitempty"`
+	}
+
+	CompletedTasksGroup struct {
+		Month time.Time          `json:"month,omitempty"`
+		Tasks []TaskResponseData `json:"tasks,omitempty"`
+	}
+
+	ArchivedTasksGroup struct {
+		Month time.Time          `json:"month,omitempty"`
+		Tasks []TaskResponseData `json:"tasks,omitempty"`
 	}
 )
