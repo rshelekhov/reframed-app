@@ -19,6 +19,8 @@ const (
 
 	Data      = "data"
 	Title     = "title"
+	Tasks     = "tasks"
+	Month     = "month"
 	UserID    = "user_id"
 	Email     = "email"
 	ListID    = "list_id"
