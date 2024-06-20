@@ -435,7 +435,7 @@ LIMIT $2;
 
 -- name: GetCompletedTasks :many
 SELECT
-    DATE_TRUNC('month', t.updated_at) AS month,
+    DATE_TRUNC('month', t.updated_at)::timestamptz AS month,
     ARRAY_TO_JSON(
             ARRAY_AGG(
                     JSON_BUILD_OBJECT(
@@ -487,6 +487,7 @@ FROM (
         t.end_time,
         t.list_id,
         t.user_id,
+        tags,
         t.updated_at
     ) t
 GROUP BY month
@@ -551,8 +552,7 @@ FROM (
         t.list_id,
         t.user_id,
         tags,
-        t.updated_at,
-        t.deleted_at
+        t.updated_at
     ) t
 GROUP BY month
 ORDER BY month DESC
