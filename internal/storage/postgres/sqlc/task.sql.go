@@ -122,7 +122,8 @@ FROM (
         t.list_id,
         t.user_id,
         tags,
-        t.updated_at
+        t.updated_at,
+        t.deleted_at
     ) t
 GROUP BY month
 ORDER BY month DESC
