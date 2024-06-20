@@ -163,3 +163,55 @@ func printDataToJSON(t *testing.T, data *httpexpect.Object) {
 	}
 	fmt.Println(string(formattedData))
 }
+
+func countTasks(t *testing.T, data *httpexpect.Object, printDetails bool) int {
+	formattedData, err := json.MarshalIndent(data.Raw(), "", "  ")
+	if err != nil {
+		t.Fatalf("Error formatting data to JSON: %v", err)
+	}
+
+	var result map[string]interface{}
+
+	err = json.Unmarshal(formattedData, &result)
+	if err != nil {
+		fmt.Println("Error decoding JSON:", err)
+		return 0
+	}
+
+	dataA, ok := result[key.Data].([]interface{})
+	if !ok {
+		fmt.Println("Error: 'data' is not an array")
+		return 0
+	}
+
+	totalTasks := 0
+
+	for _, item := range dataA {
+		itemMap, ok := item.(map[string]interface{})
+		if !ok {
+			fmt.Println("Error: 'item' is not a map")
+			continue
+		}
+
+		tasks, ok := itemMap[key.Tasks].([]interface{})
+		if !ok {
+			fmt.Printf("Error: '%s' is not an array", key.Tasks)
+			continue
+		}
+
+		month, ok := itemMap[key.Month].(string)
+		if !ok {
+			fmt.Printf("Error: '%s' is not a string", key.Month)
+			continue
+		}
+
+		taskCount := len(tasks)
+		totalTasks += taskCount
+
+		if printDetails {
+			fmt.Printf("%s: %s, Number of %s: %d\n", key.Month, month, key.Tasks, taskCount)
+		}
+	}
+
+	return totalTasks
+}
