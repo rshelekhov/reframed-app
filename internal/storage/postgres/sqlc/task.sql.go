@@ -66,7 +66,7 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) error {
 
 const getArchivedTasks = `-- name: GetArchivedTasks :many
 SELECT
-    DATE_TRUNC('month', t.updated_at) AS month,
+    DATE_TRUNC('month', t.updated_at)::timestamptz AS month,
     ARRAY_TO_JSON(
             ARRAY_AGG(
                     JSON_BUILD_OBJECT(
@@ -121,6 +121,7 @@ FROM (
         t.end_time,
         t.list_id,
         t.user_id,
+        tags,
         t.updated_at,
         t.deleted_at
     ) t
@@ -137,8 +138,8 @@ type GetArchivedTasksParams struct {
 }
 
 type GetArchivedTasksRow struct {
-	Month pgtype.Interval `db:"month"`
-	Tasks []byte          `db:"tasks"`
+	Month pgtype.Timestamptz `db:"month"`
+	Tasks []byte             `db:"tasks"`
 }
 
 func (q *Queries) GetArchivedTasks(ctx context.Context, arg GetArchivedTasksParams) ([]GetArchivedTasksRow, error) {
