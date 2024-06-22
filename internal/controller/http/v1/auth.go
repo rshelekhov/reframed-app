@@ -59,14 +59,13 @@ func (c *authController) Register() http.HandlerFunc {
 				slog.String(key.Email, userInput.Email))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToCreateUser, err)
+		default:
+			log.Info("user and tokens created",
+				slog.String(key.UserID, userID),
+				slog.Any(key.AccessToken, tokenData.GetAccessToken()),
+				slog.Any(key.RefreshToken, tokenData.GetRefreshToken()))
+			jwtoken.SendTokensToWeb(w, tokenData, http.StatusCreated)
 		}
-
-		log.Info("user and tokens created",
-			slog.String(key.UserID, userID),
-			slog.Any(key.AccessToken, tokenData.GetAccessToken()),
-			slog.Any(key.RefreshToken, tokenData.GetRefreshToken()),
-		)
-		jwtoken.SendTokensToWeb(w, tokenData, http.StatusCreated)
 	}
 }
 
@@ -104,8 +103,7 @@ func (c *authController) LoginWithPassword() http.HandlerFunc {
 				"user logged in, tokens created",
 				slog.String(key.UserID, userID),
 				slog.Any(key.AccessToken, tokenData.AccessToken),
-				slog.Any(key.RefreshToken, tokenData.RefreshToken),
-			)
+				slog.Any(key.RefreshToken, tokenData.RefreshToken))
 			jwtoken.SendTokensToWeb(w, tokenData, http.StatusOK)
 		}
 	}
@@ -200,7 +198,6 @@ func (c *authController) GetUser() http.HandlerFunc {
 		}
 
 		user, err := c.usecase.GetUserByID(ctx)
-
 		switch {
 		case errors.Is(err, le.ErrUserNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrUserNotFound, slog.String(key.UserID, userID))
@@ -235,7 +232,6 @@ func (c *authController) UpdateUser() http.HandlerFunc {
 		}
 
 		err = c.usecase.UpdateUser(ctx, userInput)
-
 		switch {
 		case errors.Is(err, le.ErrUserNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrUserNotFound,
@@ -279,7 +275,6 @@ func (c *authController) DeleteUser() http.HandlerFunc {
 		}
 
 		err = c.usecase.DeleteUser(ctx, userDevice)
-
 		switch {
 		case errors.Is(err, le.ErrUserNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrUserNotFound,
@@ -289,8 +284,7 @@ func (c *authController) DeleteUser() http.HandlerFunc {
 		default:
 			handleResponseSuccess(w, r, log, "user deleted",
 				model.UserResponseData{ID: userID},
-				slog.String(key.UserID, userID),
-			)
+				slog.String(key.UserID, userID))
 		}
 	}
 }
