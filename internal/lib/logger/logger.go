@@ -1,7 +1,6 @@
 package logger
 
 import (
-	"context"
 	"log/slog"
 	"net/http"
 	"os"
@@ -15,41 +14,28 @@ const (
 	envProd  = "prod"
 )
 
-//type Interface interface {
-//	With(args ...any) *Logger
-//	Debug(msg string, attrs ...interface{})
-//	Info(msg string, attrs ...interface{})
-//	Warn(msg string, attrs ...interface{})
-//	Error(msg string, attrs ...interface{})
-//	Log(ctx context.Context, level slog.Level, msg string, args ...any)
-//}
-
-type Logger struct {
-	*slog.Logger
-}
-
-func SetupLogger(env string) *Logger {
+func SetupLogger(env string) *slog.Logger {
 	var log *slog.Logger
 
 	switch env {
 	case envLocal:
 		log = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-			Level:     slog.LevelDebug,
-			AddSource: true,
+			Level: slog.LevelDebug,
+			// AddSource: true,
 		}))
 	case envDev:
 		log = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-			Level:     slog.LevelDebug,
-			AddSource: true,
+			Level: slog.LevelDebug,
+			// AddSource: true,
 		}))
 	case envProd:
 		log = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-			Level:     slog.LevelInfo,
-			AddSource: true,
+			Level: slog.LevelInfo,
+			// AddSource: true,
 		}))
 	}
 
-	return &Logger{Logger: log}
+	return log
 }
 
 // Err ...
@@ -67,29 +53,4 @@ func LogWithRequest(log *slog.Logger, op string, r *http.Request) *slog.Logger {
 	)
 
 	return log
-}
-
-func (l *Logger) With(args ...any) *Logger {
-	l.Logger.With(args...)
-	return l
-}
-
-func (l *Logger) Debug(msg string, attrs ...interface{}) {
-	l.Logger.Debug(msg, attrs...)
-}
-
-func (l *Logger) Info(msg string, attrs ...interface{}) {
-	l.Logger.Info(msg, attrs...)
-}
-
-func (l *Logger) Warn(msg string, attrs ...interface{}) {
-	l.Logger.Warn(msg, attrs...)
-}
-
-func (l *Logger) Error(msg string, attrs ...interface{}) {
-	l.Logger.Error(msg, attrs...)
-}
-
-func (l *Logger) Log(ctx context.Context, level slog.Level, msg string, args ...any) {
-	l.Logger.Log(ctx, level, msg, args...)
 }
