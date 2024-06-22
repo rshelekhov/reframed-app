@@ -319,7 +319,7 @@ func (u *TaskUsecase) GetTasksForSomeday(ctx context.Context, userID string, pgn
 	return taskGroups, nil
 }
 
-func (u *TaskUsecase) GetCompletedTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error) {
+func (u *TaskUsecase) GetCompletedTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.CompletedTasksGroup, error) {
 	const op = "task.usecase.GetCompletedTasks"
 
 	groupsRaw, err := u.storage.GetCompletedTasks(ctx, userID, pgn)
@@ -327,10 +327,12 @@ func (u *TaskUsecase) GetCompletedTasks(ctx context.Context, userID string, pgn 
 		return nil, err
 	}
 
-	var taskGroups []model.TaskGroup
+	fmt.Printf("groupsRaw: %v\n", groupsRaw)
+
+	var taskGroups []model.CompletedTasksGroup
 
 	for _, group := range groupsRaw {
-		var taskGroup model.TaskGroup
+		var taskGroup model.CompletedTasksGroup
 
 		var tasks []model.TaskResponseData
 
@@ -339,7 +341,6 @@ func (u *TaskUsecase) GetCompletedTasks(ctx context.Context, userID string, pgn 
 			return nil, fmt.Errorf("%s: failed to unmarshal tasks from postgres json object: %w", op, err)
 		}
 
-		// TODO: check the response for this field
 		taskGroup.Month = group.Month
 		taskGroup.Tasks = tasks
 
@@ -349,7 +350,7 @@ func (u *TaskUsecase) GetCompletedTasks(ctx context.Context, userID string, pgn 
 	return taskGroups, nil
 }
 
-func (u *TaskUsecase) GetArchivedTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error) {
+func (u *TaskUsecase) GetArchivedTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.ArchivedTasksGroup, error) {
 	const op = "task.usecase.GetArchivedTasks"
 
 	groupsRaw, err := u.storage.GetArchivedTasks(ctx, userID, pgn)
@@ -357,10 +358,10 @@ func (u *TaskUsecase) GetArchivedTasks(ctx context.Context, userID string, pgn m
 		return nil, err
 	}
 
-	var taskGroups []model.TaskGroup
+	var taskGroups []model.ArchivedTasksGroup
 
 	for _, group := range groupsRaw {
-		var taskGroup model.TaskGroup
+		var taskGroup model.ArchivedTasksGroup
 
 		var tasks []model.TaskResponseData
 
@@ -369,7 +370,6 @@ func (u *TaskUsecase) GetArchivedTasks(ctx context.Context, userID string, pgn m
 			return nil, fmt.Errorf("%s: failed to unmarshal tasks from postgres json object: %w", op, err)
 		}
 
-		// TODO: check the response for this field
 		taskGroup.Month = group.Month
 		taskGroup.Tasks = tasks
 

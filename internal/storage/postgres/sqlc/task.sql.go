@@ -169,7 +169,7 @@ func (q *Queries) GetArchivedTasks(ctx context.Context, arg GetArchivedTasksPara
 
 const getCompletedTasks = `-- name: GetCompletedTasks :many
 SELECT
-    DATE_TRUNC('month', t.updated_at) AS month,
+    DATE_TRUNC('month', t.updated_at)::timestamptz AS month,
     ARRAY_TO_JSON(
             ARRAY_AGG(
                     JSON_BUILD_OBJECT(
@@ -221,6 +221,7 @@ FROM (
         t.end_time,
         t.list_id,
         t.user_id,
+        tags,
         t.updated_at
     ) t
 GROUP BY month
@@ -236,8 +237,8 @@ type GetCompletedTasksParams struct {
 }
 
 type GetCompletedTasksRow struct {
-	Month pgtype.Interval `db:"month"`
-	Tasks []byte          `db:"tasks"`
+	Month pgtype.Timestamptz `db:"month"`
+	Tasks []byte             `db:"tasks"`
 }
 
 func (q *Queries) GetCompletedTasks(ctx context.Context, arg GetCompletedTasksParams) ([]GetCompletedTasksRow, error) {

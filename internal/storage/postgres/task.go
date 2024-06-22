@@ -521,9 +521,9 @@ func (s *TaskStorage) GetCompletedTasks(ctx context.Context, userID string, pgn 
 	for _, group := range groups {
 		var taskGroup model.TaskGroupRaw
 
-		//if group.Month.Valid {
-		//	taskGroup.Month = group.Month.Time
-		//}
+		if group.Month.Valid {
+			taskGroup.Month = group.Month.Time
+		}
 
 		taskGroup.Tasks = group.Tasks
 
@@ -570,6 +570,8 @@ func (s *TaskStorage) GetArchivedTasks(ctx context.Context, userID string, pgn m
 		}
 
 		taskGroup.Tasks = group.Tasks
+
+		taskGroup.StartDate = time.Time{}
 
 		taskGroups = append(taskGroups, taskGroup)
 	}

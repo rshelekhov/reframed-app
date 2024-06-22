@@ -32,7 +32,7 @@ func main() {
 
 	ssoClient, err := ssogrpc.New(
 		context.Background(),
-		log.Logger,
+		log,
 		cfg.Clients.SSO.Address,
 		cfg.Clients.SSO.Timeout,
 		cfg.Clients.SSO.RetriesCount,
@@ -78,7 +78,7 @@ func main() {
 
 	router := v1.NewRouter(
 		cfg,
-		log.Logger,
+		log,
 		tokenAuth,
 		authUsecase,
 		listUsecase,
@@ -88,6 +88,6 @@ func main() {
 		statusUsecase,
 	)
 
-	srv := httpserver.NewServer(cfg, log.Logger, tokenAuth, router)
+	srv := httpserver.NewServer(cfg, log, tokenAuth, router)
 	srv.Start()
 }

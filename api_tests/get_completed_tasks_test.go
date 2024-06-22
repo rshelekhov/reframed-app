@@ -12,7 +12,7 @@ import (
 	"testing"
 )
 
-func TestGetArchivedTasks_HappyPath(t *testing.T) {
+func TestGetCompletedTasks_HappyPath(t *testing.T) {
 	u := url.URL{
 		Scheme: scheme,
 		Host:   host,
@@ -40,27 +40,25 @@ func TestGetArchivedTasks_HappyPath(t *testing.T) {
 	// Create three tasks in each list
 	tasks := createTasks(e, accessToken, lists, numberOfTasks)
 
-	// Archive tasks
+	// Complete tasks
 	for _, task := range tasks {
 		taskID := task.Value(key.Data).Object().Value(key.TaskID).String().Raw()
-		e.PATCH("/user/tasks/{task_id}/archive", taskID).
+		e.PATCH("/user/tasks/{task_id}/complete", taskID).
 			WithHeader("Authorization", "Bearer "+accessToken).
 			Expect().
 			Status(http.StatusOK).
 			JSON().Object().NotEmpty()
 	}
 
-	// Get archived tasks
-	archivedTasks := e.GET("/user/tasks/archived").
+	// Get completed tasks
+	completedTasks := e.GET("/user/tasks/completed").
 		WithHeader("Authorization", "Bearer "+accessToken).
 		Expect().
 		Status(http.StatusOK).
 		JSON().Object()
 
-	printDataToJSON(t, archivedTasks)
+	// Check that returned the same amount of tasks as was completed
+	totalCompletedTasks := countTasks(t, completedTasks, false)
 
-	// Check that returned the same amount of tasks as was archived
-	totalArchivedTasks := countTasks(t, archivedTasks, false)
-
-	require.Equal(t, numberOfLists*numberOfTasks, totalArchivedTasks)
+	require.Equal(t, numberOfTasks, totalCompletedTasks)
 }

@@ -43,15 +43,11 @@ func (c *statusController) GetStatuses() http.HandlerFunc {
 		switch {
 		case errors.Is(err, le.ErrNoStatusesFound):
 			handleResponseSuccess(w, r, log, "no statuses found", nil,
-				slog.Int(key.Count, len(statuses)),
-			)
-			return
+				slog.Int(key.Count, len(statuses)))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
-			return
 		default:
 			handleResponseSuccess(w, r, log, "statuses found", statuses, slog.Int(key.Count, len(statuses)))
-			return
 		}
 	}
 }
@@ -68,22 +64,17 @@ func (c *statusController) GetStatusByID() http.HandlerFunc {
 		statusID, err := strconv.Atoi(rawStatusID)
 		if err != nil {
 			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrFailedToConvertStatusIDtoInt)
-			return
 		}
 		if statusID <= 0 {
 			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrInvalidStatusID)
-			return
 		}
 
 		status, err := c.usecase.GetStatusByID(ctx, statusID)
-
 		switch {
 		case errors.Is(err, le.ErrStatusNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrStatusNotFound)
-			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
-			return
 		default:
 			handleResponseSuccess(w, r, log, "status received", status, slog.Int(key.StatusID, status.ID))
 		}

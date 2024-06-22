@@ -42,9 +42,12 @@ func (c *taskController) CreateTask() http.HandlerFunc {
 		log := logger.LogWithRequest(c.logger, op, r)
 
 		userID, err := c.jwt.GetUserID(ctx)
-		if err != nil {
+		switch {
+		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
+				slog.String(key.UserID, userID))
+		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
-			return
 		}
 
 		listID := chi.URLParam(r, key.ListID)
@@ -60,17 +63,13 @@ func (c *taskController) CreateTask() http.HandlerFunc {
 		taskInput.UserID = userID
 
 		taskResponse, err := c.usecase.CreateTask(ctx, taskInput)
-
 		switch {
 		case errors.Is(err, le.ErrDefaultListNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrDefaultListNotFound)
-			return
 		case errors.Is(err, le.ErrHeadingNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrHeadingNotFound)
-			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToCreateTask, err)
-			return
 		default:
 			handleResponseCreated(w, r, log, "task created", taskResponse, slog.String(key.TaskID, taskResponse.ID))
 		}
@@ -85,9 +84,12 @@ func (c *taskController) CreateTaskInDefaultList() http.HandlerFunc {
 		log := logger.LogWithRequest(c.logger, op, r)
 
 		userID, err := c.jwt.GetUserID(ctx)
-		if err != nil {
+		switch {
+		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
+				slog.String(key.UserID, userID))
+		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
-			return
 		}
 
 		taskInput := &model.TaskRequestData{}
@@ -98,17 +100,13 @@ func (c *taskController) CreateTaskInDefaultList() http.HandlerFunc {
 		taskInput.UserID = userID
 
 		taskResponse, err := c.usecase.CreateTask(ctx, taskInput)
-
 		switch {
 		case errors.Is(err, le.ErrDefaultListNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrDefaultListNotFound)
-			return
 		case errors.Is(err, le.ErrDefaultHeadingNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrHeadingNotFound)
-			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToCreateTask, err)
-			return
 		default:
 			handleResponseCreated(w, r, log, "task created", taskResponse, slog.String(key.TaskID, taskResponse.ID))
 		}
@@ -123,9 +121,12 @@ func (c *taskController) GetTaskByID() http.HandlerFunc {
 		log := logger.LogWithRequest(c.logger, op, r)
 
 		userID, err := c.jwt.GetUserID(ctx)
-		if err != nil {
+		switch {
+		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
+				slog.String(key.UserID, userID))
+		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
-			return
 		}
 
 		taskID := chi.URLParam(r, key.TaskID)
@@ -136,14 +137,11 @@ func (c *taskController) GetTaskByID() http.HandlerFunc {
 		}
 
 		taskResp, err := c.usecase.GetTaskByID(ctx, taskInput)
-
 		switch {
 		case errors.Is(err, le.ErrTaskNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrTaskNotFound)
-			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
-			return
 		default:
 			handleResponseSuccess(w, r, log, "task received", taskResp, slog.String(key.TaskID, taskResp.ID))
 		}
@@ -158,28 +156,26 @@ func (c *taskController) GetTasksByUserID() http.HandlerFunc {
 		log := logger.LogWithRequest(c.logger, op, r)
 
 		userID, err := c.jwt.GetUserID(ctx)
-		if err != nil {
+		switch {
+		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
+				slog.String(key.UserID, userID))
+		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
-			return
 		}
 
 		pagination := ParseLimitAndAfterID(r)
 
 		tasksResp, err := c.usecase.GetTasksByUserID(ctx, userID, pagination)
-
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
 			handleResponseSuccess(w, r, log, "no tasks found", nil,
-				slog.Int(key.Count, len(tasksResp)),
-			)
-			return
+				slog.Int(key.Count, len(tasksResp)))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
-			return
 		default:
 			handleResponseSuccess(w, r, log, "tasks found", tasksResp,
-				slog.Int(key.Count, len(tasksResp)),
-			)
+				slog.Int(key.Count, len(tasksResp)))
 		}
 	}
 }
@@ -192,9 +188,12 @@ func (c *taskController) GetTasksByListID() http.HandlerFunc {
 		log := logger.LogWithRequest(c.logger, op, r)
 
 		userID, err := c.jwt.GetUserID(ctx)
-		if err != nil {
+		switch {
+		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
+				slog.String(key.UserID, userID))
+		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
-			return
 		}
 
 		listID := chi.URLParam(r, key.ListID)
@@ -205,20 +204,15 @@ func (c *taskController) GetTasksByListID() http.HandlerFunc {
 		}
 
 		tasksResp, err := c.usecase.GetTasksByListID(ctx, tasksInput)
-
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
 			handleResponseSuccess(w, r, log, "no tasks for the list found", nil,
-				slog.Int(key.Count, len(tasksResp)),
-			)
-			return
+				slog.Int(key.Count, len(tasksResp)))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
-			return
 		default:
 			handleResponseSuccess(w, r, log, "tasks for the list found", tasksResp,
-				slog.Int(key.Count, len(tasksResp)),
-			)
+				slog.Int(key.Count, len(tasksResp)))
 		}
 	}
 }
@@ -231,9 +225,12 @@ func (c *taskController) GetTasksGroupedByHeadings() http.HandlerFunc {
 		log := logger.LogWithRequest(c.logger, op, r)
 
 		userID, err := c.jwt.GetUserID(ctx)
-		if err != nil {
+		switch {
+		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
+				slog.String(key.UserID, userID))
+		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
-			return
 		}
 
 		listID := chi.URLParam(r, key.ListID)
@@ -244,16 +241,12 @@ func (c *taskController) GetTasksGroupedByHeadings() http.HandlerFunc {
 		}
 
 		tasksResp, err := c.usecase.GetTasksGroupedByHeadings(ctx, tasksInput)
-
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
 			handleResponseSuccess(w, r, log, "no tasks grouped by headings found", nil,
-				slog.Int(key.Count, len(tasksResp)),
-			)
-			return
+				slog.Int(key.Count, len(tasksResp)))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
-			return
 		default:
 			handleResponseSuccess(w, r, log, "tasks grouped by headings found", tasksResp, slog.Int(key.Count, len(tasksResp)))
 		}
@@ -268,22 +261,21 @@ func (c *taskController) GetTasksForToday() http.HandlerFunc {
 		log := logger.LogWithRequest(c.logger, op, r)
 
 		userID, err := c.jwt.GetUserID(ctx)
-		if err != nil {
+		switch {
+		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
+				slog.String(key.UserID, userID))
+		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
-			return
 		}
 
 		tasksResp, err := c.usecase.GetTasksForToday(ctx, userID)
-
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
 			handleResponseSuccess(w, r, log, "no tasks for today found", nil,
-				slog.Int(key.Count, len(tasksResp)),
-			)
-			return
+				slog.Int(key.Count, len(tasksResp)))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
-			return
 		default:
 			handleResponseSuccess(w, r, log, "tasks for today found", tasksResp, slog.Int(key.Count, len(tasksResp)))
 		}
@@ -298,28 +290,26 @@ func (c *taskController) GetUpcomingTasks() http.HandlerFunc {
 		log := logger.LogWithRequest(c.logger, op, r)
 
 		userID, err := c.jwt.GetUserID(ctx)
-		if err != nil {
+		switch {
+		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
+				slog.String(key.UserID, userID))
+		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
-			return
 		}
 
 		pagination, err := ParseLimitAndAfterDate(r)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToParseQueryParams, err)
-			return
 		}
 
 		tasksResp, err := c.usecase.GetUpcomingTasks(ctx, userID, pagination)
-
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
 			handleResponseSuccess(w, r, log, "no upcoming tasks found", nil,
-				slog.Int(key.Count, len(tasksResp)),
-			)
-			return
+				slog.Int(key.Count, len(tasksResp)))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
-			return
 		default:
 			handleResponseSuccess(w, r, log, "upcoming tasks found", tasksResp, slog.Int(key.Count, len(tasksResp)))
 		}
@@ -334,24 +324,23 @@ func (c *taskController) GetOverdueTasks() http.HandlerFunc {
 		log := logger.LogWithRequest(c.logger, op, r)
 
 		userID, err := c.jwt.GetUserID(ctx)
-		if err != nil {
+		switch {
+		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
+				slog.String(key.UserID, userID))
+		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
-			return
 		}
 
 		pagination := ParseLimitAndAfterID(r)
 
 		tasksResp, err := c.usecase.GetOverdueTasks(ctx, userID, pagination)
-
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
 			handleResponseSuccess(w, r, log, "no overdue tasks found", nil,
-				slog.Int(key.Count, len(tasksResp)),
-			)
-			return
+				slog.Int(key.Count, len(tasksResp)))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
-			return
 		default:
 			handleResponseSuccess(w, r, log, "overdue tasks found", tasksResp, slog.Int(key.Count, len(tasksResp)))
 		}
@@ -366,24 +355,23 @@ func (c *taskController) GetTasksForSomeday() http.HandlerFunc {
 		log := logger.LogWithRequest(c.logger, op, r)
 
 		userID, err := c.jwt.GetUserID(ctx)
-		if err != nil {
+		switch {
+		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
+				slog.String(key.UserID, userID))
+		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
-			return
 		}
 
 		pagination := ParseLimitAndAfterID(r)
 
 		tasksResp, err := c.usecase.GetTasksForSomeday(ctx, userID, pagination)
-
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
 			handleResponseSuccess(w, r, log, "no tasks for someday found", nil,
-				slog.Int(key.Count, len(tasksResp)),
-			)
-			return
+				slog.Int(key.Count, len(tasksResp)))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
-			return
 		default:
 			handleResponseSuccess(w, r, log, "tasks for someday found", tasksResp, slog.Int(key.Count, len(tasksResp)))
 		}
@@ -398,28 +386,26 @@ func (c *taskController) GetCompletedTasks() http.HandlerFunc {
 		log := logger.LogWithRequest(c.logger, op, r)
 
 		userID, err := c.jwt.GetUserID(ctx)
-		if err != nil {
+		switch {
+		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
+				slog.String(key.UserID, userID))
+		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
-			return
 		}
 
 		pagination, err := ParseLimitAndAfterDate(r)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToParseQueryParams, err)
-			return
 		}
 
 		tasksResp, err := c.usecase.GetCompletedTasks(ctx, userID, pagination)
-
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
 			handleResponseSuccess(w, r, log, "no completed tasks found", nil,
-				slog.Int(key.Count, len(tasksResp)),
-			)
-			return
+				slog.Int(key.Count, len(tasksResp)))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
-			return
 		default:
 			handleResponseSuccess(w, r, log, "completed tasks found", tasksResp, slog.Int(key.Count, len(tasksResp)))
 		}
@@ -434,28 +420,26 @@ func (c *taskController) GetArchivedTasks() http.HandlerFunc {
 		log := logger.LogWithRequest(c.logger, op, r)
 
 		userID, err := c.jwt.GetUserID(ctx)
-		if err != nil {
+		switch {
+		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
+				slog.String(key.UserID, userID))
+		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
-			return
 		}
 
 		pagination, err := ParseLimitAndAfterDate(r)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToParseQueryParams, err)
-			return
 		}
 
 		tasksResp, err := c.usecase.GetArchivedTasks(ctx, userID, pagination)
-
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
 			handleResponseSuccess(w, r, log, "no archived tasks found", nil,
-				slog.Int(key.Count, len(tasksResp)),
-			)
-			return
+				slog.Int(key.Count, len(tasksResp)))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
-			return
 		default:
 			handleResponseSuccess(w, r, log, "archived tasks found", tasksResp, slog.Int(key.Count, len(tasksResp)))
 		}
@@ -470,9 +454,12 @@ func (c *taskController) UpdateTask() http.HandlerFunc {
 		log := logger.LogWithRequest(c.logger, op, r)
 
 		userID, err := c.jwt.GetUserID(ctx)
-		if err != nil {
+		switch {
+		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
+				slog.String(key.UserID, userID))
+		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
-			return
 		}
 
 		taskID := chi.URLParam(r, key.TaskID)
@@ -486,14 +473,11 @@ func (c *taskController) UpdateTask() http.HandlerFunc {
 		taskInput.UserID = userID
 
 		taskResponse, err := c.usecase.UpdateTask(ctx, taskInput)
-
 		switch {
 		case errors.Is(err, le.ErrTaskNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrTaskNotFound)
-			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToUpdateTask, err)
-			return
 		default:
 			handleResponseSuccess(w, r, log, "task updated", taskResponse, slog.String(key.TaskID, taskResponse.ID))
 		}
@@ -508,9 +492,12 @@ func (c *taskController) UpdateTaskTime() http.HandlerFunc {
 		log := logger.LogWithRequest(c.logger, op, r)
 
 		userID, err := c.jwt.GetUserID(ctx)
-		if err != nil {
+		switch {
+		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
+				slog.String(key.UserID, userID))
+		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
-			return
 		}
 
 		taskID := chi.URLParam(r, key.TaskID)
@@ -524,17 +511,13 @@ func (c *taskController) UpdateTaskTime() http.HandlerFunc {
 		taskInput.UserID = userID
 
 		taskResponse, err := c.usecase.UpdateTaskTime(ctx, taskInput)
-
 		switch {
 		case errors.Is(err, le.ErrTaskNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrTaskNotFound)
-			return
 		case errors.Is(err, le.ErrInvalidTaskTimeRange):
 			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrInvalidTaskTimeRange)
-			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToUpdateTask, err)
-			return
 		default:
 			handleResponseSuccess(w, r, log, "task updated", taskResponse, slog.String(key.TaskID, taskResponse.ID))
 		}
@@ -549,9 +532,12 @@ func (c *taskController) MoveTaskToAnotherList() http.HandlerFunc {
 		log := logger.LogWithRequest(c.logger, op, r)
 
 		userID, err := c.jwt.GetUserID(ctx)
-		if err != nil {
+		switch {
+		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
+				slog.String(key.UserID, userID))
+		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
-			return
 		}
 
 		taskID := chi.URLParam(r, key.TaskID)
@@ -559,7 +545,6 @@ func (c *taskController) MoveTaskToAnotherList() http.HandlerFunc {
 		listID := r.URL.Query().Get(key.ListID)
 		if listID == "" {
 			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryListID)
-			return
 		}
 
 		taskInput := model.TaskRequestData{
@@ -569,17 +554,13 @@ func (c *taskController) MoveTaskToAnotherList() http.HandlerFunc {
 		}
 
 		taskResponse, err := c.usecase.MoveTaskToAnotherList(ctx, taskInput)
-
 		switch {
 		case errors.Is(err, le.ErrTaskNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrTaskNotFound)
-			return
 		case errors.Is(err, le.ErrListNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrListNotFound)
-			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToMoveTask, err)
-			return
 		default:
 			handleResponseSuccess(w, r, log, "task moved to another list", taskResponse, slog.String(key.TaskID, taskInput.ID))
 		}
@@ -594,9 +575,12 @@ func (c *taskController) MoveTaskToAnotherHeading() http.HandlerFunc {
 		log := logger.LogWithRequest(c.logger, op, r)
 
 		userID, err := c.jwt.GetUserID(ctx)
-		if err != nil {
+		switch {
+		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
+				slog.String(key.UserID, userID))
+		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
-			return
 		}
 
 		taskID := chi.URLParam(r, key.TaskID)
@@ -604,7 +588,6 @@ func (c *taskController) MoveTaskToAnotherHeading() http.HandlerFunc {
 		headingID := r.URL.Query().Get(key.HeadingID)
 		if headingID == "" {
 			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryHeadingID)
-			return
 		}
 
 		taskInput := model.TaskRequestData{
@@ -614,17 +597,13 @@ func (c *taskController) MoveTaskToAnotherHeading() http.HandlerFunc {
 		}
 
 		taskResponse, err := c.usecase.MoveTaskToAnotherHeading(ctx, taskInput)
-
 		switch {
 		case errors.Is(err, le.ErrTaskNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrTaskNotFound)
-			return
 		case errors.Is(err, le.ErrHeadingNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrHeadingNotFound)
-			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToMoveTask, err)
-			return
 		default:
 			handleResponseSuccess(w, r, log, "task moved to another heading", taskResponse, slog.String(key.TaskID, taskInput.ID))
 		}
@@ -639,9 +618,12 @@ func (c *taskController) CompleteTask() http.HandlerFunc {
 		log := logger.LogWithRequest(c.logger, op, r)
 
 		userID, err := c.jwt.GetUserID(ctx)
-		if err != nil {
+		switch {
+		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
+				slog.String(key.UserID, userID))
+		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
-			return
 		}
 
 		taskID := chi.URLParam(r, key.TaskID)
@@ -652,14 +634,11 @@ func (c *taskController) CompleteTask() http.HandlerFunc {
 		}
 
 		taskResponse, err := c.usecase.CompleteTask(ctx, taskInput)
-
 		switch {
 		case errors.Is(err, le.ErrTaskNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrTaskNotFound)
-			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToCompleteTask, err)
-			return
 		default:
 			handleResponseSuccess(w, r, log, "task completed", taskResponse, slog.String(key.TaskID, taskID))
 		}
@@ -674,9 +653,12 @@ func (c *taskController) ArchiveTask() http.HandlerFunc {
 		log := logger.LogWithRequest(c.logger, op, r)
 
 		userID, err := c.jwt.GetUserID(ctx)
-		if err != nil {
+		switch {
+		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
+				slog.String(key.UserID, userID))
+		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
-			return
 		}
 
 		taskID := chi.URLParam(r, key.TaskID)
@@ -687,14 +669,11 @@ func (c *taskController) ArchiveTask() http.HandlerFunc {
 		}
 
 		taskResponse, err := c.usecase.ArchiveTask(ctx, taskInput)
-
 		switch {
 		case errors.Is(err, le.ErrTaskNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrTaskNotFound)
-			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToArchiveTask, err)
-			return
 		default:
 			handleResponseSuccess(w, r, log, "task archived", taskResponse, slog.String(key.TaskID, taskID))
 		}

@@ -40,7 +40,6 @@ func (c *authController) Register() http.HandlerFunc {
 		const op = "user.controller.RegisterNewUser"
 
 		ctx := r.Context()
-
 		log := logger.LogWithRequest(c.logger, op, r)
 
 		userInput := &model.UserRequestData{}
@@ -57,20 +56,16 @@ func (c *authController) Register() http.HandlerFunc {
 		switch {
 		case errors.Is(err, le.ErrUserAlreadyExists):
 			handleResponseError(w, r, log, http.StatusConflict, le.ErrUserAlreadyExists,
-				slog.String(key.Email, userInput.Email),
-			)
-			return
+				slog.String(key.Email, userInput.Email))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToCreateUser, err)
-			return
+		default:
+			log.Info("user and tokens created",
+				slog.String(key.UserID, userID),
+				slog.Any(key.AccessToken, tokenData.GetAccessToken()),
+				slog.Any(key.RefreshToken, tokenData.GetRefreshToken()))
+			jwtoken.SendTokensToWeb(w, tokenData, http.StatusCreated)
 		}
-
-		log.Info("user and tokens created",
-			slog.String(key.UserID, userID),
-			slog.Any(key.AccessToken, tokenData.GetAccessToken()),
-			slog.Any(key.RefreshToken, tokenData.GetRefreshToken()),
-		)
-		jwtoken.SendTokensToWeb(w, tokenData, http.StatusCreated)
 	}
 }
 
@@ -79,7 +74,6 @@ func (c *authController) LoginWithPassword() http.HandlerFunc {
 		const op = "user.controller.LoginWithPassword"
 
 		ctx := r.Context()
-
 		log := logger.LogWithRequest(c.logger, op, r)
 
 		userInput := &model.UserRequestData{}
@@ -96,29 +90,22 @@ func (c *authController) LoginWithPassword() http.HandlerFunc {
 		switch {
 		case errors.Is(err, le.ErrUserNotFound):
 			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrUserNotFound,
-				slog.String(key.Email, userInput.Email),
-			)
-			return
+				slog.String(key.Email, userInput.Email))
 		case errors.Is(err, le.ErrUserUnauthenticated):
 			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrUserUnauthenticated,
-				slog.String(key.Email, userInput.Email),
-			)
-			return
+				slog.String(key.Email, userInput.Email))
 		case err != nil:
 			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrFailedToLoginUser,
 				slog.String(key.Email, userInput.Email),
-				slog.String(key.Error, err.Error()),
-			)
-			return
+				slog.String(key.Error, err.Error()))
+		default:
+			log.Info(
+				"user logged in, tokens created",
+				slog.String(key.UserID, userID),
+				slog.Any(key.AccessToken, tokenData.AccessToken),
+				slog.Any(key.RefreshToken, tokenData.RefreshToken))
+			jwtoken.SendTokensToWeb(w, tokenData, http.StatusOK)
 		}
-
-		log.Info(
-			"user logged in, tokens created",
-			slog.String(key.UserID, userID),
-			slog.Any(key.AccessToken, tokenData.AccessToken),
-			slog.Any(key.RefreshToken, tokenData.RefreshToken),
-		)
-		jwtoken.SendTokensToWeb(w, tokenData, http.StatusOK)
 	}
 }
 
@@ -127,7 +114,6 @@ func (c *authController) RefreshJWTokens() http.HandlerFunc {
 		const op = "user.controller.RefreshJWTokens"
 
 		ctx := r.Context()
-
 		log := logger.LogWithRequest(c.logger, op, r)
 
 		refreshToken, err := jwtoken.FindRefreshToken(r)
@@ -146,17 +132,14 @@ func (c *authController) RefreshJWTokens() http.HandlerFunc {
 		case err != nil:
 			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrFailedToRefreshTokens,
 				slog.String(key.UserID, userID), // TODO: check if can return userID when error is here
-				slog.String(key.Error, err.Error()),
-			)
-
-			return
+				slog.String(key.Error, err.Error()))
+		default:
+			log.Info("tokens created",
+				slog.Any(key.UserID, userID),
+				slog.Any(key.AccessToken, tokenData.AccessToken),
+				slog.Any(key.RefreshToken, tokenData.RefreshToken))
+			jwtoken.SendTokensToWeb(w, tokenData, http.StatusOK)
 		}
-
-		log.Info("tokens created",
-			slog.Any(key.UserID, userID),
-			slog.Any(key.AccessToken, tokenData.AccessToken),
-			slog.Any(key.RefreshToken, tokenData.RefreshToken))
-		jwtoken.SendTokensToWeb(w, tokenData, http.StatusOK)
 	}
 }
 
@@ -206,23 +189,23 @@ func (c *authController) GetUser() http.HandlerFunc {
 		log := logger.LogWithRequest(c.logger, op, r)
 
 		userID, err := c.jwt.GetUserID(ctx)
-		if err != nil {
+		switch {
+		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
+				slog.String(key.UserID, userID))
+		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
-			return
 		}
 
 		user, err := c.usecase.GetUserByID(ctx)
-
 		switch {
 		case errors.Is(err, le.ErrUserNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrUserNotFound, slog.String(key.UserID, userID))
-			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
-			return
+		default:
+			handleResponseSuccess(w, r, log, "user received", user, slog.String(key.UserID, userID))
 		}
-
-		handleResponseSuccess(w, r, log, "user received", user, slog.String(key.UserID, userID))
 	}
 }
 
@@ -235,9 +218,12 @@ func (c *authController) UpdateUser() http.HandlerFunc {
 		log := logger.LogWithRequest(c.logger, op, r)
 
 		userID, err := c.jwt.GetUserID(ctx)
-		if err != nil {
+		switch {
+		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
+				slog.String(key.UserID, userID))
+		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
-			return
 		}
 
 		userInput := &model.UserRequestData{}
@@ -246,31 +232,23 @@ func (c *authController) UpdateUser() http.HandlerFunc {
 		}
 
 		err = c.usecase.UpdateUser(ctx, userInput)
-
 		switch {
 		case errors.Is(err, le.ErrUserNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrUserNotFound,
 				slog.String(key.UserID, userID),
-				slog.String(key.Email, userInput.Email),
-			)
-			return
+				slog.String(key.Email, userInput.Email))
 		case errors.Is(err, le.ErrEmailAlreadyTaken):
 			handleResponseError(w, r, log, http.StatusConflict, le.ErrEmailAlreadyTaken,
 				slog.String(key.UserID, userID),
-				slog.String(key.Email, userInput.Email),
-			)
-			return
+				slog.String(key.Email, userInput.Email))
 		case errors.Is(err, le.ErrNoChangesDetected):
 			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrNoChangesDetected,
-				slog.String(key.UserID, userID),
-			)
-			return
+				slog.String(key.UserID, userID))
+		default:
+			handleResponseSuccess(w, r, log, "user updated",
+				model.UserResponseData{ID: userID},
+				slog.String(key.UserID, userID))
 		}
-
-		handleResponseSuccess(w, r, log, "user updated",
-			model.UserResponseData{ID: userID},
-			slog.String(key.UserID, userID),
-		)
 	}
 }
 
@@ -283,13 +261,12 @@ func (c *authController) DeleteUser() http.HandlerFunc {
 		log := logger.LogWithRequest(c.logger, op, r)
 
 		userID, err := c.jwt.GetUserID(ctx)
-		if err != nil {
-			if errors.Is(err, le.ErrUserNotFound) {
-				handleResponseError(w, r, log, http.StatusNotFound, le.ErrUserNotFound, slog.String(key.UserID, userID))
-				return
-			}
+		switch {
+		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
+				slog.String(key.UserID, userID))
+		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
-			return
 		}
 
 		userDevice := model.UserDeviceRequestData{
@@ -298,22 +275,16 @@ func (c *authController) DeleteUser() http.HandlerFunc {
 		}
 
 		err = c.usecase.DeleteUser(ctx, userDevice)
-
 		switch {
 		case errors.Is(err, le.ErrUserNotFound):
-			handleResponseError(w, r, log, http.StatusNotFound,
-				le.ErrUserNotFound,
-				slog.String(key.UserID, userID),
-			)
-			return
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrUserNotFound,
+				slog.String(key.UserID, userID))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToDeleteUser, err)
-			return
+		default:
+			handleResponseSuccess(w, r, log, "user deleted",
+				model.UserResponseData{ID: userID},
+				slog.String(key.UserID, userID))
 		}
-
-		handleResponseSuccess(w, r, log, "user deleted",
-			model.UserResponseData{ID: userID},
-			slog.String(key.UserID, userID),
-		)
 	}
 }
