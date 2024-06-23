@@ -57,10 +57,37 @@ func TestGetArchivedTasks_HappyPath(t *testing.T) {
 		Status(http.StatusOK).
 		JSON().Object()
 
-	printDataToJSON(t, archivedTasks)
-
 	// Check that returned the same amount of tasks as was archived
 	totalArchivedTasks := countTasks(t, archivedTasks, false)
 
 	require.Equal(t, numberOfLists*numberOfTasks, totalArchivedTasks)
+}
+
+func TestGetArchivedTasks_NotFound(t *testing.T) {
+	u := url.URL{
+		Scheme: scheme,
+		Host:   host,
+	}
+	e := httpexpect.Default(t, u.String())
+
+	// Register user
+	r := e.POST("/register").
+		WithJSON(model.UserRequestData{
+			Email:    gofakeit.Email(),
+			Password: randomFakePassword(),
+		}).
+		Expect().
+		Status(http.StatusCreated).
+		JSON().Object()
+
+	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+
+	// Get archived tasks
+	archivedTasks := e.GET("/user/tasks/archived").
+		WithHeader("Authorization", "Bearer "+accessToken).
+		Expect().
+		Status(http.StatusOK).
+		JSON().Object()
+
+	printDataToJSON(t, archivedTasks)
 }
