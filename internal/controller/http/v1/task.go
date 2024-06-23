@@ -407,7 +407,7 @@ func (c *taskController) GetCompletedTasks() http.HandlerFunc {
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
 		default:
-			handleResponseSuccess(w, r, log, "completed tasks found", tasksResp, slog.Int(key.Count, len(tasksResp)))
+			handleResponseSuccess(w, r, log, "completed tasks found", tasksResp)
 		}
 	}
 }
@@ -441,7 +441,7 @@ func (c *taskController) GetArchivedTasks() http.HandlerFunc {
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
 		default:
-			handleResponseSuccess(w, r, log, "archived tasks found", tasksResp, slog.Int(key.Count, len(tasksResp)))
+			handleResponseSuccess(w, r, log, "archived tasks found", tasksResp)
 		}
 	}
 }
