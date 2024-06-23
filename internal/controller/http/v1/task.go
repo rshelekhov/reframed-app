@@ -206,7 +206,7 @@ func (c *taskController) GetTasksByListID() http.HandlerFunc {
 		tasksResp, err := c.usecase.GetTasksByListID(ctx, tasksInput)
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
-			handleResponseSuccess(w, r, log, "no tasks for the list found", nil,
+			handleResponseSuccess(w, r, log, "no tasks found for the list", nil,
 				slog.Int(key.Count, len(tasksResp)))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
@@ -272,7 +272,7 @@ func (c *taskController) GetTasksForToday() http.HandlerFunc {
 		tasksResp, err := c.usecase.GetTasksForToday(ctx, userID)
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
-			handleResponseSuccess(w, r, log, "no tasks for today found", nil,
+			handleResponseSuccess(w, r, log, "no tasks found for today", nil,
 				slog.Int(key.Count, len(tasksResp)))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
@@ -368,7 +368,7 @@ func (c *taskController) GetTasksForSomeday() http.HandlerFunc {
 		tasksResp, err := c.usecase.GetTasksForSomeday(ctx, userID, pagination)
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
-			handleResponseSuccess(w, r, log, "no tasks for someday found", nil,
+			handleResponseSuccess(w, r, log, "no tasks found for someday", nil,
 				slog.Int(key.Count, len(tasksResp)))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
