@@ -169,13 +169,11 @@ func (c *taskController) GetTasksByUserID() http.HandlerFunc {
 		tasksResp, err := c.usecase.GetTasksByUserID(ctx, userID, pagination)
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
-			handleResponseSuccess(w, r, log, "no tasks found", nil,
-				slog.Int(key.Count, len(tasksResp)))
+			handleResponseSuccess(w, r, log, "no tasks found", nil)
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
 		default:
-			handleResponseSuccess(w, r, log, "tasks found", tasksResp,
-				slog.Int(key.Count, len(tasksResp)))
+			handleResponseSuccess(w, r, log, "tasks found", tasksResp)
 		}
 	}
 }
@@ -206,13 +204,11 @@ func (c *taskController) GetTasksByListID() http.HandlerFunc {
 		tasksResp, err := c.usecase.GetTasksByListID(ctx, tasksInput)
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
-			handleResponseSuccess(w, r, log, "no tasks found for the list", nil,
-				slog.Int(key.Count, len(tasksResp)))
+			handleResponseSuccess(w, r, log, "no tasks found for the list", nil)
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
 		default:
-			handleResponseSuccess(w, r, log, "tasks for the list found", tasksResp,
-				slog.Int(key.Count, len(tasksResp)))
+			handleResponseSuccess(w, r, log, "tasks for the list found", tasksResp)
 		}
 	}
 }
@@ -243,12 +239,11 @@ func (c *taskController) GetTasksGroupedByHeadings() http.HandlerFunc {
 		tasksResp, err := c.usecase.GetTasksGroupedByHeadings(ctx, tasksInput)
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
-			handleResponseSuccess(w, r, log, "no tasks grouped by headings found", nil,
-				slog.Int(key.Count, len(tasksResp)))
+			handleResponseSuccess(w, r, log, "no tasks grouped by headings found", nil)
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
 		default:
-			handleResponseSuccess(w, r, log, "tasks grouped by headings found", tasksResp, slog.Int(key.Count, len(tasksResp)))
+			handleResponseSuccess(w, r, log, "tasks grouped by headings found", tasksResp)
 		}
 	}
 }
@@ -272,12 +267,11 @@ func (c *taskController) GetTasksForToday() http.HandlerFunc {
 		tasksResp, err := c.usecase.GetTasksForToday(ctx, userID)
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
-			handleResponseSuccess(w, r, log, "no tasks found for today", nil,
-				slog.Int(key.Count, len(tasksResp)))
+			handleResponseSuccess(w, r, log, "no tasks found for today", nil)
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
 		default:
-			handleResponseSuccess(w, r, log, "tasks for today found", tasksResp, slog.Int(key.Count, len(tasksResp)))
+			handleResponseSuccess(w, r, log, "tasks for today found", tasksResp)
 		}
 	}
 }
@@ -306,12 +300,11 @@ func (c *taskController) GetUpcomingTasks() http.HandlerFunc {
 		tasksResp, err := c.usecase.GetUpcomingTasks(ctx, userID, pagination)
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
-			handleResponseSuccess(w, r, log, "no upcoming tasks found", nil,
-				slog.Int(key.Count, len(tasksResp)))
+			handleResponseSuccess(w, r, log, "no upcoming tasks found", nil)
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
 		default:
-			handleResponseSuccess(w, r, log, "upcoming tasks found", tasksResp, slog.Int(key.Count, len(tasksResp)))
+			handleResponseSuccess(w, r, log, "upcoming tasks found", tasksResp)
 		}
 	}
 }
@@ -337,12 +330,11 @@ func (c *taskController) GetOverdueTasks() http.HandlerFunc {
 		tasksResp, err := c.usecase.GetOverdueTasks(ctx, userID, pagination)
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
-			handleResponseSuccess(w, r, log, "no overdue tasks found", nil,
-				slog.Int(key.Count, len(tasksResp)))
+			handleResponseSuccess(w, r, log, "no overdue tasks found", nil)
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
 		default:
-			handleResponseSuccess(w, r, log, "overdue tasks found", tasksResp, slog.Int(key.Count, len(tasksResp)))
+			handleResponseSuccess(w, r, log, "overdue tasks found", tasksResp)
 		}
 	}
 }
@@ -368,12 +360,11 @@ func (c *taskController) GetTasksForSomeday() http.HandlerFunc {
 		tasksResp, err := c.usecase.GetTasksForSomeday(ctx, userID, pagination)
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
-			handleResponseSuccess(w, r, log, "no tasks found for someday", nil,
-				slog.Int(key.Count, len(tasksResp)))
+			handleResponseSuccess(w, r, log, "no tasks found for someday", nil)
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
 		default:
-			handleResponseSuccess(w, r, log, "tasks for someday found", tasksResp, slog.Int(key.Count, len(tasksResp)))
+			handleResponseSuccess(w, r, log, "tasks for someday found", tasksResp)
 		}
 	}
 }
@@ -402,8 +393,7 @@ func (c *taskController) GetCompletedTasks() http.HandlerFunc {
 		tasksResp, err := c.usecase.GetCompletedTasks(ctx, userID, pagination)
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
-			handleResponseSuccess(w, r, log, "no completed tasks found", nil,
-				slog.Int(key.Count, len(tasksResp)))
+			handleResponseSuccess(w, r, log, "no completed tasks found", nil)
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
 		default:
@@ -436,8 +426,7 @@ func (c *taskController) GetArchivedTasks() http.HandlerFunc {
 		tasksResp, err := c.usecase.GetArchivedTasks(ctx, userID, pagination)
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
-			handleResponseSuccess(w, r, log, "no archived tasks found", nil,
-				slog.Int(key.Count, len(tasksResp)))
+			handleResponseSuccess(w, r, log, "no archived tasks found", nil)
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
 		default:
