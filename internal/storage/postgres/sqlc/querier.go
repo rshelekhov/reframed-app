@@ -35,7 +35,7 @@ type Querier interface {
 	GetTasksByUserID(ctx context.Context, arg GetTasksByUserIDParams) ([]GetTasksByUserIDRow, error)
 	GetTasksForSomeday(ctx context.Context, arg GetTasksForSomedayParams) ([]GetTasksForSomedayRow, error)
 	GetTasksForToday(ctx context.Context, userID string) ([]GetTasksForTodayRow, error)
-	GetTasksGroupedByHeadings(ctx context.Context, arg GetTasksGroupedByHeadingsParams) ([]GetTasksGroupedByHeadingsRow, error)
+	GetTasksGroupedByHeading(ctx context.Context, arg GetTasksGroupedByHeadingParams) ([]GetTasksGroupedByHeadingRow, error)
 	GetUpcomingTasks(ctx context.Context, arg GetUpcomingTasksParams) ([]GetUpcomingTasksRow, error)
 	LinkTagToTask(ctx context.Context, arg LinkTagToTaskParams) error
 	MarkTaskAsArchived(ctx context.Context, arg MarkTaskAsArchivedParams) (string, error)

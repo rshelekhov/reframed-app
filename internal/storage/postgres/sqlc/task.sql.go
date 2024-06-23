@@ -820,7 +820,7 @@ func (q *Queries) GetTasksForToday(ctx context.Context, userID string) ([]GetTas
 	return items, nil
 }
 
-const getTasksGroupedByHeadings = `-- name: GetTasksGroupedByHeadings :many
+const getTasksGroupedByHeading = `-- name: GetTasksGroupedByHeading :many
 SELECT
     h.id AS heading_id,
     ARRAY_TO_JSON(
@@ -885,25 +885,25 @@ GROUP BY h.id
 ORDER BY h.id
 `
 
-type GetTasksGroupedByHeadingsParams struct {
+type GetTasksGroupedByHeadingParams struct {
 	ListID string `db:"list_id"`
 	UserID string `db:"user_id"`
 }
 
-type GetTasksGroupedByHeadingsRow struct {
+type GetTasksGroupedByHeadingRow struct {
 	HeadingID string `db:"heading_id"`
 	Tasks     []byte `db:"tasks"`
 }
 
-func (q *Queries) GetTasksGroupedByHeadings(ctx context.Context, arg GetTasksGroupedByHeadingsParams) ([]GetTasksGroupedByHeadingsRow, error) {
-	rows, err := q.db.Query(ctx, getTasksGroupedByHeadings, arg.ListID, arg.UserID)
+func (q *Queries) GetTasksGroupedByHeading(ctx context.Context, arg GetTasksGroupedByHeadingParams) ([]GetTasksGroupedByHeadingRow, error) {
+	rows, err := q.db.Query(ctx, getTasksGroupedByHeading, arg.ListID, arg.UserID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []GetTasksGroupedByHeadingsRow{}
+	items := []GetTasksGroupedByHeadingRow{}
 	for rows.Next() {
-		var i GetTasksGroupedByHeadingsRow
+		var i GetTasksGroupedByHeadingRow
 		if err := rows.Scan(&i.HeadingID, &i.Tasks); err != nil {
 			return nil, err
 		}

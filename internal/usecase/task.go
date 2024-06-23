@@ -173,8 +173,8 @@ func mapTaskToResponseData(task model.Task) model.TaskResponseData {
 	}
 }
 
-func (u *TaskUsecase) GetTasksGroupedByHeadings(ctx context.Context, data model.TaskRequestData) ([]model.TaskGroupWithHeading, error) {
-	const op = "task.usecase.GetTasksGroupedByHeadings"
+func (u *TaskUsecase) GetTasksGroupedByHeading(ctx context.Context, data model.TaskRequestData) ([]model.TaskGroupWithHeading, error) {
+	const op = "task.usecase.GetTasksGroupedByHeading"
 
 	groupsRaw, err := u.storage.GetTasksGroupedByHeadings(ctx, data.ListID, data.UserID)
 	if err != nil {

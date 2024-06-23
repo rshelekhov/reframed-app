@@ -129,7 +129,7 @@ GROUP BY
     ttv.tags
 ORDER BY t.id;
 
--- name: GetTasksGroupedByHeadings :many
+-- name: GetTasksGroupedByHeading :many
 SELECT
     h.id AS heading_id,
     ARRAY_TO_JSON(

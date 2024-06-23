@@ -349,9 +349,9 @@ func transformTags(tags interface{}) ([]string, error) {
 }
 
 func (s *TaskStorage) GetTasksGroupedByHeadings(ctx context.Context, listID, userID string) ([]model.TaskGroupRaw, error) {
-	const op = "task.storage.GetTasksGroupedByHeadings"
+	const op = "task.storage.GetTasksGroupedByHeading"
 
-	groups, err := s.Queries.GetTasksGroupedByHeadings(ctx, sqlc.GetTasksGroupedByHeadingsParams{
+	groups, err := s.Queries.GetTasksGroupedByHeading(ctx, sqlc.GetTasksGroupedByHeadingParams{
 		ListID: listID,
 		UserID: userID,
 	})

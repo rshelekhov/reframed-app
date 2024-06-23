@@ -215,7 +215,7 @@ func (c *taskController) GetTasksByListID() http.HandlerFunc {
 
 func (c *taskController) GetTasksGroupedByHeadings() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "task.controller.GetTasksGroupedByHeadings"
+		const op = "task.controller.GetTasksGroupedByHeading"
 
 		ctx := r.Context()
 		log := logger.LogWithRequest(c.logger, op, r)
@@ -236,7 +236,7 @@ func (c *taskController) GetTasksGroupedByHeadings() http.HandlerFunc {
 			UserID: userID,
 		}
 
-		tasksResp, err := c.usecase.GetTasksGroupedByHeadings(ctx, tasksInput)
+		tasksResp, err := c.usecase.GetTasksGroupedByHeading(ctx, tasksInput)
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
 			handleResponseSuccess(w, r, log, "no tasks grouped by headings found", nil)
