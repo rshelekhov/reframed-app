@@ -57,10 +57,37 @@ func TestGetCompletedTasks_HappyPath(t *testing.T) {
 		Status(http.StatusOK).
 		JSON().Object()
 
-	printDataToJSON(t, completedTasks)
-
 	// Check that returned the same amount of tasks as was completed
 	totalCompletedTasks := countTasks(t, completedTasks, false)
 
 	require.Equal(t, numberOfTasks*numberOfLists, totalCompletedTasks)
+}
+
+func TestGetCompletedTasks_NotFound(t *testing.T) {
+	u := url.URL{
+		Scheme: scheme,
+		Host:   host,
+	}
+	e := httpexpect.Default(t, u.String())
+
+	// Register user
+	r := e.POST("/register").
+		WithJSON(model.UserRequestData{
+			Email:    gofakeit.Email(),
+			Password: randomFakePassword(),
+		}).
+		Expect().
+		Status(http.StatusCreated).
+		JSON().Object()
+
+	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+
+	// Get completed tasks
+	completedTasks := e.GET("/user/tasks/completed").
+		WithHeader("Authorization", "Bearer "+accessToken).
+		Expect().
+		Status(http.StatusOK).
+		JSON().Object()
+
+	printDataToJSON(t, completedTasks)
 }
