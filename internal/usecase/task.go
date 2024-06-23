@@ -327,8 +327,6 @@ func (u *TaskUsecase) GetCompletedTasks(ctx context.Context, userID string, pgn 
 		return nil, err
 	}
 
-	fmt.Printf("groupsRaw: %v\n", groupsRaw)
-
 	var taskGroups []model.CompletedTasksGroup
 
 	for _, group := range groupsRaw {
@@ -584,7 +582,7 @@ func (u *TaskUsecase) CompleteTask(ctx context.Context, data model.TaskRequestDa
 		ID:        data.ID,
 		StatusID:  data.StatusID,
 		UserID:    data.UserID,
-		DeletedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	if err = u.storage.MarkAsCompleted(ctx, completedTask); err != nil {
