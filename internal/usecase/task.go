@@ -173,7 +173,7 @@ func mapTaskToResponseData(task model.Task) model.TaskResponseData {
 	}
 }
 
-func (u *TaskUsecase) GetTasksGroupedByHeadings(ctx context.Context, data model.TaskRequestData) ([]model.TaskGroup, error) {
+func (u *TaskUsecase) GetTasksGroupedByHeadings(ctx context.Context, data model.TaskRequestData) ([]model.TaskGroupWithHeading, error) {
 	const op = "task.usecase.GetTasksGroupedByHeadings"
 
 	groupsRaw, err := u.storage.GetTasksGroupedByHeadings(ctx, data.ListID, data.UserID)
@@ -181,10 +181,10 @@ func (u *TaskUsecase) GetTasksGroupedByHeadings(ctx context.Context, data model.
 		return nil, err
 	}
 
-	var taskGroups []model.TaskGroup
+	var taskGroups []model.TaskGroupWithHeading
 
 	for _, group := range groupsRaw {
-		var taskGroup model.TaskGroup
+		var taskGroup model.TaskGroupWithHeading
 
 		var tasks []model.TaskResponseData
 
