@@ -875,7 +875,8 @@ FROM headings h
             t.end_time,
             t.heading_id,
             t.user_id,
-            t.updated_at
+            t.updated_at,
+            ttv.tags
     ) t
         ON h.id = t.heading_id
 WHERE h.list_id = $1
