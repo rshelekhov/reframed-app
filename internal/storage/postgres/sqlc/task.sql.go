@@ -478,7 +478,8 @@ GROUP BY
     t.status_id,
     t.heading_id,
     overdue,
-    t.updated_at
+    t.updated_at,
+    ttv.tags
 ORDER BY t.id
 `
 
