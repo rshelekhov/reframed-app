@@ -164,10 +164,10 @@ func printDataToJSON(t *testing.T, data *httpexpect.Object) {
 	fmt.Println(string(formattedData))
 }
 
-func countTasks(t *testing.T, data *httpexpect.Object, printDetails bool) int {
-	formattedData, err := json.MarshalIndent(data.Raw(), "", "  ")
+func countTasks(t *testing.T, response *httpexpect.Object, printDetails bool) int {
+	formattedData, err := json.MarshalIndent(response.Raw(), "", "  ")
 	if err != nil {
-		t.Fatalf("Error formatting data to JSON: %v", err)
+		t.Fatalf("Error formatting response to JSON: %v", err)
 	}
 
 	var result map[string]interface{}
@@ -178,7 +178,7 @@ func countTasks(t *testing.T, data *httpexpect.Object, printDetails bool) int {
 		return 0
 	}
 
-	dataA, ok := result[key.Data].([]interface{})
+	data, ok := result[key.Data].([]interface{})
 	if !ok {
 		fmt.Println("Error: 'data' is not an array")
 		return 0
@@ -186,7 +186,45 @@ func countTasks(t *testing.T, data *httpexpect.Object, printDetails bool) int {
 
 	totalTasks := 0
 
-	for _, item := range dataA {
+	for i := 0; i < len(data); i++ {
+		_, ok = data[i].(map[string]interface{})
+		if !ok {
+			fmt.Println("Error: 'item' is not a map")
+			continue
+		}
+		totalTasks += 1
+	}
+
+	if printDetails {
+		fmt.Printf("Total tasks: %d\n", totalTasks)
+	}
+
+	return totalTasks
+}
+
+func countTasksInGroups(t *testing.T, response *httpexpect.Object, printDetails bool) int {
+	formattedData, err := json.MarshalIndent(response.Raw(), "", "  ")
+	if err != nil {
+		t.Fatalf("Error formatting response to JSON: %v", err)
+	}
+
+	var result map[string]interface{}
+
+	err = json.Unmarshal(formattedData, &result)
+	if err != nil {
+		fmt.Println("Error decoding JSON:", err)
+		return 0
+	}
+
+	data, ok := result[key.Data].([]interface{})
+	if !ok {
+		fmt.Println("Error: 'data' is not an array")
+		return 0
+	}
+
+	totalTasks := 0
+
+	for _, item := range data {
 		itemMap, ok := item.(map[string]interface{})
 		if !ok {
 			fmt.Println("Error: 'item' is not a map")
