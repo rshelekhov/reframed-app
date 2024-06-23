@@ -471,12 +471,13 @@ FROM (
             ON t.id = ttv.task_id
     WHERE t.user_id = $1
       AND t.status_id = (
-      SELECT id
-      FROM statuses
-      WHERE statuses.title = @status_title::varchar
+          SELECT id
+          FROM statuses
+          WHERE statuses.title = @status_title::varchar
       )
       AND (t.deleted_at IS NULL
-               OR (DATE_TRUNC('month', t.updated_at) > @after_date::timestamptz AND t.deleted_at IS NULL))
+               OR (DATE_TRUNC('month', t.updated_at) > @after_date::timestamptz AND t.deleted_at IS NULL)
+          )
     GROUP BY
         t.id,
         t.title,
@@ -491,7 +492,7 @@ FROM (
         t.updated_at
     ) t
 GROUP BY month
-ORDER BY month
+ORDER BY month DESC
 LIMIT $2;
 
 -- name: GetArchivedTasks :many

@@ -205,12 +205,13 @@ FROM (
             ON t.id = ttv.task_id
     WHERE t.user_id = $1
       AND t.status_id = (
-      SELECT id
-      FROM statuses
-      WHERE statuses.title = $3::varchar
+          SELECT id
+          FROM statuses
+          WHERE statuses.title = $3::varchar
       )
       AND (t.deleted_at IS NULL
-               OR (DATE_TRUNC('month', t.updated_at) > $4::timestamptz AND t.deleted_at IS NULL))
+               OR (DATE_TRUNC('month', t.updated_at) > $4::timestamptz AND t.deleted_at IS NULL)
+          )
     GROUP BY
         t.id,
         t.title,
@@ -225,7 +226,7 @@ FROM (
         t.updated_at
     ) t
 GROUP BY month
-ORDER BY month
+ORDER BY month DESC
 LIMIT $2
 `
 
