@@ -237,17 +237,11 @@ func countTasksInGroups(t *testing.T, response *httpexpect.Object, printDetails 
 			continue
 		}
 
-		month, ok := itemMap[key.Month].(string)
-		if !ok {
-			fmt.Printf("Error: '%s' is not a string", key.Month)
-			continue
-		}
-
 		taskCount := len(tasks)
 		totalTasks += taskCount
 
 		if printDetails {
-			fmt.Printf("%s: %s, Number of %s: %d\n", key.Month, month, key.Tasks, taskCount)
+			fmt.Printf("Number of %s: %d\n", key.Tasks, taskCount)
 		}
 	}
 
