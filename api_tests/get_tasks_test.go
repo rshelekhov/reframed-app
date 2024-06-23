@@ -167,3 +167,58 @@ func TestGetTasksByListID_NotFound(t *testing.T) {
 		Status(http.StatusOK).
 		JSON().Object().NotEmpty()
 }
+
+func TestGetTasksGroupedByHeading_HappyPath(t *testing.T) {
+	u := url.URL{
+		Scheme: scheme,
+		Host:   host,
+	}
+	e := httpexpect.Default(t, u.String())
+
+	// Register user
+	r := e.POST("/register").
+		WithJSON(model.UserRequestData{
+			Email:    gofakeit.Email(),
+			Password: randomFakePassword(),
+		}).
+		Expect().
+		Status(http.StatusCreated).
+		JSON().Object()
+
+	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+
+	l := e.POST("/user/lists/").
+		WithHeader("Authorization", "Bearer "+accessToken).
+		WithJSON(model.ListRequestData{
+			Title: gofakeit.Word(),
+		}).
+		Expect().
+		Status(http.StatusCreated).
+		JSON().Object()
+
+	listID := l.Value(key.Data).Object().Value(key.ListID).String().Raw()
+
+	numberOfTasks := 3
+
+	for i := 0; i < numberOfTasks; i++ {
+		fakeTask := randomFakeTask(true, true, true, true, true, listID, "")
+
+		e.POST("/user/lists/{list_id}/tasks", listID).
+			WithHeader("Authorization", "Bearer "+accessToken).
+			WithJSON(fakeTask).
+			Expect().
+			Status(http.StatusCreated).
+			JSON().Object().NotEmpty()
+	}
+
+	// Get tasks by listID
+	tasks := e.GET("/user/lists/{list_id}/headings/tasks", listID).
+		WithHeader("Authorization", "Bearer "+accessToken).
+		Expect().
+		Status(http.StatusOK).
+		JSON().Object()
+
+	totalTasksInList := countTasksInGroups(t, tasks, false)
+
+	require.Equal(t, numberOfTasks, totalTasksInList)
+}
