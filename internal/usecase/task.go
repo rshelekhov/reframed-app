@@ -173,7 +173,6 @@ func mapTaskToResponseData(task model.Task) model.TaskResponseData {
 	}
 }
 
-// TODO: update this and following usecases — need to match data to models here, not in the storage!
 func (u *TaskUsecase) GetTasksGroupedByHeadings(ctx context.Context, data model.TaskRequestData) ([]model.TaskGroup, error) {
 	const op = "task.usecase.GetTasksGroupedByHeadings"
 
