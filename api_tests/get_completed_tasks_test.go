@@ -58,7 +58,7 @@ func TestGetCompletedTasks_HappyPath(t *testing.T) {
 		JSON().Object()
 
 	// Check that returned the same amount of tasks as was completed
-	totalCompletedTasks := countTasks(t, completedTasks, false)
+	totalCompletedTasks := countTasksInGroups(t, completedTasks, false)
 
 	require.Equal(t, numberOfTasks*numberOfLists, totalCompletedTasks)
 }

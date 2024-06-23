@@ -58,7 +58,7 @@ func TestGetArchivedTasks_HappyPath(t *testing.T) {
 		JSON().Object()
 
 	// Check that returned the same amount of tasks as was archived
-	totalArchivedTasks := countTasks(t, archivedTasks, false)
+	totalArchivedTasks := countTasksInGroups(t, archivedTasks, false)
 
 	require.Equal(t, numberOfLists*numberOfTasks, totalArchivedTasks)
 }
