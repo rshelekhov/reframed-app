@@ -276,39 +276,39 @@ SELECT
             )
     ) AS tasks
 FROM (
-    SELECT
-        t.id,
-        t.title,
-        t.description,
-        t.start_date,
-        t.deadline,
-        t.start_time,
-        t.end_time,
-        t.list_id,
-        t.user_id,
-        ttv.tags as tags,
-        t.updated_at
-    FROM tasks t
-        LEFT JOIN task_tags_view ttv
-            ON t.id = ttv.task_id
-    WHERE t.user_id = $1
-      AND (
-          (t.start_date >= COALESCE(@after_date::timestamptz, CURRENT_DATE + interval '1 day'))
-              AND (t.deleted_at IS NULL)
-              AND (COALESCE(t.start_date, @after_date::timestamptz) > @after_date::timestamptz)
-          )
-    GROUP BY
-        t.id,
-        t.title,
-        t.description,
-        t.start_date,
-        t.deadline,
-        t.start_time,
-        t.end_time,
-        t.list_id,
-        t.user_id,
-        t.updated_at
-    ) t
+         SELECT
+             t.id,
+             t.title,
+             t.description,
+             t.start_date,
+             t.deadline,
+             t.start_time,
+             t.end_time,
+             t.list_id,
+             t.user_id,
+             ttv.tags as tags,
+             t.updated_at
+         FROM tasks t
+                  LEFT JOIN task_tags_view ttv
+                            ON t.id = ttv.task_id
+         WHERE t.user_id = $1
+           AND (
+             (t.start_date >= COALESCE(@after_date::timestamptz, CURRENT_DATE + interval '1 day'))
+                 AND (t.deleted_at IS NULL)
+             )
+         GROUP BY
+             t.id,
+             t.title,
+             t.description,
+             t.start_date,
+             t.deadline,
+             t.start_time,
+             t.end_time,
+             t.list_id,
+             t.user_id,
+             ttv.tags,
+             t.updated_at
+     ) t
 GROUP BY t.start_date
 ORDER BY t.start_date
 LIMIT $2;
