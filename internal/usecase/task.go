@@ -231,7 +231,7 @@ func (u *TaskUsecase) GetTasksForToday(ctx context.Context, userID string) ([]mo
 	return taskGroups, nil
 }
 
-func (u *TaskUsecase) GetUpcomingTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error) {
+func (u *TaskUsecase) GetUpcomingTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.UpcomingTaskGroup, error) {
 	const op = "task.usecase.GetUpcomingTasks"
 
 	groupsRaw, err := u.storage.GetUpcomingTasks(ctx, userID, pgn)
@@ -239,10 +239,10 @@ func (u *TaskUsecase) GetUpcomingTasks(ctx context.Context, userID string, pgn m
 		return nil, err
 	}
 
-	var taskGroups []model.TaskGroup
+	var taskGroups []model.UpcomingTaskGroup
 
 	for _, group := range groupsRaw {
-		var taskGroup model.TaskGroup
+		var taskGroup model.UpcomingTaskGroup
 
 		var tasks []model.TaskResponseData
 
