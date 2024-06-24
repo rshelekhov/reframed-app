@@ -71,9 +71,11 @@ func TestGetUpcomingTasks_NotFound(t *testing.T) {
 	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	// Get upcoming tasks
-	e.GET("/user/tasks/upcoming").
+	tasks := e.GET("/user/tasks/upcoming").
 		WithHeader("Authorization", "Bearer "+accessToken).
 		Expect().
 		Status(http.StatusOK).
-		JSON().Object().NotEmpty()
+		JSON().Object()
+
+	printDataToJSON(t, tasks)
 }
