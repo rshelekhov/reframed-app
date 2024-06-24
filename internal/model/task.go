@@ -97,6 +97,11 @@ type (
 		Tasks     []TaskResponseData `json:"tasks,omitempty"`
 	}
 
+	UpcomingTaskGroup struct {
+		StartDate time.Time          `json:"start_date,omitempty"`
+		Tasks     []TaskResponseData `json:"tasks,omitempty"`
+	}
+
 	TaskGroupWithHeading struct {
 		HeadingID string             `json:"heading_id,omitempty"`
 		Tasks     []TaskResponseData `json:"tasks,omitempty"`
