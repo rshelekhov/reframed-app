@@ -38,7 +38,7 @@ func TestGetTasksByUserID_HappyPath(t *testing.T) {
 	lists := createLists(e, accessToken, numberOfLists)
 
 	// Create three tasks in each list
-	_ = createTasks(e, accessToken, lists, numberOfTasks)
+	_ = createTasks(e, accessToken, upcomingTasks, lists, numberOfTasks)
 
 	// Get tasks
 	e.GET("/user/tasks").
@@ -108,7 +108,7 @@ func TestGetTasksByListID_HappyPath(t *testing.T) {
 	numberOfTasks := 3
 
 	for i := 0; i < numberOfTasks; i++ {
-		fakeTask := randomFakeTask(true, true, true, true, true, listID, "")
+		fakeTask := randomFakeTask(upcomingTasks, listID, "")
 
 		e.POST("/user/lists/{list_id}/tasks", listID).
 			WithHeader("Authorization", "Bearer "+accessToken).
@@ -201,7 +201,7 @@ func TestGetTasksGroupedByHeading_HappyPath(t *testing.T) {
 	numberOfTasks := 3
 
 	for i := 0; i < numberOfTasks; i++ {
-		fakeTask := randomFakeTask(true, true, true, true, true, listID, "")
+		fakeTask := randomFakeTask(upcomingTasks, listID, "")
 
 		e.POST("/user/lists/{list_id}/tasks", listID).
 			WithHeader("Authorization", "Bearer "+accessToken).

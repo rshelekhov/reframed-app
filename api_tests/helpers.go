@@ -14,10 +14,12 @@ import (
 )
 
 const (
-	scheme                    = "http"
-	host                      = "localhost:8082"
-	cookieDomain              = "localhost"
-	cookiePath                = "/"
+	scheme = "http"
+	host   = "localhost:8082"
+
+	cookieDomain = "localhost"
+	cookiePath   = "/"
+
 	passwordDefaultLength     = 10
 	titleDefaultLength        = 5
 	paragraphDefaultCount     = 1
@@ -34,18 +36,27 @@ func randomFakePassword() string {
 	return gofakeit.Password(true, true, true, true, true, passwordDefaultLength)
 }
 
-func randomFakeTask(isStartDate, isDeadline, isStartTime, isEndTime, isTags bool, listID, headingID string) model.TaskRequestData {
-	startDate := randomDateRange(isStartDate, time.Now(), time.Now().AddDate(0, 0, 1))
-	startTime := randomDateTimeRange(isStartTime, time.Now(), time.Now().AddDate(0, 0, 1))
-	var deadline, endTime string
+type taskType int
 
-	if isDeadline {
-		startDateParsed, _ := time.Parse(time.DateOnly, startDate)
-		deadline = randomDateRange(isDeadline, startDateParsed, startDateParsed.Add(randomDays()))
-	}
-	if isEndTime {
-		startTimeParsed, _ := time.Parse(time.DateTime, startTime)
-		endTime = randomDateTimeRange(isStartTime, startTimeParsed, startTimeParsed.Add(randomTimeDuration()))
+const (
+	todayTasks taskType = iota
+	upcomingTasks
+	overdueTasks
+	somedayTasks
+)
+
+func randomFakeTask(tt taskType, listID, headingID string) model.TaskRequestData {
+	var startDate, startTime, deadline, endTime string
+
+	switch tt {
+	case todayTasks:
+		startDate = time.Now().Format(time.DateOnly)
+	case upcomingTasks:
+		startDate = randomDateRange(true, time.Now().AddDate(0, 0, 1), time.Now().AddDate(0, 1, 0))
+	case overdueTasks:
+		deadline = randomDateRange(true, time.Now().AddDate(0, -1, 0), time.Now().AddDate(0, 0, -1))
+	case somedayTasks:
+		// Leaving startDate, deadline, startTime, and endTime as empty strings
 	}
 
 	return model.TaskRequestData{
@@ -57,7 +68,7 @@ func randomFakeTask(isStartDate, isDeadline, isStartTime, isEndTime, isTags bool
 		EndTime:     endTime,
 		ListID:      listID,
 		HeadingID:   headingID,
-		Tags:        randomTags(isTags),
+		Tags:        randomTags(),
 	}
 }
 
@@ -102,16 +113,13 @@ func randomTimeInterval() (string, string) {
 	return firstFormattedTime, secondFormattedTime
 }
 
-func randomTags(isSet bool) []string {
-	if isSet {
-		tagCount := rand.Intn(5) + 3
-		tags := make([]string, tagCount)
-		for i := 0; i < tagCount; i++ {
-			tags[i] = gofakeit.Word()
-		}
-		return tags
+func randomTags() []string {
+	tagCount := rand.Intn(5) + 3
+	tags := make([]string, tagCount)
+	for i := 0; i < tagCount; i++ {
+		tags[i] = gofakeit.Word()
 	}
-	return nil
+	return tags
 }
 
 func createLists(e *httpexpect.Expect, accessToken string, n int) []*httpexpect.Object {
@@ -133,13 +141,13 @@ func createLists(e *httpexpect.Expect, accessToken string, n int) []*httpexpect.
 	return lists
 }
 
-func createTasks(e *httpexpect.Expect, accessToken string, lists []*httpexpect.Object, n int) []*httpexpect.Object {
+func createTasks(e *httpexpect.Expect, accessToken string, taskType taskType, lists []*httpexpect.Object, n int) []*httpexpect.Object {
 	var tasks []*httpexpect.Object
 
 	for _, list := range lists {
 		listID := list.Value(key.Data).Object().Value(key.ListID).String().Raw()
 
-		fakeTask := randomFakeTask(true, true, true, true, true, listID, "")
+		fakeTask := randomFakeTask(taskType, listID, "")
 
 		for i := 0; i < n; i++ {
 			task := e.POST("/user/lists/{list_id}/tasks", listID).

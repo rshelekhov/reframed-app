@@ -31,7 +31,7 @@ func TestCompleteTask_HappyPath(t *testing.T) {
 
 	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
 
-	fakeTask := randomFakeTask(true, true, true, true, true, "", "")
+	fakeTask := randomFakeTask(upcomingTasks, "", "")
 
 	// Create task
 	task := e.POST("/user/lists/default").

@@ -37,7 +37,7 @@ func TestGetUpcomingTasks_HappyPath(t *testing.T) {
 	lists := createLists(e, accessToken, numberOfLists)
 
 	// Create three tasks in each list
-	_ = createTasksUpd(e, accessToken, upcomingTasks, lists, numberOfTasks)
+	_ = createTasks(e, accessToken, upcomingTasks, lists, numberOfTasks)
 
 	// Get upcoming tasks
 	tasks := e.GET("/user/tasks/upcoming").

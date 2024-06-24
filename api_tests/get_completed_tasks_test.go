@@ -38,7 +38,7 @@ func TestGetCompletedTasks_HappyPath(t *testing.T) {
 	lists := createLists(e, accessToken, numberOfLists)
 
 	// Create three tasks in each list
-	tasks := createTasks(e, accessToken, lists, numberOfTasks)
+	tasks := createTasks(e, accessToken, overdueTasks, lists, numberOfTasks)
 
 	// Complete tasks
 	for _, task := range tasks {
