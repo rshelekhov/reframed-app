@@ -218,7 +218,51 @@ func TestGetTasksGroupedByHeading_HappyPath(t *testing.T) {
 		Status(http.StatusOK).
 		JSON().Object()
 
-	totalTasksInList := countTasksInGroups(t, tasks, false)
+	totalTasks := countTasksInGroups(t, tasks, false)
 
-	require.Equal(t, numberOfTasks, totalTasksInList)
+	require.Equal(t, numberOfTasks, totalTasks)
+}
+
+func TestGetTasksGroupedByHeading_NotFound(t *testing.T) {
+	u := url.URL{
+		Scheme: scheme,
+		Host:   host,
+	}
+	e := httpexpect.Default(t, u.String())
+
+	// Register user
+	r := e.POST("/register").
+		WithJSON(model.UserRequestData{
+			Email:    gofakeit.Email(),
+			Password: randomFakePassword(),
+		}).
+		Expect().
+		Status(http.StatusCreated).
+		JSON().Object()
+
+	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+
+	l := e.POST("/user/lists/").
+		WithHeader("Authorization", "Bearer "+accessToken).
+		WithJSON(model.ListRequestData{
+			Title: gofakeit.Word(),
+		}).
+		Expect().
+		Status(http.StatusCreated).
+		JSON().Object()
+
+	listID := l.Value(key.Data).Object().Value(key.ListID).String().Raw()
+
+	// Get tasks by listID
+	tasks := e.GET("/user/lists/{list_id}/headings/tasks", listID).
+		WithHeader("Authorization", "Bearer "+accessToken).
+		Expect().
+		Status(http.StatusOK).
+		JSON().Object()
+
+	printDataToJSON(t, tasks)
+
+	totalTasks := countTasksInGroups(t, tasks, false)
+
+	require.Equal(t, 0, totalTasks)
 }
