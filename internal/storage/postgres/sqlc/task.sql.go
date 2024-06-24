@@ -842,43 +842,43 @@ SELECT
             )
     ) AS tasks
 FROM headings h
-    LEFT JOIN (
-        SELECT
-            t.id,
-            t.title,
-            t.description,
-            t.start_date,
-            t.deadline,
-            t.start_time,
-            t.end_time,
-            t.heading_id,
-            t.user_id,
-            ttv.tags as tags,
-            CASE
-                WHEN t.deadline <= CURRENT_DATE THEN TRUE
-                ELSE FALSE END
-                AS overdue,
-            t.updated_at
-        FROM tasks t
-            LEFT JOIN task_tags_view ttv
-                ON t.id = ttv.task_id
-        WHERE t.list_id = $1
-          AND t.user_id = $2
-          AND t.deleted_at IS NULL
-        GROUP BY
-            t.id,
-            t.title,
-            t.description,
-            t.start_date,
-            t.deadline,
-            t.start_time,
-            t.end_time,
-            t.heading_id,
-            t.user_id,
-            t.updated_at,
-            ttv.tags
-    ) t
-        ON h.id = t.heading_id
+         JOIN (
+    SELECT
+        t.id,
+        t.title,
+        t.description,
+        t.start_date,
+        t.deadline,
+        t.start_time,
+        t.end_time,
+        t.heading_id,
+        t.user_id,
+        ttv.tags as tags,
+        CASE
+            WHEN t.deadline <= CURRENT_DATE THEN TRUE
+            ELSE FALSE END
+                 AS overdue,
+        t.updated_at
+    FROM tasks t
+             LEFT JOIN task_tags_view ttv
+                       ON t.id = ttv.task_id
+    WHERE t.list_id = $1
+      AND t.user_id = $2
+      AND t.deleted_at IS NULL
+    GROUP BY
+        t.id,
+        t.title,
+        t.description,
+        t.start_date,
+        t.deadline,
+        t.start_time,
+        t.end_time,
+        t.heading_id,
+        t.user_id,
+        t.updated_at,
+        ttv.tags
+) t
+              ON h.id = t.heading_id
 WHERE h.list_id = $1
   AND h.user_id = $2
 GROUP BY h.id
