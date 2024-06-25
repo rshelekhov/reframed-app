@@ -210,6 +210,29 @@ func countTasks(t *testing.T, response *httpexpect.Object, printDetails bool) in
 	return totalTasks
 }
 
+func countGroups(t *testing.T, response *httpexpect.Object, printDetails bool) int {
+	formattedData, err := json.MarshalIndent(response.Raw(), "", "  ")
+	if err != nil {
+		t.Fatalf("Error formatting response to JSON: %v", err)
+	}
+
+	var result map[string]interface{}
+
+	err = json.Unmarshal(formattedData, &result)
+	if err != nil {
+		fmt.Println("Error decoding JSON:", err)
+		return 0
+	}
+
+	data, ok := result[key.Data].([]interface{})
+	if !ok {
+		fmt.Println("Error: 'data' is not an array")
+		return 0
+	}
+
+	return len(data)
+}
+
 func countTasksInGroups(t *testing.T, response *httpexpect.Object, printDetails bool) int {
 	formattedData, err := json.MarshalIndent(response.Raw(), "", "  ")
 	if err != nil {
