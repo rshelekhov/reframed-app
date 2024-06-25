@@ -360,7 +360,7 @@ func (c *taskController) GetTasksForSomeday() http.HandlerFunc {
 		tasksResp, err := c.usecase.GetTasksForSomeday(ctx, userID, pagination)
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
-			handleResponseSuccess(w, r, log, "no tasks found for someday", nil)
+			handleResponseSuccess(w, r, log, "no tasks for someday found", nil)
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
 		default:

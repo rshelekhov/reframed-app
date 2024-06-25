@@ -289,7 +289,7 @@ func (u *TaskUsecase) GetOverdueTasks(ctx context.Context, userID string, pgn mo
 	return taskGroups, nil
 }
 
-func (u *TaskUsecase) GetTasksForSomeday(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error) {
+func (u *TaskUsecase) GetTasksForSomeday(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroupForSomeday, error) {
 	const op = "task.usecase.GetTasksForSomeday"
 
 	groupsRaw, err := u.storage.GetTasksForSomeday(ctx, userID, pgn)
@@ -297,10 +297,10 @@ func (u *TaskUsecase) GetTasksForSomeday(ctx context.Context, userID string, pgn
 		return nil, err
 	}
 
-	var taskGroups []model.TaskGroup
+	var taskGroups []model.TaskGroupForSomeday
 
 	for _, group := range groupsRaw {
-		var taskGroup model.TaskGroup
+		var taskGroup model.TaskGroupForSomeday
 
 		var tasks []model.TaskResponseData
 
@@ -309,7 +309,7 @@ func (u *TaskUsecase) GetTasksForSomeday(ctx context.Context, userID string, pgn
 			return nil, fmt.Errorf("%s: failed to unmarshal tasks from postgres json object: %w", op, err)
 		}
 
-		taskGroup.StartDate = group.StartDate
+		taskGroup.ListID = group.ListID
 		taskGroup.Tasks = tasks
 
 		taskGroups = append(taskGroups, taskGroup)

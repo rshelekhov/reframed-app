@@ -465,13 +465,10 @@ func (s *TaskStorage) GetOverdueTasks(ctx context.Context, userID string, pgn mo
 func (s *TaskStorage) GetTasksForSomeday(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroupRaw, error) {
 	const op = "task.storage.GetTasksForSomeday"
 
-	groups, err := s.Queries.GetUpcomingTasks(ctx, sqlc.GetUpcomingTasksParams{
-		UserID: userID,
-		AfterDate: pgtype.Timestamptz{
-			Valid: true,
-			Time:  pgn.AfterDate,
-		},
-		Limit: pgn.Limit,
+	groups, err := s.Queries.GetTasksForSomeday(ctx, sqlc.GetTasksForSomedayParams{
+		UserID:  userID,
+		Limit:   pgn.Limit,
+		AfterID: pgn.AfterID,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("%s: failed to get tasks groups: %w", op, err)
@@ -485,10 +482,7 @@ func (s *TaskStorage) GetTasksForSomeday(ctx context.Context, userID string, pgn
 	for _, group := range groups {
 		var taskGroup model.TaskGroupRaw
 
-		if group.StartDate.Valid {
-			taskGroup.StartDate = group.StartDate.Time
-		}
-
+		taskGroup.ListID = group.ListID
 		taskGroup.Tasks = group.Tasks
 
 		groupsRaw = append(groupsRaw, taskGroup)
