@@ -15,7 +15,7 @@ const (
 
 func ParseLimitAndAfterID(r *http.Request) model.Pagination {
 	limit, err := strconv.Atoi(r.URL.Query().Get(key.Limit))
-	if err != nil || limit < 0 {
+	if err != nil || limit < 1 {
 		limit = DefaultLimit
 	}
 
