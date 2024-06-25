@@ -151,7 +151,7 @@ SELECT
             )
     ) AS tasks
 FROM headings h
-         JOIN (
+JOIN (
     SELECT
         t.id,
         t.title,
@@ -390,46 +390,47 @@ SELECT
                             'list_id', t.list_id,
                             'user_id', t.user_id,
                             'tags', tags,
-                            'overdue', overdue,
                             'updated_at', t.updated_at
                     )
             )
     ) AS tasks
 FROM lists l
-    LEFT JOIN (
-        SELECT
-            t.id,
-            t.title,
-            t.description,
-            t.deadline,
-            t.start_time,
-            t.end_time,
-            t.list_id,
-            t.user_id,
-            ttv.tags as tags,
-            CASE
-                WHEN t.deadline <= CURRENT_DATE THEN TRUE
-                ELSE FALSE END
-                AS overdue,
-            t.updated_at
-        FROM tasks t
-            LEFT JOIN task_tags_view ttv
-                ON t.id = ttv.task_id
-        WHERE t.user_id = $1
-          AND t.start_date IS NULL
-          AND t.deadline > CURRENT_DATE
-          AND (t.deleted_at IS NULL OR l.id > @after_id::varchar)
-        GROUP BY
-            t.id,
-            t.title,
-            t.description,
-            t.deadline,
-            t.start_time,
-            t.end_time,
-            t.list_id,
-            t.user_id,
-            t.updated_at
-        ) t ON l.id = t.list_id
+JOIN (
+    SELECT
+        t.id,
+        t.title,
+        t.description,
+        t.deadline,
+        t.start_time,
+        t.end_time,
+        t.status_id,
+        t.list_id,
+        t.heading_id,
+        t.user_id,
+        ttv.tags as tags,
+        t.updated_at
+    FROM tasks t
+        LEFT JOIN task_tags_view ttv
+            ON t.id = ttv.task_id
+    WHERE t.user_id = $1
+    AND t.start_date IS NULL
+      AND t.deadline IS NULL
+      AND (t.list_id > COALESCE(NULLIF(@after_id, ''), '0'))
+      AND t.deleted_at IS NULL
+    GROUP BY
+        t.id,
+        t.title,
+        t.description,
+        t.deadline,
+        t.start_time,
+        t.end_time,
+        t.status_id,
+        t.list_id,
+        t.heading_id,
+        t.user_id,
+        ttv.tags,
+        t.updated_at
+    ) t ON l.id = t.list_id
 WHERE l.user_id = $1
 GROUP BY l.id
 ORDER BY l.id
