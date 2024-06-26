@@ -1,6 +1,8 @@
 package v1
 
 import (
+	"github.com/rshelekhov/reframed/internal/lib/constants/le"
+	"github.com/segmentio/ksuid"
 	"net/http"
 	"strconv"
 	"time"
@@ -13,20 +15,42 @@ const (
 	DefaultLimit = 30
 )
 
-func ParseLimitAndAfterID(r *http.Request) model.Pagination {
+func ParseLimitAndCursor(r *http.Request) (model.Pagination, error) {
 	limit, err := strconv.Atoi(r.URL.Query().Get(key.Limit))
 	if err != nil || limit < 1 {
 		limit = DefaultLimit
 	}
 
-	afterID := r.URL.Query().Get(key.AfterID)
+	cursor := r.URL.Query().Get(key.Cursor)
 
-	return model.Pagination{
-		Limit:   int32(limit),
-		AfterID: afterID,
+	cursorDate, err := time.Parse(time.DateOnly, cursor)
+	if err == nil {
+		// cursor is in date format
+		return model.Pagination{
+			Limit:      int32(limit),
+			CursorDate: cursorDate,
+		}, nil
 	}
+
+	if _, err = ksuid.Parse(cursor); err == nil {
+		// cursor is in ksuid format
+		return model.Pagination{
+			Limit:  int32(limit),
+			Cursor: cursor,
+		}, nil
+	}
+
+	if cursor != "" {
+		return model.Pagination{}, le.ErrInvalidCursor
+	}
+
+	// cursor is empty, it's ok
+	return model.Pagination{
+		Limit: int32(limit),
+	}, nil
 }
 
+// ParseLimitAndAfterDate is deprecated
 func ParseLimitAndAfterDate(r *http.Request) (model.Pagination, error) {
 	limit, err := strconv.Atoi(r.URL.Query().Get(key.Limit))
 	if err != nil || limit < 0 {
@@ -46,7 +70,7 @@ func ParseLimitAndAfterDate(r *http.Request) (model.Pagination, error) {
 	}
 
 	return model.Pagination{
-		Limit:     int32(limit),
-		AfterDate: afterDate,
+		Limit:      int32(limit),
+		CursorDate: afterDate,
 	}, nil
 }

@@ -36,8 +36,7 @@ const (
 	//  pagination keys
 	// ===========================================================================
 
-	Count     = "count"
-	AfterID   = "after_id"
+	Cursor    = "cursor"
 	AfterDate = "after_date"
 	Limit     = "limit"
 )

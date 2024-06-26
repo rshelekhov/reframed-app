@@ -36,6 +36,7 @@ const (
 	ErrFailedToGetData          LocalError = "failed to get data"
 	ErrFailedToValidateData     LocalError = "failed to validate data"
 	ErrFailedToParseQueryParams LocalError = "failed to parse query params"
+	ErrInvalidCursor            LocalError = "invalid format for cursor, expected object id type string or YYYY-MM-DD"
 
 	// ===========================================================================
 	//   user errors
