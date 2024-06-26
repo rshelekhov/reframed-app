@@ -699,8 +699,8 @@ JOIN (
 ) t ON l.id = t.list_id
 WHERE l.user_id = $1
   AND l.id > $3::varchar
-GROUP BY l.id
-ORDER BY l.id
+GROUP BY l.id, l.created_at
+ORDER BY l.created_at
 LIMIT $2
 `
 
