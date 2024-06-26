@@ -164,7 +164,10 @@ func (c *taskController) GetTasksByUserID() http.HandlerFunc {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 		}
 
-		pagination := ParseLimitAndAfterID(r)
+		pagination, err := ParseLimitAndCursor(r)
+		if err != nil {
+			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrInvalidCursor)
+		}
 
 		tasksResp, err := c.usecase.GetTasksByUserID(ctx, userID, pagination)
 		switch {
@@ -292,9 +295,9 @@ func (c *taskController) GetUpcomingTasks() http.HandlerFunc {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 		}
 
-		pagination, err := ParseLimitAndAfterDate(r)
+		pagination, err := ParseLimitAndCursor(r)
 		if err != nil {
-			handleInternalServerError(w, r, log, le.ErrFailedToParseQueryParams, err)
+			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrInvalidCursor)
 		}
 
 		tasksResp, err := c.usecase.GetUpcomingTasks(ctx, userID, pagination)
@@ -325,7 +328,10 @@ func (c *taskController) GetOverdueTasks() http.HandlerFunc {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 		}
 
-		pagination := ParseLimitAndAfterID(r)
+		pagination, err := ParseLimitAndCursor(r)
+		if err != nil {
+			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrInvalidCursor)
+		}
 
 		tasksResp, err := c.usecase.GetOverdueTasks(ctx, userID, pagination)
 		switch {
@@ -355,7 +361,10 @@ func (c *taskController) GetTasksForSomeday() http.HandlerFunc {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 		}
 
-		pagination := ParseLimitAndAfterID(r)
+		pagination, err := ParseLimitAndCursor(r)
+		if err != nil {
+			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrInvalidCursor)
+		}
 
 		tasksResp, err := c.usecase.GetTasksForSomeday(ctx, userID, pagination)
 		switch {
@@ -385,9 +394,9 @@ func (c *taskController) GetCompletedTasks() http.HandlerFunc {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 		}
 
-		pagination, err := ParseLimitAndAfterDate(r)
+		pagination, err := ParseLimitAndCursor(r)
 		if err != nil {
-			handleInternalServerError(w, r, log, le.ErrFailedToParseQueryParams, err)
+			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrInvalidCursor)
 		}
 
 		tasksResp, err := c.usecase.GetCompletedTasks(ctx, userID, pagination)
@@ -418,9 +427,9 @@ func (c *taskController) GetArchivedTasks() http.HandlerFunc {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 		}
 
-		pagination, err := ParseLimitAndAfterDate(r)
+		pagination, err := ParseLimitAndCursor(r)
 		if err != nil {
-			handleInternalServerError(w, r, log, le.ErrFailedToParseQueryParams, err)
+			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrInvalidCursor)
 		}
 
 		tasksResp, err := c.usecase.GetArchivedTasks(ctx, userID, pagination)

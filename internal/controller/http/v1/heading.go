@@ -131,12 +131,11 @@ func (c *headingController) GetHeadingsByListID() http.HandlerFunc {
 		headingsResp, err := c.usecase.GetHeadingsByListID(ctx, headingsInput)
 		switch {
 		case errors.Is(err, le.ErrNoHeadingsFound):
-			handleResponseSuccess(w, r, log, "no headings found", nil,
-				slog.Int(key.Count, len(headingsResp)))
+			handleResponseSuccess(w, r, log, "no headings found", nil)
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetHeadingsByListID, err)
 		default:
-			handleResponseSuccess(w, r, log, "headings found", headingsResp, slog.Int(key.Count, len(headingsResp)))
+			handleResponseSuccess(w, r, log, "headings found", headingsResp)
 		}
 	}
 }
