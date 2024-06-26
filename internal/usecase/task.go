@@ -52,6 +52,7 @@ func (u *TaskUsecase) CreateTask(ctx context.Context, data *model.TaskRequestDat
 	}
 
 	data.StatusID = statusNotStarted
+	currentTime := time.Now()
 
 	newTask := model.Task{
 		ID:          ksuid.New().String(),
@@ -66,7 +67,8 @@ func (u *TaskUsecase) CreateTask(ctx context.Context, data *model.TaskRequestDat
 		HeadingID:   data.HeadingID,
 		UserID:      data.UserID,
 		Tags:        data.Tags,
-		UpdatedAt:   time.Now(),
+		CreatedAt:   currentTime,
+		UpdatedAt:   currentTime,
 	}
 
 	if err = u.storage.Transaction(ctx, func(_ port.TaskStorage) error {
@@ -102,6 +104,7 @@ func (u *TaskUsecase) CreateTask(ctx context.Context, data *model.TaskRequestDat
 		HeadingID:   newTask.HeadingID,
 		UserID:      newTask.UserID,
 		Tags:        newTask.Tags,
+		CreatedAt:   newTask.CreatedAt,
 		UpdatedAt:   newTask.UpdatedAt,
 	}, nil
 }

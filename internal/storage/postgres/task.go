@@ -175,9 +175,9 @@ func (s *TaskStorage) GetTasksByUserID(ctx context.Context, userID string, pgn m
 	const op = "task.storage.GetTasksByUserID"
 
 	tasksRaw, err := s.Queries.GetTasksByUserID(ctx, sqlc.GetTasksByUserIDParams{
-		UserID:  userID,
-		AfterID: pgn.AfterID,
-		Limit:   pgn.Limit,
+		UserID: userID,
+		Cursor: pgn.Cursor,
+		Limit:  pgn.Limit,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("%s: failed to get tasks: %w", op, err)
@@ -406,9 +406,10 @@ func (s *TaskStorage) GetUpcomingTasks(ctx context.Context, userID string, pgn m
 
 	groups, err := s.Queries.GetUpcomingTasks(ctx, sqlc.GetUpcomingTasksParams{
 		UserID: userID,
+		// TODO: rename to CursorDate and Cursor
 		AfterDate: pgtype.Timestamptz{
 			Valid: true,
-			Time:  pgn.AfterDate,
+			Time:  pgn.CursorDate,
 		},
 		Limit: pgn.Limit,
 	})
@@ -437,9 +438,9 @@ func (s *TaskStorage) GetOverdueTasks(ctx context.Context, userID string, pgn mo
 	const op = "task.storage.GetOverdueTasks"
 
 	groups, err := s.Queries.GetOverdueTasks(ctx, sqlc.GetOverdueTasksParams{
-		UserID:  userID,
-		Limit:   pgn.Limit,
-		AfterID: pgn.AfterID,
+		UserID: userID,
+		Limit:  pgn.Limit,
+		Cursor: pgn.Cursor,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("%s: failed to get tasks groups: %w", op, err)
@@ -466,9 +467,9 @@ func (s *TaskStorage) GetTasksForSomeday(ctx context.Context, userID string, pgn
 	const op = "task.storage.GetTasksForSomeday"
 
 	groups, err := s.Queries.GetTasksForSomeday(ctx, sqlc.GetTasksForSomedayParams{
-		UserID:  userID,
-		Limit:   pgn.Limit,
-		AfterID: pgn.AfterID,
+		UserID: userID,
+		Limit:  pgn.Limit,
+		Cursor: pgn.Cursor,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("%s: failed to get tasks groups: %w", op, err)
@@ -498,9 +499,9 @@ func (s *TaskStorage) GetCompletedTasks(ctx context.Context, userID string, pgn 
 		UserID:      userID,
 		Limit:       pgn.Limit,
 		StatusTitle: model.StatusCompleted.String(),
-		AfterDate: pgtype.Timestamptz{
+		CursorDate: pgtype.Timestamptz{
 			Valid: true,
-			Time:  pgn.AfterDate,
+			Time:  pgn.CursorDate,
 		},
 	})
 	if err != nil {
@@ -532,17 +533,17 @@ func (s *TaskStorage) GetArchivedTasks(ctx context.Context, userID string, pgn m
 
 	var afterMonth time.Time
 
-	if pgn.AfterDate.IsZero() {
+	if pgn.CursorDate.IsZero() {
 		afterMonth = time.Now().Truncate(24 * time.Hour)
 	} else {
-		afterMonth = pgn.AfterDate
+		afterMonth = pgn.CursorDate
 	}
 
 	groups, err := s.Queries.GetArchivedTasks(ctx, sqlc.GetArchivedTasksParams{
 		UserID:      userID,
 		Limit:       pgn.Limit,
 		StatusTitle: model.StatusArchived.String(),
-		AfterMonth: pgtype.Timestamptz{
+		CursorDate: pgtype.Timestamptz{
 			Valid: true,
 			Time:  afterMonth,
 		},

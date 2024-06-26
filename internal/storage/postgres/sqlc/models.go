@@ -16,6 +16,7 @@ type Heading struct {
 	ListID    string             `db:"list_id"`
 	UserID    string             `db:"user_id"`
 	IsDefault bool               `db:"is_default"`
+	CreatedAt time.Time          `db:"created_at"`
 	UpdatedAt time.Time          `db:"updated_at"`
 	DeletedAt pgtype.Timestamptz `db:"deleted_at"`
 }
@@ -25,6 +26,7 @@ type List struct {
 	Title     string             `db:"title"`
 	UserID    string             `db:"user_id"`
 	IsDefault bool               `db:"is_default"`
+	CreatedAt time.Time          `db:"created_at"`
 	UpdatedAt time.Time          `db:"updated_at"`
 	DeletedAt pgtype.Timestamptz `db:"deleted_at"`
 }
@@ -35,6 +37,7 @@ type Reminder struct {
 	Read      bool               `db:"read"`
 	TaskID    string             `db:"task_id"`
 	UserID    string             `db:"user_id"`
+	CreatedAt time.Time          `db:"created_at"`
 	UpdatedAt time.Time          `db:"updated_at"`
 	DeletedAt pgtype.Timestamptz `db:"deleted_at"`
 }
@@ -53,6 +56,7 @@ type Tag struct {
 	ID        string             `db:"id"`
 	Title     string             `db:"title"`
 	UserID    string             `db:"user_id"`
+	CreatedAt time.Time          `db:"created_at"`
 	UpdatedAt time.Time          `db:"updated_at"`
 	DeletedAt pgtype.Timestamptz `db:"deleted_at"`
 }
@@ -69,6 +73,7 @@ type Task struct {
 	ListID      string             `db:"list_id"`
 	HeadingID   string             `db:"heading_id"`
 	UserID      string             `db:"user_id"`
+	CreatedAt   time.Time          `db:"created_at"`
 	UpdatedAt   time.Time          `db:"updated_at"`
 	DeletedAt   pgtype.Timestamptz `db:"deleted_at"`
 }

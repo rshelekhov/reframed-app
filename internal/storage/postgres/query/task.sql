@@ -11,9 +11,10 @@ INSERT INTO tasks (
     list_id,
     heading_id,
     user_id,
+    created_at,
     updated_at
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
 );
 
 -- name: GetTaskStatusID :one
@@ -70,8 +71,8 @@ FROM tasks t
 WHERE t.user_id = $1
   AND t.deleted_at IS NULL
   AND (
-      (@after_id::varchar IS NULL AND t.id > @after_id::varchar)
-          OR (@after_id::varchar IS NOT NULL AND t.id > @after_id::varchar)
+      (@cursor::varchar IS NULL AND t.id > @cursor::varchar)
+          OR (@cursor::varchar IS NOT NULL AND t.id > @cursor::varchar)
       )
 GROUP BY
     t.id,
@@ -357,7 +358,7 @@ FROM lists l
                 ON t.id = ttv.task_id
         WHERE t.user_id = $1
           AND t.deadline <= CURRENT_DATE
-          AND (t.deleted_at IS NULL OR l.id > @after_id::varchar)
+          AND (t.deleted_at IS NULL OR l.id > @cursor::varchar)
         GROUP BY
             t.id,
             t.title,
@@ -410,12 +411,10 @@ JOIN (
         ttv.tags as tags,
         t.updated_at
     FROM tasks t
-        LEFT JOIN task_tags_view ttv
-            ON t.id = ttv.task_id
+             LEFT JOIN task_tags_view ttv ON t.id = ttv.task_id
     WHERE t.user_id = $1
-    AND t.start_date IS NULL
+      AND t.start_date IS NULL
       AND t.deadline IS NULL
-      AND (t.list_id > COALESCE(NULLIF(@after_id, ''), '0'))
       AND t.deleted_at IS NULL
     GROUP BY
         t.id,
@@ -430,8 +429,9 @@ JOIN (
         t.user_id,
         ttv.tags,
         t.updated_at
-    ) t ON l.id = t.list_id
+) t ON l.id = t.list_id
 WHERE l.user_id = $1
+  AND l.id > @cursor::varchar
 GROUP BY l.id
 ORDER BY l.id
 LIMIT $2;
@@ -479,7 +479,7 @@ FROM (
           WHERE statuses.title = @status_title::varchar
       )
       AND (t.deleted_at IS NULL
-               OR (DATE_TRUNC('month', t.updated_at) > @after_date::timestamptz AND t.deleted_at IS NULL)
+               OR (DATE_TRUNC('month', t.updated_at) > @cursor_date::timestamptz AND t.deleted_at IS NULL)
           )
     GROUP BY
         t.id,
@@ -543,7 +543,7 @@ FROM (
         WHERE statuses.title = @status_title::varchar
         )
       AND (t.deleted_at IS NOT NULL
-               OR (DATE_TRUNC('month', t.updated_at) > @after_month::timestamptz AND t.deleted_at IS NOT NULL)
+               OR (DATE_TRUNC('month', t.updated_at) > @cursor_date::timestamptz AND t.deleted_at IS NOT NULL)
           )
     GROUP BY
         t.id,

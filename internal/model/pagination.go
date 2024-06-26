@@ -4,7 +4,7 @@ import "time"
 
 // Pagination represents pagination parameters
 type Pagination struct {
-	Limit     int32     `json:"limit"`
-	AfterID   string    `json:"after_id"`
-	AfterDate time.Time `json:"after_date"`
+	Limit      int32     `json:"limit"`
+	Cursor     string    `json:"cursor"`
+	CursorDate time.Time `json:"cursor_date"`
 }

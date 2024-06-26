@@ -25,9 +25,10 @@ INSERT INTO tasks (
     list_id,
     heading_id,
     user_id,
+    created_at,
     updated_at
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
 )
 `
 
@@ -43,6 +44,7 @@ type CreateTaskParams struct {
 	ListID      string             `db:"list_id"`
 	HeadingID   string             `db:"heading_id"`
 	UserID      string             `db:"user_id"`
+	CreatedAt   time.Time          `db:"created_at"`
 	UpdatedAt   time.Time          `db:"updated_at"`
 }
 
@@ -59,6 +61,7 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) error {
 		arg.ListID,
 		arg.HeadingID,
 		arg.UserID,
+		arg.CreatedAt,
 		arg.UpdatedAt,
 	)
 	return err
@@ -134,7 +137,7 @@ type GetArchivedTasksParams struct {
 	UserID      string             `db:"user_id"`
 	Limit       int32              `db:"limit"`
 	StatusTitle string             `db:"status_title"`
-	AfterMonth  pgtype.Timestamptz `db:"after_month"`
+	CursorDate  pgtype.Timestamptz `db:"cursor_date"`
 }
 
 type GetArchivedTasksRow struct {
@@ -147,7 +150,7 @@ func (q *Queries) GetArchivedTasks(ctx context.Context, arg GetArchivedTasksPara
 		arg.UserID,
 		arg.Limit,
 		arg.StatusTitle,
-		arg.AfterMonth,
+		arg.CursorDate,
 	)
 	if err != nil {
 		return nil, err
@@ -234,7 +237,7 @@ type GetCompletedTasksParams struct {
 	UserID      string             `db:"user_id"`
 	Limit       int32              `db:"limit"`
 	StatusTitle string             `db:"status_title"`
-	AfterDate   pgtype.Timestamptz `db:"after_date"`
+	CursorDate  pgtype.Timestamptz `db:"cursor_date"`
 }
 
 type GetCompletedTasksRow struct {
@@ -247,7 +250,7 @@ func (q *Queries) GetCompletedTasks(ctx context.Context, arg GetCompletedTasksPa
 		arg.UserID,
 		arg.Limit,
 		arg.StatusTitle,
-		arg.AfterDate,
+		arg.CursorDate,
 	)
 	if err != nil {
 		return nil, err
@@ -331,9 +334,9 @@ LIMIT $2
 `
 
 type GetOverdueTasksParams struct {
-	UserID  string `db:"user_id"`
-	Limit   int32  `db:"limit"`
-	AfterID string `db:"after_id"`
+	UserID string `db:"user_id"`
+	Limit  int32  `db:"limit"`
+	Cursor string `db:"cursor"`
 }
 
 type GetOverdueTasksRow struct {
@@ -342,7 +345,7 @@ type GetOverdueTasksRow struct {
 }
 
 func (q *Queries) GetOverdueTasks(ctx context.Context, arg GetOverdueTasksParams) ([]GetOverdueTasksRow, error) {
-	rows, err := q.db.Query(ctx, getOverdueTasks, arg.UserID, arg.Limit, arg.AfterID)
+	rows, err := q.db.Query(ctx, getOverdueTasks, arg.UserID, arg.Limit, arg.Cursor)
 	if err != nil {
 		return nil, err
 	}
@@ -585,9 +588,9 @@ LIMIT $2
 `
 
 type GetTasksByUserIDParams struct {
-	UserID  string `db:"user_id"`
-	Limit   int32  `db:"limit"`
-	AfterID string `db:"after_id"`
+	UserID string `db:"user_id"`
+	Limit  int32  `db:"limit"`
+	Cursor string `db:"cursor"`
 }
 
 type GetTasksByUserIDRow struct {
@@ -607,7 +610,7 @@ type GetTasksByUserIDRow struct {
 }
 
 func (q *Queries) GetTasksByUserID(ctx context.Context, arg GetTasksByUserIDParams) ([]GetTasksByUserIDRow, error) {
-	rows, err := q.db.Query(ctx, getTasksByUserID, arg.UserID, arg.Limit, arg.AfterID)
+	rows, err := q.db.Query(ctx, getTasksByUserID, arg.UserID, arg.Limit, arg.Cursor)
 	if err != nil {
 		return nil, err
 	}
@@ -675,12 +678,10 @@ JOIN (
         ttv.tags as tags,
         t.updated_at
     FROM tasks t
-        LEFT JOIN task_tags_view ttv
-            ON t.id = ttv.task_id
+             LEFT JOIN task_tags_view ttv ON t.id = ttv.task_id
     WHERE t.user_id = $1
-    AND t.start_date IS NULL
+      AND t.start_date IS NULL
       AND t.deadline IS NULL
-      AND (t.list_id > COALESCE(NULLIF($3, ''), '0'))
       AND t.deleted_at IS NULL
     GROUP BY
         t.id,
@@ -695,17 +696,18 @@ JOIN (
         t.user_id,
         ttv.tags,
         t.updated_at
-    ) t ON l.id = t.list_id
+) t ON l.id = t.list_id
 WHERE l.user_id = $1
+  AND l.id > $3::varchar
 GROUP BY l.id
 ORDER BY l.id
 LIMIT $2
 `
 
 type GetTasksForSomedayParams struct {
-	UserID  string      `db:"user_id"`
-	Limit   int32       `db:"limit"`
-	AfterID interface{} `db:"after_id"`
+	UserID string `db:"user_id"`
+	Limit  int32  `db:"limit"`
+	Cursor string `db:"cursor"`
 }
 
 type GetTasksForSomedayRow struct {
@@ -714,7 +716,7 @@ type GetTasksForSomedayRow struct {
 }
 
 func (q *Queries) GetTasksForSomeday(ctx context.Context, arg GetTasksForSomedayParams) ([]GetTasksForSomedayRow, error) {
-	rows, err := q.db.Query(ctx, getTasksForSomeday, arg.UserID, arg.Limit, arg.AfterID)
+	rows, err := q.db.Query(ctx, getTasksForSomeday, arg.UserID, arg.Limit, arg.Cursor)
 	if err != nil {
 		return nil, err
 	}

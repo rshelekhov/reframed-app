@@ -1,6 +1,6 @@
 -- name: CreateTag :exec
-INSERT INTO tags (id, title, user_id, updated_at)
-VALUES ($1, $2, $3, $4);
+INSERT INTO tags (id, title, user_id, created_at, updated_at)
+VALUES ($1, $2, $3, $4, $5);
 
 -- name: LinkTagToTask :exec
 INSERT INTO tasks_tags (task_id, tag_id)

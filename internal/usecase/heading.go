@@ -22,13 +22,16 @@ func NewHeadingUsecase(storage port.HeadingStorage) *HeadingUsecase {
 }
 
 func (u *HeadingUsecase) CreateHeading(ctx context.Context, data *model.HeadingRequestData) (model.HeadingResponseData, error) {
+	currentTime := time.Now()
+
 	newHeading := model.Heading{
 		ID:        ksuid.New().String(),
 		Title:     data.Title,
 		ListID:    data.ListID,
 		UserID:    data.UserID,
 		IsDefault: false,
-		UpdatedAt: time.Now(),
+		CreatedAt: currentTime,
+		UpdatedAt: currentTime,
 	}
 
 	if err := u.storage.CreateHeading(ctx, newHeading); err != nil {
@@ -40,6 +43,7 @@ func (u *HeadingUsecase) CreateHeading(ctx context.Context, data *model.HeadingR
 		Title:     newHeading.Title,
 		ListID:    newHeading.ListID,
 		UserID:    newHeading.UserID,
+		CreatedAt: newHeading.CreatedAt,
 		UpdatedAt: newHeading.UpdatedAt,
 	}, nil
 }
@@ -59,6 +63,7 @@ func (u *HeadingUsecase) GetHeadingByID(ctx context.Context, data model.HeadingR
 		Title:     heading.Title,
 		ListID:    heading.ListID,
 		UserID:    heading.UserID,
+		CreatedAt: heading.CreatedAt,
 		UpdatedAt: heading.UpdatedAt,
 	}, nil
 }
@@ -88,6 +93,7 @@ func mapHeadingToResponseData(heading model.Heading) model.HeadingResponseData {
 		Title:     heading.Title,
 		ListID:    heading.ListID,
 		UserID:    heading.UserID,
+		CreatedAt: heading.CreatedAt,
 		UpdatedAt: heading.UpdatedAt,
 	}
 }
@@ -115,18 +121,20 @@ func (u *HeadingUsecase) UpdateHeading(ctx context.Context, data *model.HeadingR
 }
 
 func (u *HeadingUsecase) MoveHeadingToAnotherList(ctx context.Context, data model.HeadingRequestData) (model.HeadingResponseData, error) {
+	currentTime := time.Now()
+
 	updatedHeading := model.Heading{
 		ID:        data.ID,
 		ListID:    data.ListID,
 		UserID:    data.UserID,
-		UpdatedAt: time.Now(),
+		UpdatedAt: currentTime,
 	}
 
 	updatedTasks := model.Task{
 		HeadingID: data.ID,
 		ListID:    data.ListID,
 		UserID:    data.UserID,
-		UpdatedAt: time.Now(),
+		UpdatedAt: currentTime,
 	}
 
 	listRequestData := model.ListRequestData{

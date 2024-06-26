@@ -23,11 +23,13 @@ func NewTagUsecase(storage port.TagStorage) *TagUsecase {
 func (u *TagUsecase) CreateTagIfNotExists(ctx context.Context, data model.TagRequestData) error {
 	_, err := u.storage.GetTagIDByTitle(ctx, data.Title, data.UserID)
 	if errors.Is(err, le.ErrTagNotFound) {
+		currentTime := time.Now()
 		newTag := model.Tag{
 			ID:        ksuid.New().String(),
 			Title:     data.Title,
 			UserID:    data.UserID,
-			UpdatedAt: time.Now(),
+			CreatedAt: currentTime,
+			UpdatedAt: currentTime,
 		}
 
 		return u.storage.CreateTag(ctx, newTag)

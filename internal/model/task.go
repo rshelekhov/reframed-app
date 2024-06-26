@@ -20,6 +20,7 @@ type (
 		UserID      string    `db:"user_id"`
 		Tags        []string
 		Overdue     bool
+		CreatedAt   time.Time `db:"created_at"`
 		UpdatedAt   time.Time `db:"updated_at"`
 		DeletedAt   time.Time `db:"deleted_at"`
 	}
@@ -59,7 +60,8 @@ type (
 		UserID      string    `json:"user_id,omitempty"`
 		Tags        []string  `json:"tags,omitempty"`
 		Overdue     bool      `json:"overdue,omitempty"`
-		UpdatedAt   time.Time `json:"updated_at"`
+		CreatedAt   time.Time `json:"created_at,omitempty"`
+		UpdatedAt   time.Time `json:"updated_at,omitempty"`
 	}
 
 	TaskRequestTimeData struct {
@@ -74,11 +76,11 @@ type (
 	}
 
 	TaskResponseTimeData struct {
-		ID        string    `json:"task_id"`
-		StartTime time.Time `json:"start_time"`
-		EndTime   time.Time `json:"end_time"`
-		UserID    string    `json:"user_id"`
-		UpdatedAt time.Time `json:"updated_at"`
+		ID        string    `json:"task_id,omitempty"`
+		StartTime time.Time `json:"start_time,omitempty"`
+		EndTime   time.Time `json:"end_time,omitempty"`
+		UserID    string    `json:"user_id,omitempty"`
+		UpdatedAt time.Time `json:"updated_at,omitempty"`
 	}
 
 	TaskGroupRaw struct {
