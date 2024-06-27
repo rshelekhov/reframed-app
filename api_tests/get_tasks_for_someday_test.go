@@ -107,7 +107,7 @@ func TestGetTasksForSomeday_WithLimit(t *testing.T) {
 			// Get tasks for someday
 			tasks := e.GET("/user/tasks/someday").
 				WithHeader("Authorization", "Bearer "+accessToken).
-				WithQuery("limit", tc.limit).
+				WithQuery(key.Limit, tc.limit).
 				Expect().
 				Status(http.StatusOK).
 				JSON().Object()
