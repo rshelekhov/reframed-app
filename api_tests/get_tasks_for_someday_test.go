@@ -156,8 +156,6 @@ func TestGetTasksForSomeday_WithPagination(t *testing.T) {
 		Status(http.StatusOK).
 		JSON().Object()
 
-	printDataToJSON(t, response)
-
 	// Ensure we received tasks
 	totalGroups := countGroups(t, response, false)
 	require.Equal(t, limit, totalGroups)
@@ -165,8 +163,6 @@ func TestGetTasksForSomeday_WithPagination(t *testing.T) {
 	// Extract the last list_id from the response
 	lastGroup := response.Value(key.Data).Array().Last().Object()
 	lastListID := lastGroup.Value(key.ListID).String().Raw()
-
-	t.Log("lastListID", lastListID)
 
 	// Second request to get tasks for someday with afterID set to last list_id from the first response
 	nextResponse := e.GET("/user/tasks/someday").
@@ -176,8 +172,6 @@ func TestGetTasksForSomeday_WithPagination(t *testing.T) {
 		Expect().
 		Status(http.StatusOK).
 		JSON().Object()
-
-	printDataToJSON(t, nextResponse)
 
 	// Count the number of task groups (lists) in the second response
 	nextTotalGroups := countGroups(t, nextResponse, false)
