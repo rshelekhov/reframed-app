@@ -11,14 +11,15 @@ import (
 )
 
 const createTag = `-- name: CreateTag :exec
-INSERT INTO tags (id, title, user_id, updated_at)
-VALUES ($1, $2, $3, $4)
+INSERT INTO tags (id, title, user_id, created_at, updated_at)
+VALUES ($1, $2, $3, $4, $5)
 `
 
 type CreateTagParams struct {
 	ID        string    `db:"id"`
 	Title     string    `db:"title"`
 	UserID    string    `db:"user_id"`
+	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
 }
 
@@ -27,6 +28,7 @@ func (q *Queries) CreateTag(ctx context.Context, arg CreateTagParams) error {
 		arg.ID,
 		arg.Title,
 		arg.UserID,
+		arg.CreatedAt,
 		arg.UpdatedAt,
 	)
 	return err
@@ -124,17 +126,19 @@ const linkTagToTask = `-- name: LinkTagToTask :exec
 INSERT INTO tasks_tags (task_id, tag_id)
 VALUES ($1, (SELECT id
              FROM tags
-             WHERE title = $2)
+             WHERE title = $2
+             AND user_id = $3)
 )
 `
 
 type LinkTagToTaskParams struct {
 	TaskID string `db:"task_id"`
 	Title  string `db:"title"`
+	UserID string `db:"user_id"`
 }
 
 func (q *Queries) LinkTagToTask(ctx context.Context, arg LinkTagToTaskParams) error {
-	_, err := q.db.Exec(ctx, linkTagToTask, arg.TaskID, arg.Title)
+	_, err := q.db.Exec(ctx, linkTagToTask, arg.TaskID, arg.Title, arg.UserID)
 	return err
 }
 
@@ -144,15 +148,17 @@ WHERE task_id = $1
   AND tag_id = (SELECT id
                 FROM tags
                 WHERE title = $2
+                AND user_id = $3
 )
 `
 
 type UnlinkTagFromTaskParams struct {
 	TaskID string `db:"task_id"`
 	Title  string `db:"title"`
+	UserID string `db:"user_id"`
 }
 
 func (q *Queries) UnlinkTagFromTask(ctx context.Context, arg UnlinkTagFromTaskParams) error {
-	_, err := q.db.Exec(ctx, unlinkTagFromTask, arg.TaskID, arg.Title)
+	_, err := q.db.Exec(ctx, unlinkTagFromTask, arg.TaskID, arg.Title, arg.UserID)
 	return err
 }

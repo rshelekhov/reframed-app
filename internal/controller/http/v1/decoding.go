@@ -27,12 +27,18 @@ func decodeJSON(w http.ResponseWriter, r *http.Request, log *slog.Logger, data a
 
 	if errors.Is(err, io.EOF) {
 		log.Error(le.ErrEmptyRequestBody.Error())
-		responseError(w, r, http.StatusBadRequest, le.ErrEmptyRequestBody)
+
+		resp := &errorResponse{}
+		responseError(w, r, http.StatusBadRequest, le.ErrEmptyRequestBody, resp)
+
 		return le.ErrEmptyRequestBody
 	}
 	if err != nil {
 		log.Error(le.ErrInvalidJSON.Error(), logger.Err(err))
-		responseError(w, r, http.StatusBadRequest, le.LocalError(err.Error()))
+
+		resp := &errorResponse{}
+		responseError(w, r, http.StatusBadRequest, le.LocalError(err.Error()), resp)
+
 		return le.ErrInvalidJSON
 	}
 

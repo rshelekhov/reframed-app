@@ -13,7 +13,7 @@ import (
 
 func TestLogin_HappyPath(t *testing.T) {
 	u := url.URL{
-		Scheme: "http",
+		Scheme: scheme,
 		Host:   host,
 	}
 	e := httpexpect.Default(t, u.String())
@@ -53,14 +53,14 @@ func TestLogin_HappyPath(t *testing.T) {
 		Cookie(jwtoken.RefreshTokenKey)
 
 	c.Value().NotEmpty()
-	c.Domain().IsEqual("localhost")
-	c.Path().IsEqual("/")
+	c.Domain().IsEqual(cookieDomain)
+	c.Path().IsEqual(cookiePath)
 	c.Expires().InRange(time.Now(), time.Now().Add(time.Hour*720))
 }
 
 func TestLogin_FailCases(t *testing.T) {
 	u := url.URL{
-		Scheme: "http",
+		Scheme: scheme,
 		Host:   host,
 	}
 	e := httpexpect.Default(t, u.String())
@@ -131,7 +131,7 @@ func TestLogin_FailCases(t *testing.T) {
 
 func TestLoginUserNotFound(t *testing.T) {
 	u := url.URL{
-		Scheme: "http",
+		Scheme: scheme,
 		Host:   host,
 	}
 	e := httpexpect.Default(t, u.String())

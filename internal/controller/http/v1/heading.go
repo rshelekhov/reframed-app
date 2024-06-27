@@ -42,16 +42,15 @@ func (c *headingController) CreateHeading() http.HandlerFunc {
 		log := logger.LogWithRequest(c.logger, op, r)
 
 		userID, err := c.jwt.GetUserID(ctx)
-		if err != nil {
+		switch {
+		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
+				slog.String(key.UserID, userID))
+		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
-			return
 		}
 
 		listID := chi.URLParam(r, key.ListID)
-		if listID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryListID)
-			return
-		}
 
 		headingInput := &model.HeadingRequestData{}
 		if err = decodeAndValidateJSON(w, r, log, headingInput); err != nil {
@@ -64,14 +63,10 @@ func (c *headingController) CreateHeading() http.HandlerFunc {
 		headingResponse, err := c.usecase.CreateHeading(ctx, headingInput)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToCreateHeading, err)
-			return
 		}
 
-		handleResponseCreated(
-			w, r, log, "heading created",
-			headingResponse,
-			slog.String(key.HeadingID, headingResponse.ID),
-		)
+		handleResponseCreated(w, r, log, "heading created", headingResponse,
+			slog.String(key.HeadingID, headingResponse.ID))
 	}
 }
 
@@ -83,16 +78,15 @@ func (c *headingController) GetHeadingByID() http.HandlerFunc {
 		log := logger.LogWithRequest(c.logger, op, r)
 
 		userID, err := c.jwt.GetUserID(ctx)
-		if err != nil {
+		switch {
+		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
+				slog.String(key.UserID, userID))
+		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
-			return
 		}
 
 		headingID := chi.URLParam(r, key.HeadingID)
-		if headingID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryHeadingID)
-			return
-		}
 
 		headingInput := model.HeadingRequestData{
 			ID:     headingID,
@@ -100,14 +94,11 @@ func (c *headingController) GetHeadingByID() http.HandlerFunc {
 		}
 
 		headingResp, err := c.usecase.GetHeadingByID(ctx, headingInput)
-
 		switch {
 		case errors.Is(err, le.ErrHeadingNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrHeadingNotFound)
-			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
-			return
 		default:
 			handleResponseSuccess(w, r, log, "heading received", headingResp, slog.String(key.HeadingID, headingID))
 		}
@@ -122,16 +113,15 @@ func (c *headingController) GetHeadingsByListID() http.HandlerFunc {
 		log := logger.LogWithRequest(c.logger, op, r)
 
 		userID, err := c.jwt.GetUserID(ctx)
-		if err != nil {
+		switch {
+		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
+				slog.String(key.UserID, userID))
+		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
-			return
 		}
 
 		listID := chi.URLParam(r, key.ListID)
-		if listID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryListID)
-			return
-		}
 
 		headingsInput := model.HeadingRequestData{
 			ListID: listID,
@@ -139,16 +129,13 @@ func (c *headingController) GetHeadingsByListID() http.HandlerFunc {
 		}
 
 		headingsResp, err := c.usecase.GetHeadingsByListID(ctx, headingsInput)
-
 		switch {
 		case errors.Is(err, le.ErrNoHeadingsFound):
-			handleResponseError(w, r, log, http.StatusNotFound, le.ErrNoHeadingsFound)
-			return
+			handleResponseSuccess(w, r, log, "no headings found", nil)
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetHeadingsByListID, err)
-			return
 		default:
-			handleResponseSuccess(w, r, log, "headings found", headingsResp, slog.Int(key.Count, len(headingsResp)))
+			handleResponseSuccess(w, r, log, "headings found", headingsResp)
 		}
 	}
 }
@@ -161,16 +148,15 @@ func (c *headingController) UpdateHeading() http.HandlerFunc {
 		log := logger.LogWithRequest(c.logger, op, r)
 
 		userID, err := c.jwt.GetUserID(ctx)
-		if err != nil {
+		switch {
+		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
+				slog.String(key.UserID, userID))
+		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
-			return
 		}
 
 		headingID := chi.URLParam(r, key.HeadingID)
-		if headingID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryHeadingID)
-			return
-		}
 
 		headingInput := &model.HeadingRequestData{}
 		if err = decodeAndValidateJSON(w, r, log, headingInput); err != nil {
@@ -181,14 +167,11 @@ func (c *headingController) UpdateHeading() http.HandlerFunc {
 		headingInput.UserID = userID
 
 		headingResponse, err := c.usecase.UpdateHeading(ctx, headingInput)
-
 		switch {
 		case errors.Is(err, le.ErrHeadingNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrHeadingNotFound)
-			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToUpdateHeading, err)
-			return
 		default:
 			handleResponseSuccess(w, r, log, "heading updated", headingResponse, slog.String(key.HeadingID, headingResponse.ID))
 		}
@@ -203,21 +186,19 @@ func (c *headingController) MoveHeadingToAnotherList() http.HandlerFunc {
 		log := logger.LogWithRequest(c.logger, op, r)
 
 		userID, err := c.jwt.GetUserID(ctx)
-		if err != nil {
+		switch {
+		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
+				slog.String(key.UserID, userID))
+		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
-			return
 		}
 
 		headingID := chi.URLParam(r, key.HeadingID)
-		if headingID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryHeadingID)
-			return
-		}
 
 		otherListID := r.URL.Query().Get(key.ListID)
 		if otherListID == "" {
 			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryListID)
-			return
 		}
 
 		headingInput := model.HeadingRequestData{
@@ -227,17 +208,13 @@ func (c *headingController) MoveHeadingToAnotherList() http.HandlerFunc {
 		}
 
 		headingResponse, err := c.usecase.MoveHeadingToAnotherList(ctx, headingInput)
-
 		switch {
 		case errors.Is(err, le.ErrHeadingNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrHeadingNotFound)
-			return
 		case errors.Is(err, le.ErrListNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrListNotFound)
-			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToMoveHeading, err)
-			return
 		default:
 			handleResponseSuccess(w, r, log, "heading moved to another list", headingResponse, slog.String(key.HeadingID, headingResponse.ID))
 		}
@@ -252,16 +229,15 @@ func (c *headingController) DeleteHeading() http.HandlerFunc {
 		log := logger.LogWithRequest(c.logger, op, r)
 
 		userID, err := c.jwt.GetUserID(ctx)
-		if err != nil {
+		switch {
+		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
+				slog.String(key.UserID, userID))
+		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
-			return
 		}
 
 		headingID := chi.URLParam(r, key.HeadingID)
-		if headingID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryHeadingID)
-			return
-		}
 
 		headingInput := model.HeadingRequestData{
 			ID:     headingID,
@@ -269,14 +245,11 @@ func (c *headingController) DeleteHeading() http.HandlerFunc {
 		}
 
 		err = c.usecase.DeleteHeading(ctx, headingInput)
-
 		switch {
 		case errors.Is(err, le.ErrHeadingNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrHeadingNotFound)
-			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToDeleteHeading, err)
-			return
 		default:
 			handleResponseSuccess(w, r, log, "heading deleted", headingID, slog.String(key.HeadingID, headingID))
 		}

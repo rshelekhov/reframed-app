@@ -13,8 +13,8 @@ import (
 )
 
 const createHeading = `-- name: CreateHeading :exec
-INSERT INTO headings (id, title, list_id, user_id, is_default, updated_at)
-VALUES($1, $2, $3, $4, $5, $6)
+INSERT INTO headings (id, title, list_id, user_id, is_default, created_at,updated_at)
+VALUES($1, $2, $3, $4, $5, $6, $7)
 `
 
 type CreateHeadingParams struct {
@@ -23,6 +23,7 @@ type CreateHeadingParams struct {
 	ListID    string    `db:"list_id"`
 	UserID    string    `db:"user_id"`
 	IsDefault bool      `db:"is_default"`
+	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
 }
 
@@ -33,6 +34,7 @@ func (q *Queries) CreateHeading(ctx context.Context, arg CreateHeadingParams) er
 		arg.ListID,
 		arg.UserID,
 		arg.IsDefault,
+		arg.CreatedAt,
 		arg.UpdatedAt,
 	)
 	return err

@@ -6,12 +6,13 @@ import (
 	"github.com/rshelekhov/reframed/internal/lib/constants/key"
 	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
 	"github.com/rshelekhov/reframed/internal/model"
+	"github.com/segmentio/ksuid"
 	"net/http"
 	"net/url"
 	"testing"
 )
 
-func TestDeleteList_HappyPath(t *testing.T) {
+func TestUpdateTask_HappyPath(t *testing.T) {
 	u := url.URL{
 		Scheme: scheme,
 		Host:   host,
@@ -30,26 +31,30 @@ func TestDeleteList_HappyPath(t *testing.T) {
 
 	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
 
-	// Create list
-	l := e.POST("/user/lists/").
+	fakeTask := randomFakeTask(upcomingTasks, "", "")
+
+	// Create task
+	task := e.POST("/user/lists/default").
 		WithHeader("Authorization", "Bearer "+accessToken).
-		WithJSON(model.ListRequestData{
+		WithJSON(fakeTask).
+		Expect().
+		Status(http.StatusCreated).
+		JSON().Object()
+
+	taskID := task.Value(key.Data).Object().Value(key.TaskID).String().Raw()
+
+	// Update task
+	e.PATCH("/user/tasks/{task_id}", taskID).
+		WithHeader("Authorization", "Bearer "+accessToken).
+		WithJSON(model.TaskRequestData{
 			Title: gofakeit.Word(),
 		}).
 		Expect().
-		Status(http.StatusCreated).
-		JSON().Object()
-
-	listID := l.Value(key.Data).Object().Value(key.ListID).String().Raw()
-
-	// Delete list
-	e.DELETE("/user/lists/{list_id}", listID).
-		WithHeader("Authorization", "Bearer "+accessToken).
-		Expect().
-		Status(http.StatusOK)
+		Status(http.StatusOK).
+		JSON().Object().NotEmpty()
 }
 
-func TestDeleteDefaultList_BadRequest(t *testing.T) {
+func TestUpdateTask_NotFound(t *testing.T) {
 	u := url.URL{
 		Scheme: scheme,
 		Host:   host,
@@ -68,19 +73,24 @@ func TestDeleteDefaultList_BadRequest(t *testing.T) {
 
 	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
 
-	// Get default list
-	l := e.GET("/user/lists/default").
+	fakeTask := randomFakeTask(upcomingTasks, "", "")
+
+	// Create task
+	e.POST("/user/lists/default").
 		WithHeader("Authorization", "Bearer "+accessToken).
+		WithJSON(fakeTask).
 		Expect().
-		Status(http.StatusOK).
-		JSON().Object()
+		Status(http.StatusCreated).
+		JSON().Object().NotEmpty()
 
-	defaultListID := l.Value(key.Data).Object().Value(key.ListID).String().Raw()
+	fakeID := ksuid.New().String()
 
-	// Remove default list
-	e.DELETE("/user/lists/{list_id}", defaultListID).
+	// Update task
+	e.PATCH("/user/tasks/{task_id}", fakeID).
 		WithHeader("Authorization", "Bearer "+accessToken).
+		WithJSON(model.TaskRequestData{
+			Title: gofakeit.Word(),
+		}).
 		Expect().
-		Status(http.StatusBadRequest)
-
+		Status(http.StatusNotFound)
 }

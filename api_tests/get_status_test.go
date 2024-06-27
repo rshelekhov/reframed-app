@@ -12,7 +12,7 @@ import (
 
 func TestGetStatuses_HappyPath(t *testing.T) {
 	u := url.URL{
-		Scheme: "http",
+		Scheme: scheme,
 		Host:   host,
 	}
 	e := httpexpect.Default(t, u.String())
@@ -39,7 +39,7 @@ func TestGetStatuses_HappyPath(t *testing.T) {
 
 func TestGetStatusByID_HappyPath(t *testing.T) {
 	u := url.URL{
-		Scheme: "http",
+		Scheme: scheme,
 		Host:   host,
 	}
 	e := httpexpect.Default(t, u.String())
@@ -66,7 +66,7 @@ func TestGetStatusByID_HappyPath(t *testing.T) {
 
 func TestGetStatusByID_FailCases(t *testing.T) {
 	u := url.URL{
-		Scheme: "http",
+		Scheme: scheme,
 		Host:   host,
 	}
 	e := httpexpect.Default(t, u.String())

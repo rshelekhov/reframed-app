@@ -3,6 +3,7 @@ package api_tests
 import (
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/gavv/httpexpect/v2"
+	"github.com/rshelekhov/reframed/internal/lib/constants/key"
 	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
 	"github.com/rshelekhov/reframed/internal/model"
 	"net/http"
@@ -12,7 +13,7 @@ import (
 
 func TestDeleteHeading_HappyPath(t *testing.T) {
 	u := url.URL{
-		Scheme: "http",
+		Scheme: scheme,
 		Host:   host,
 	}
 	e := httpexpect.Default(t, u.String())
@@ -39,11 +40,10 @@ func TestDeleteHeading_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	listID := l.Value("data").Object().Value("list_id").String().Raw()
+	listID := l.Value(key.Data).Object().Value(key.ListID).String().Raw()
 
 	// Create heading
-	h := e.POST("/user/lists/{list_id}/headings/").
-		WithPath("list_id", listID).
+	h := e.POST("/user/lists/{list_id}/headings/", listID).
 		WithHeader("Authorization", "Bearer "+accessToken).
 		WithJSON(model.HeadingRequestData{
 			Title:  gofakeit.Word(),
@@ -53,12 +53,10 @@ func TestDeleteHeading_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	headingID := h.Value("data").Object().Value("heading_id").String().Raw()
+	headingID := h.Value(key.Data).Object().Value(key.HeadingID).String().Raw()
 
 	// Delete heading
-	e.DELETE("/user/lists/{list_id}/headings/{heading_id}").
-		WithPath("list_id", listID).
-		WithPath("heading_id", headingID).
+	e.DELETE("/user/lists/{list_id}/headings/{heading_id}", listID, headingID).
 		WithHeader("Authorization", "Bearer "+accessToken).
 		Expect().
 		Status(http.StatusOK)

@@ -35,13 +35,14 @@ type Querier interface {
 	GetTasksByUserID(ctx context.Context, arg GetTasksByUserIDParams) ([]GetTasksByUserIDRow, error)
 	GetTasksForSomeday(ctx context.Context, arg GetTasksForSomedayParams) ([]GetTasksForSomedayRow, error)
 	GetTasksForToday(ctx context.Context, userID string) ([]GetTasksForTodayRow, error)
-	GetTasksGroupedByHeadings(ctx context.Context, arg GetTasksGroupedByHeadingsParams) ([]GetTasksGroupedByHeadingsRow, error)
+	GetTasksGroupedByHeading(ctx context.Context, arg GetTasksGroupedByHeadingParams) ([]GetTasksGroupedByHeadingRow, error)
 	GetUpcomingTasks(ctx context.Context, arg GetUpcomingTasksParams) ([]GetUpcomingTasksRow, error)
 	LinkTagToTask(ctx context.Context, arg LinkTagToTaskParams) error
 	MarkTaskAsArchived(ctx context.Context, arg MarkTaskAsArchivedParams) (string, error)
 	MarkTaskAsCompleted(ctx context.Context, arg MarkTaskAsCompletedParams) (string, error)
 	MoveHeadingToAnotherList(ctx context.Context, arg MoveHeadingToAnotherListParams) (string, error)
-	MoveTaskToAnotherList(ctx context.Context, arg MoveTaskToAnotherListParams) error
+	MoveTaskToAnotherHeading(ctx context.Context, arg MoveTaskToAnotherHeadingParams) (string, error)
+	MoveTaskToAnotherList(ctx context.Context, arg MoveTaskToAnotherListParams) (string, error)
 	UnlinkTagFromTask(ctx context.Context, arg UnlinkTagFromTaskParams) error
 	UpdateHeading(ctx context.Context, arg UpdateHeadingParams) (string, error)
 	UpdateList(ctx context.Context, arg UpdateListParams) (string, error)

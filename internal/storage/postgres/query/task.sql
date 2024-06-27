@@ -11,9 +11,10 @@ INSERT INTO tasks (
     list_id,
     heading_id,
     user_id,
+    created_at,
     updated_at
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
 );
 
 -- name: GetTaskStatusID :one
@@ -69,10 +70,7 @@ FROM tasks t
         ON t.id = ttv.task_id
 WHERE t.user_id = $1
   AND t.deleted_at IS NULL
-  AND (
-      (@after_id::varchar IS NULL AND t.id > @after_id::varchar)
-          OR (@after_id::varchar IS NOT NULL AND t.id > @after_id::varchar)
-      )
+  AND t.id > @cursor::varchar
 GROUP BY
     t.id,
     t.title,
@@ -84,8 +82,10 @@ GROUP BY
     t.status_id,
     t.list_id,
     t.heading_id,
+    ttv.tags,
+    t.created_at,
     t.updated_at
-ORDER BY t.id
+ORDER BY t.id, t.created_at
 LIMIT $2;
 
 -- name: GetTasksByListID :many
@@ -124,10 +124,11 @@ GROUP BY
     t.status_id,
     t.heading_id,
     overdue,
-    t.updated_at
+    t.updated_at,
+    ttv.tags
 ORDER BY t.id;
 
--- name: GetTasksGroupedByHeadings :many
+-- name: GetTasksGroupedByHeading :many
 SELECT
     h.id AS heading_id,
     ARRAY_TO_JSON(
@@ -149,42 +150,43 @@ SELECT
             )
     ) AS tasks
 FROM headings h
-    LEFT JOIN (
-        SELECT
-            t.id,
-            t.title,
-            t.description,
-            t.start_date,
-            t.deadline,
-            t.start_time,
-            t.end_time,
-            t.heading_id,
-            t.user_id,
-            ttv.tags as tags,
-            CASE
-                WHEN t.deadline <= CURRENT_DATE THEN TRUE
-                ELSE FALSE END
-                AS overdue,
-            t.updated_at
-        FROM tasks t
-            LEFT JOIN task_tags_view ttv
-                ON t.id = ttv.task_id
-        WHERE t.list_id = $1
-          AND t.user_id = $2
-          AND t.deleted_at IS NULL
-        GROUP BY
-            t.id,
-            t.title,
-            t.description,
-            t.start_date,
-            t.deadline,
-            t.start_time,
-            t.end_time,
-            t.heading_id,
-            t.user_id,
-            t.updated_at
-    ) t
-        ON h.id = t.heading_id
+JOIN (
+    SELECT
+        t.id,
+        t.title,
+        t.description,
+        t.start_date,
+        t.deadline,
+        t.start_time,
+        t.end_time,
+        t.heading_id,
+        t.user_id,
+        ttv.tags as tags,
+        CASE
+            WHEN t.deadline <= CURRENT_DATE THEN TRUE
+            ELSE FALSE END
+                 AS overdue,
+        t.updated_at
+    FROM tasks t
+             LEFT JOIN task_tags_view ttv
+                       ON t.id = ttv.task_id
+    WHERE t.list_id = $1
+      AND t.user_id = $2
+      AND t.deleted_at IS NULL
+    GROUP BY
+        t.id,
+        t.title,
+        t.description,
+        t.start_date,
+        t.deadline,
+        t.start_time,
+        t.end_time,
+        t.heading_id,
+        t.user_id,
+        t.updated_at,
+        ttv.tags
+) t
+              ON h.id = t.heading_id
 WHERE h.list_id = $1
   AND h.user_id = $2
 GROUP BY h.id
@@ -212,7 +214,7 @@ SELECT
             )
     ) AS tasks
 FROM lists l
-    LEFT JOIN (
+    JOIN (
         SELECT
             t.id,
             t.title,
@@ -226,14 +228,13 @@ FROM lists l
             ttv.tags as tags,
             CASE
                 WHEN t.deadline <= CURRENT_DATE THEN TRUE
-                ELSE FALSE END
-                AS overdue,
+                ELSE FALSE END AS overdue,
             t.updated_at
         FROM tasks t
             LEFT JOIN task_tags_view ttv
                 ON t.id = ttv.task_id
         WHERE t.user_id = $1
-          AND t.start_date = CURRENT_DATE
+          AND t.start_date::date = CURRENT_DATE
           AND t.deleted_at IS NULL
         GROUP BY
             t.id,
@@ -245,6 +246,7 @@ FROM lists l
             t.end_time,
             t.list_id,
             t.user_id,
+            ttv.tags,
             t.updated_at
         ) t
         ON l.id = t.list_id
@@ -287,14 +289,13 @@ FROM (
         t.updated_at
     FROM tasks t
         LEFT JOIN task_tags_view ttv
-            ON t.id = ttv.task_id
+             ON t.id = ttv.task_id
     WHERE t.user_id = $1
-      AND (
-          (t.start_date >= COALESCE(@after_date::timestamptz, CURRENT_DATE + interval '1 day'))
-              AND (t.deleted_at IS NULL)
-              AND (COALESCE(t.start_date, @after_date::timestamptz) > @after_date::timestamptz)
-          )
-    GROUP BY
+        AND (
+             (t.start_date >= COALESCE(@after_date::timestamptz, CURRENT_DATE + interval '1 day'))
+             AND (t.deleted_at IS NULL)
+        )
+   GROUP BY
         t.id,
         t.title,
         t.description,
@@ -304,8 +305,9 @@ FROM (
         t.end_time,
         t.list_id,
         t.user_id,
+        ttv.tags,
         t.updated_at
-    ) t
+) t
 GROUP BY t.start_date
 ORDER BY t.start_date
 LIMIT $2;
@@ -332,7 +334,7 @@ SELECT
             )
     ) AS tasks
 FROM lists l
-    LEFT JOIN (
+   JOIN (
         SELECT
             t.id,
             t.title,
@@ -354,7 +356,7 @@ FROM lists l
                 ON t.id = ttv.task_id
         WHERE t.user_id = $1
           AND t.deadline <= CURRENT_DATE
-          AND (t.deleted_at IS NULL OR l.id > @after_id::varchar)
+          AND t.deleted_at IS NULL
         GROUP BY
             t.id,
             t.title,
@@ -365,11 +367,13 @@ FROM lists l
             t.end_time,
             t.list_id,
             t.user_id,
+            ttv.tags,
             t.updated_at
         ) t ON l.id = t.list_id
 WHERE l.user_id = $1
-GROUP BY l.id
-ORDER BY l.id
+  AND l.id > @cursor::varchar
+GROUP BY l.id, l.created_at
+ORDER BY l.created_at
 LIMIT $2;
 
 -- name: GetTasksForSomeday :many
@@ -387,54 +391,54 @@ SELECT
                             'list_id', t.list_id,
                             'user_id', t.user_id,
                             'tags', tags,
-                            'overdue', overdue,
                             'updated_at', t.updated_at
                     )
             )
     ) AS tasks
 FROM lists l
-    LEFT JOIN (
-        SELECT
-            t.id,
-            t.title,
-            t.description,
-            t.deadline,
-            t.start_time,
-            t.end_time,
-            t.list_id,
-            t.user_id,
-            ttv.tags as tags,
-            CASE
-                WHEN t.deadline <= CURRENT_DATE THEN TRUE
-                ELSE FALSE END
-                AS overdue,
-            t.updated_at
-        FROM tasks t
-            LEFT JOIN task_tags_view ttv
-                ON t.id = ttv.task_id
-        WHERE t.user_id = $1
-          AND t.start_date IS NULL
-          AND t.deadline > CURRENT_DATE
-          AND (t.deleted_at IS NULL OR l.id > @after_id::varchar)
-        GROUP BY
-            t.id,
-            t.title,
-            t.description,
-            t.deadline,
-            t.start_time,
-            t.end_time,
-            t.list_id,
-            t.user_id,
-            t.updated_at
-        ) t ON l.id = t.list_id
+JOIN (
+    SELECT
+        t.id,
+        t.title,
+        t.description,
+        t.deadline,
+        t.start_time,
+        t.end_time,
+        t.status_id,
+        t.list_id,
+        t.heading_id,
+        t.user_id,
+        ttv.tags as tags,
+        t.updated_at
+    FROM tasks t
+             LEFT JOIN task_tags_view ttv ON t.id = ttv.task_id
+    WHERE t.user_id = $1
+      AND t.start_date IS NULL
+      AND t.deadline IS NULL
+      AND t.deleted_at IS NULL
+    GROUP BY
+        t.id,
+        t.title,
+        t.description,
+        t.deadline,
+        t.start_time,
+        t.end_time,
+        t.status_id,
+        t.list_id,
+        t.heading_id,
+        t.user_id,
+        ttv.tags,
+        t.updated_at
+) t ON l.id = t.list_id
 WHERE l.user_id = $1
-GROUP BY l.id
-ORDER BY l.id
+  AND l.id > @cursor::varchar
+GROUP BY l.id, l.created_at
+ORDER BY l.created_at
 LIMIT $2;
 
 -- name: GetCompletedTasks :many
 SELECT
-    DATE_TRUNC('month', t.updated_at) AS month,
+    DATE_TRUNC('month', t.updated_at)::timestamptz AS month,
     ARRAY_TO_JSON(
             ARRAY_AGG(
                     JSON_BUILD_OBJECT(
@@ -470,12 +474,13 @@ FROM (
             ON t.id = ttv.task_id
     WHERE t.user_id = $1
       AND t.status_id = (
-      SELECT id
-      FROM statuses
-      WHERE statuses.title = @status_title::varchar
+          SELECT id
+          FROM statuses
+          WHERE statuses.title = @status_title::varchar
       )
       AND (t.deleted_at IS NULL
-               OR (DATE_TRUNC('month', t.updated_at) > @after_date::timestamptz AND t.deleted_at IS NULL))
+               OR (DATE_TRUNC('month', t.updated_at) > @cursor_date::timestamptz AND t.deleted_at IS NULL)
+          )
     GROUP BY
         t.id,
         t.title,
@@ -486,15 +491,16 @@ FROM (
         t.end_time,
         t.list_id,
         t.user_id,
+        tags,
         t.updated_at
     ) t
 GROUP BY month
-ORDER BY month
+ORDER BY month DESC
 LIMIT $2;
 
 -- name: GetArchivedTasks :many
 SELECT
-    DATE_TRUNC('month', t.updated_at) AS month,
+    DATE_TRUNC('month', t.updated_at)::timestamptz AS month,
     ARRAY_TO_JSON(
             ARRAY_AGG(
                     JSON_BUILD_OBJECT(
@@ -537,7 +543,7 @@ FROM (
         WHERE statuses.title = @status_title::varchar
         )
       AND (t.deleted_at IS NOT NULL
-               OR (DATE_TRUNC('month', t.updated_at) > @after_month::timestamptz AND t.deleted_at IS NOT NULL)
+               OR (DATE_TRUNC('month', t.updated_at) > @cursor_date::timestamptz AND t.deleted_at IS NOT NULL)
           )
     GROUP BY
         t.id,
@@ -549,6 +555,7 @@ FROM (
         t.end_time,
         t.list_id,
         t.user_id,
+        tags,
         t.updated_at,
         t.deleted_at
     ) t
@@ -556,14 +563,24 @@ GROUP BY month
 ORDER BY month DESC
 LIMIT $2;
 
--- name: MoveTaskToAnotherList :exec
+-- name: MoveTaskToAnotherList :one
 UPDATE tasks
 SET	list_id = $1,
     heading_id = $2,
     updated_at = $3
 WHERE id = $4
   AND user_id = $5
-  AND deleted_at IS NULL;
+  AND deleted_at IS NULL
+RETURNING id;
+
+-- name: MoveTaskToAnotherHeading :one
+UPDATE tasks
+SET	heading_id = $1,
+    updated_at = $2
+WHERE id = $3
+    AND user_id = $4
+    AND deleted_at IS NULL
+RETURNING id;
 
 -- name: MarkTaskAsCompleted :one
 UPDATE tasks

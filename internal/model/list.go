@@ -11,6 +11,7 @@ type (
 		Title     string    `db:"title"`
 		UserID    string    `db:"user_id"`
 		IsDefault bool      `db:"is_default"`
+		CreatedAt time.Time `db:"created_at"`
 		UpdatedAt time.Time `db:"updated_at"`
 		DeletedAt time.Time `db:"deleted_at"`
 	}
@@ -22,10 +23,11 @@ type (
 	}
 
 	ListResponseData struct {
-		ID        string    `json:"list_id"`
-		Title     string    `json:"title"`
-		UserID    string    `json:"user_id"`
-		UpdatedAt time.Time `json:"updated_at"`
+		ID        string    `json:"list_id,omitempty"`
+		Title     string    `json:"title,omitempty"`
+		UserID    string    `json:"user_id,omitempty"`
+		CreatedAt time.Time `json:"created_at,omitempty"`
+		UpdatedAt time.Time `json:"updated_at,omitempty"`
 	}
 )
 

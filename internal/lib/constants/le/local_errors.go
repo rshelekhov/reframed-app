@@ -36,32 +36,30 @@ const (
 	ErrFailedToGetData          LocalError = "failed to get data"
 	ErrFailedToValidateData     LocalError = "failed to validate data"
 	ErrFailedToParseQueryParams LocalError = "failed to parse query params"
+	ErrInvalidCursor            LocalError = "invalid format for cursor, expected object id type string or YYYY-MM-DD"
 
 	// ===========================================================================
 	//   user errors
 	// ===========================================================================
 
-	ErrUserAlreadyExists         LocalError = "user with this email already exists"
-	ErrEmailAlreadyTaken         LocalError = "this email already taken"
-	ErrNoChangesDetected         LocalError = "no changes detected"
-	ErrNoPasswordChangesDetected LocalError = "no password changes detected"
-	ErrFailedToUpdateUser        LocalError = "failed to update user"
-	ErrFailedToDeleteUser        LocalError = "failed to delete user"
+	ErrUserAlreadyExists  LocalError = "user with this email already exists"
+	ErrEmailAlreadyTaken  LocalError = "this email already taken"
+	ErrNoChangesDetected  LocalError = "no changes detected"
+	ErrFailedToDeleteUser LocalError = "failed to delete user"
 
 	// ===========================================================================
 	//   list errors
 	// ===========================================================================
 
-	ErrNoListsFound             LocalError = "no lists found"
-	ErrListNotFound             LocalError = "list not found"
-	ErrDefaultListNotFound      LocalError = "default list not found"
-	ErrFailedToCreateList       LocalError = "failed to create list"
-	ErrFailedToGetLists         LocalError = "failed to get lists"
-	ErrFailedToGetDefaultListID LocalError = "failed to get default list ID"
-	ErrFailedToUpdateList       LocalError = "failed to update list"
-	ErrFailedToDeleteList       LocalError = "failed to delete list"
-	ErrCannotDeleteDefaultList  LocalError = "cannot delete default list"
-	ErrEmptyQueryListID         LocalError = "list_id is empty in query"
+	ErrNoListsFound            LocalError = "no lists found"
+	ErrListNotFound            LocalError = "list not found"
+	ErrDefaultListNotFound     LocalError = "default list not found"
+	ErrFailedToCreateList      LocalError = "failed to create list"
+	ErrFailedToGetLists        LocalError = "failed to get lists"
+	ErrFailedToUpdateList      LocalError = "failed to update list"
+	ErrFailedToDeleteList      LocalError = "failed to delete list"
+	ErrCannotDeleteDefaultList LocalError = "cannot delete default list"
+	ErrEmptyQueryListID        LocalError = "list_id is empty in query"
 
 	// ===========================================================================
 	//   heading errors
@@ -89,18 +87,14 @@ const (
 	ErrFailedToCompleteTask LocalError = "failed to complete task"
 	ErrFailedToMoveTask     LocalError = "failed to move task"
 	ErrFailedToArchiveTask  LocalError = "failed to archive task"
-	ErrEmptyQueryTaskID     LocalError = "task_id is empty in query"
 	ErrInvalidTaskTimeRange LocalError = "invalid task time range"
 
 	// ===========================================================================
 	//   tag errors
 	// ===========================================================================
 
-	ErrTagNotFound            LocalError = "tag not found"
-	ErrNoTagsFound            LocalError = "no tags found"
-	ErrFailedToCreateTag      LocalError = "failed to create tag"
-	ErrFailedToDeleteTag      LocalError = "failed to delete tag"
-	ErrFailedToLinkTagsToTask LocalError = "failed to link tags to task"
+	ErrTagNotFound LocalError = "tag not found"
+	ErrNoTagsFound LocalError = "no tags found"
 
 	// ===========================================================================
 	//   status errors
@@ -108,7 +102,6 @@ const (
 
 	ErrNoStatusesFound              LocalError = "no statuses found"
 	ErrStatusNotFound               LocalError = "task status not found"
-	ErrEmptyQueryStatusID           LocalError = "status_id is empty in query"
 	ErrFailedToConvertStatusIDtoInt LocalError = "failed to convert status_id to int"
 	ErrInvalidStatusID              LocalError = "invalid status_id"
 

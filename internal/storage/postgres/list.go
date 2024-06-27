@@ -34,6 +34,7 @@ func (s *ListStorage) CreateList(ctx context.Context, list model.List) error {
 		Title:     list.Title,
 		IsDefault: list.IsDefault,
 		UserID:    list.UserID,
+		CreatedAt: list.CreatedAt,
 		UpdatedAt: list.UpdatedAt,
 	}); err != nil {
 		return fmt.Errorf("%s: failed to create new list: %w", op, err)

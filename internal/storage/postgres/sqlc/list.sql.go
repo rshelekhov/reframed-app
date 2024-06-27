@@ -13,8 +13,8 @@ import (
 )
 
 const createList = `-- name: CreateList :exec
-INSERT INTO lists (id, title, user_id, is_default, updated_at)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO lists (id, title, user_id, is_default, created_at,updated_at)
+VALUES ($1, $2, $3, $4, $5, $6)
 `
 
 type CreateListParams struct {
@@ -22,6 +22,7 @@ type CreateListParams struct {
 	Title     string    `db:"title"`
 	UserID    string    `db:"user_id"`
 	IsDefault bool      `db:"is_default"`
+	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
 }
 
@@ -31,6 +32,7 @@ func (q *Queries) CreateList(ctx context.Context, arg CreateListParams) error {
 		arg.Title,
 		arg.UserID,
 		arg.IsDefault,
+		arg.CreatedAt,
 		arg.UpdatedAt,
 	)
 	return err

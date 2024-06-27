@@ -12,6 +12,7 @@ type (
 		ListID    string    `db:"list_id"`
 		UserID    string    `db:"user_id"`
 		IsDefault bool      `db:"is_default"`
+		CreatedAt time.Time `db:"created_at"`
 		UpdatedAt time.Time `db:"updated_at"`
 		DeletedAt time.Time `db:"deleted_at"`
 	}
@@ -28,7 +29,8 @@ type (
 		Title     string    `json:"title,omitempty"`
 		ListID    string    `json:"list_id,omitempty"`
 		UserID    string    `json:"user_id,omitempty"`
-		UpdatedAt time.Time `json:"updated_at"`
+		CreatedAt time.Time `json:"created_at,omitempty"`
+		UpdatedAt time.Time `json:"updated_at,omitempty"`
 	}
 )
 
