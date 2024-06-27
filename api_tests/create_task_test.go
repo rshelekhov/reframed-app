@@ -3,9 +3,9 @@ package api_tests
 import (
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/gavv/httpexpect/v2"
+	"github.com/rshelekhov/reframed/internal/lib/constants/key"
 	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
 	"github.com/rshelekhov/reframed/internal/model"
-	"github.com/stretchr/testify/require"
 	"net/http"
 	"net/url"
 	"testing"
@@ -13,7 +13,7 @@ import (
 
 func TestCreateTaskInDefaultList_HappyPath(t *testing.T) {
 	u := url.URL{
-		Scheme: "http",
+		Scheme: scheme,
 		Host:   host,
 	}
 	e := httpexpect.Default(t, u.String())
@@ -30,7 +30,7 @@ func TestCreateTaskInDefaultList_HappyPath(t *testing.T) {
 
 	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
 
-	fakeTask := randomFakeTask(true, true, true, true, true, "", "")
+	fakeTask := randomFakeTask(upcomingTasks, "", "")
 
 	// Create task
 	e.POST("/user/lists/default").
@@ -38,12 +38,12 @@ func TestCreateTaskInDefaultList_HappyPath(t *testing.T) {
 		WithJSON(fakeTask).
 		Expect().
 		Status(http.StatusCreated).
-		JSON().Object()
+		JSON().Object().NotEmpty()
 }
 
 func TestCreateTaskOnSpecificList_HappyPath(t *testing.T) {
 	u := url.URL{
-		Scheme: "http",
+		Scheme: scheme,
 		Host:   host,
 	}
 	e := httpexpect.Default(t, u.String())
@@ -69,40 +69,36 @@ func TestCreateTaskOnSpecificList_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	listID := l.Value("data").Object().Value("list_id").String().Raw()
+	listID := l.Value(key.Data).Object().Value(key.ListID).String().Raw()
 
-	fakeTask := randomFakeTask(true, true, true, true, true, "", "")
+	fakeTask := randomFakeTask(upcomingTasks, "", "")
 
 	// Create task
-	task := e.POST("/user/lists/{list_id}/tasks/").
-		WithPath("list_id", listID).
+	task := e.POST("/user/lists/{list_id}/tasks/", listID).
 		WithHeader("Authorization", "Bearer "+accessToken).
 		WithJSON(fakeTask).
 		Expect().
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	task.NotEmpty()
+	taskID := task.Value(key.Data).Object().Value(key.TaskID).String().Raw()
 
-	taskID := task.Value("data").Object().Value("task_id").String().Raw()
-
-	getTask := e.GET("/user/tasks/{task_id}/").
-		WithPath("task_id", taskID).
+	getTask := e.GET("/user/tasks/{task_id}/", taskID).
 		WithHeader("Authorization", "Bearer "+accessToken).
 		Expect().
 		Status(http.StatusOK).
 		JSON().Object()
 
-	getTask.NotEmpty()
+	taskList := getTask.Value(key.Data).Object().Value(key.ListID).String().Raw()
 
-	taskList := getTask.Value("data").Object().Value("list_id").String().Raw()
-
-	require.Equal(t, listID, taskList)
+	if taskList != listID {
+		t.Errorf("expected task list to be %s, but got %s", listID, taskList)
+	}
 }
 
 func TestCreateTaskOnSpecificHeading_HappyPath(t *testing.T) {
 	u := url.URL{
-		Scheme: "http",
+		Scheme: scheme,
 		Host:   host,
 	}
 	e := httpexpect.Default(t, u.String())
@@ -129,11 +125,10 @@ func TestCreateTaskOnSpecificHeading_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	listID := l.Value("data").Object().Value("list_id").String().Raw()
+	listID := l.Value(key.Data).Object().Value(key.ListID).String().Raw()
 
 	// Create heading
-	h := e.POST("/user/lists/{list_id}/headings/").
-		WithPath("list_id", listID).
+	h := e.POST("/user/lists/{list_id}/headings/", listID).
 		WithHeader("Authorization", "Bearer "+accessToken).
 		WithJSON(model.HeadingRequestData{
 			Title:  gofakeit.Word(),
@@ -143,23 +138,21 @@ func TestCreateTaskOnSpecificHeading_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	headingID := h.Value("data").Object().Value("heading_id").String().Raw()
+	headingID := h.Value(key.Data).Object().Value(key.HeadingID).String().Raw()
 
-	fakeTask := randomFakeTask(true, true, true, true, true, "", "")
+	fakeTask := randomFakeTask(upcomingTasks, "", "")
 
 	// Create task
-	task := e.POST("/user/lists/{list_id}/headings/{heading_id}/").
-		WithPath("list_id", listID).
-		WithPath("heading_id", headingID).
+	task := e.POST("/user/lists/{list_id}/headings/{heading_id}/", listID, headingID).
 		WithHeader("Authorization", "Bearer "+accessToken).
 		WithJSON(fakeTask).
 		Expect().
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	task.NotEmpty()
+	taskHeadingID := task.Value(key.Data).Object().Value(key.HeadingID).String().Raw()
 
-	taskHeadingID := task.Value("data").Object().Value("heading_id").String().Raw()
-
-	require.Equal(t, headingID, taskHeadingID)
+	if taskHeadingID != headingID {
+		t.Errorf("expected task heading to be %s, but got %s", headingID, taskHeadingID)
+	}
 }

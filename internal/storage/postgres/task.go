@@ -2,7 +2,6 @@ package postgres
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -59,6 +58,7 @@ func (s *TaskStorage) CreateTask(ctx context.Context, task model.Task) error {
 		ListID:    task.ListID,
 		HeadingID: task.HeadingID,
 		UserID:    task.UserID,
+		CreatedAt: task.CreatedAt,
 		UpdatedAt: task.UpdatedAt,
 	}
 	if task.Description != "" {
@@ -176,9 +176,9 @@ func (s *TaskStorage) GetTasksByUserID(ctx context.Context, userID string, pgn m
 	const op = "task.storage.GetTasksByUserID"
 
 	tasksRaw, err := s.Queries.GetTasksByUserID(ctx, sqlc.GetTasksByUserIDParams{
-		UserID:  userID,
-		AfterID: pgn.AfterID,
-		Limit:   pgn.Limit,
+		UserID: userID,
+		Cursor: pgn.Cursor,
+		Limit:  pgn.Limit,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("%s: failed to get tasks: %w", op, err)
@@ -349,10 +349,10 @@ func transformTags(tags interface{}) ([]string, error) {
 	return transformedTags, nil
 }
 
-func (s *TaskStorage) GetTasksGroupedByHeadings(ctx context.Context, listID, userID string) ([]model.TaskGroup, error) {
-	const op = "task.storage.GetTasksGroupedByHeadings"
+func (s *TaskStorage) GetTasksGroupedByHeadings(ctx context.Context, listID, userID string) ([]model.TaskGroupRaw, error) {
+	const op = "task.storage.GetTasksGroupedByHeading"
 
-	groups, err := s.Queries.GetTasksGroupedByHeadings(ctx, sqlc.GetTasksGroupedByHeadingsParams{
+	groups, err := s.Queries.GetTasksGroupedByHeading(ctx, sqlc.GetTasksGroupedByHeadingParams{
 		ListID: listID,
 		UserID: userID,
 	})
@@ -363,28 +363,21 @@ func (s *TaskStorage) GetTasksGroupedByHeadings(ctx context.Context, listID, use
 		return nil, le.ErrNoTasksFound
 	}
 
-	var taskGroups []model.TaskGroup
+	var groupsRaw []model.TaskGroupRaw
 
 	for _, group := range groups {
-		var taskGroup model.TaskGroup
-
-		var tasks []model.TaskResponseData
-
-		err = json.Unmarshal(group.Tasks, &tasks)
-		if err != nil {
-			return nil, fmt.Errorf("%s: failed to unmarshal tasks from postgres json object: %w", op, err)
-		}
+		var taskGroup model.TaskGroupRaw
 
 		taskGroup.HeadingID = group.HeadingID
-		taskGroup.Tasks = tasks
+		taskGroup.Tasks = group.Tasks
 
-		taskGroups = append(taskGroups, taskGroup)
+		groupsRaw = append(groupsRaw, taskGroup)
 	}
 
-	return taskGroups, nil
+	return groupsRaw, nil
 }
 
-func (s *TaskStorage) GetTasksForToday(ctx context.Context, userID string) ([]model.TaskGroup, error) {
+func (s *TaskStorage) GetTasksForToday(ctx context.Context, userID string) ([]model.TaskGroupRaw, error) {
 	const op = "task.storage.GetTasksForToday"
 
 	groups, err := s.Queries.GetTasksForToday(ctx, userID)
@@ -395,43 +388,28 @@ func (s *TaskStorage) GetTasksForToday(ctx context.Context, userID string) ([]mo
 		return nil, le.ErrNoTasksFound
 	}
 
-	var taskGroups []model.TaskGroup
+	var groupsRaw []model.TaskGroupRaw
 
 	for _, group := range groups {
-		var taskGroup model.TaskGroup
-
-		var tasks []model.TaskResponseData
-
-		err = json.Unmarshal(group.Tasks, &tasks)
-		if err != nil {
-			return nil, fmt.Errorf("%s: failed to unmarshal tasks from postgres json object: %w", op, err)
-		}
+		var taskGroup model.TaskGroupRaw
 
 		taskGroup.ListID = group.ListID
-		taskGroup.Tasks = tasks
+		taskGroup.Tasks = group.Tasks
 
-		taskGroups = append(taskGroups, taskGroup)
+		groupsRaw = append(groupsRaw, taskGroup)
 	}
 
-	return taskGroups, nil
+	return groupsRaw, nil
 }
 
-func (s *TaskStorage) GetUpcomingTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error) {
+func (s *TaskStorage) GetUpcomingTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroupRaw, error) {
 	const op = "task.storage.GetUpcomingTasks"
-
-	var afterDate time.Time
-
-	if pgn.AfterDate.IsZero() {
-		afterDate = time.Now()
-	} else {
-		afterDate = pgn.AfterDate
-	}
 
 	groups, err := s.Queries.GetUpcomingTasks(ctx, sqlc.GetUpcomingTasksParams{
 		UserID: userID,
 		AfterDate: pgtype.Timestamptz{
 			Valid: true,
-			Time:  afterDate,
+			Time:  pgn.CursorDate,
 		},
 		Limit: pgn.Limit,
 	})
@@ -442,34 +420,27 @@ func (s *TaskStorage) GetUpcomingTasks(ctx context.Context, userID string, pgn m
 		return nil, le.ErrNoTasksFound
 	}
 
-	var taskGroups []model.TaskGroup
+	var groupsRaw []model.TaskGroupRaw
 
 	for _, group := range groups {
-		var taskGroup model.TaskGroup
-
-		var tasks []model.TaskResponseData
-
-		err = json.Unmarshal(group.Tasks, &tasks)
-		if err != nil {
-			return nil, fmt.Errorf("%s: failed to unmarshal tasks from postgres json object: %w", op, err)
-		}
+		var taskGroup model.TaskGroupRaw
 
 		taskGroup.StartDate = group.StartDate.Time
-		taskGroup.Tasks = tasks
+		taskGroup.Tasks = group.Tasks
 
-		taskGroups = append(taskGroups, taskGroup)
+		groupsRaw = append(groupsRaw, taskGroup)
 	}
 
-	return taskGroups, nil
+	return groupsRaw, nil
 }
 
-func (s *TaskStorage) GetOverdueTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error) {
+func (s *TaskStorage) GetOverdueTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroupRaw, error) {
 	const op = "task.storage.GetOverdueTasks"
 
 	groups, err := s.Queries.GetOverdueTasks(ctx, sqlc.GetOverdueTasksParams{
-		UserID:  userID,
-		Limit:   pgn.Limit,
-		AfterID: pgn.AfterID,
+		UserID: userID,
+		Limit:  pgn.Limit,
+		Cursor: pgn.Cursor,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("%s: failed to get tasks groups: %w", op, err)
@@ -478,45 +449,27 @@ func (s *TaskStorage) GetOverdueTasks(ctx context.Context, userID string, pgn mo
 		return nil, le.ErrNoTasksFound
 	}
 
-	var taskGroups []model.TaskGroup
+	var groupsRaw []model.TaskGroupRaw
 
 	for _, group := range groups {
-		var taskGroup model.TaskGroup
-
-		var tasks []model.TaskResponseData
-
-		err = json.Unmarshal(group.Tasks, &tasks)
-		if err != nil {
-			return nil, fmt.Errorf("%s: failed to unmarshal tasks from postgres json object: %w", op, err)
-		}
+		var taskGroup model.TaskGroupRaw
 
 		taskGroup.ListID = group.ListID
-		taskGroup.Tasks = tasks
+		taskGroup.Tasks = group.Tasks
 
-		taskGroups = append(taskGroups, taskGroup)
+		groupsRaw = append(groupsRaw, taskGroup)
 	}
 
-	return taskGroups, nil
+	return groupsRaw, nil
 }
 
-func (s *TaskStorage) GetTasksForSomeday(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error) {
+func (s *TaskStorage) GetTasksForSomeday(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroupRaw, error) {
 	const op = "task.storage.GetTasksForSomeday"
 
-	var afterDate time.Time
-
-	if pgn.AfterDate.IsZero() {
-		afterDate = time.Now()
-	} else {
-		afterDate = pgn.AfterDate
-	}
-
-	groups, err := s.Queries.GetUpcomingTasks(ctx, sqlc.GetUpcomingTasksParams{
+	groups, err := s.Queries.GetTasksForSomeday(ctx, sqlc.GetTasksForSomedayParams{
 		UserID: userID,
-		AfterDate: pgtype.Timestamptz{
-			Valid: true,
-			Time:  afterDate,
-		},
-		Limit: pgn.Limit,
+		Limit:  pgn.Limit,
+		Cursor: pgn.Cursor,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("%s: failed to get tasks groups: %w", op, err)
@@ -525,48 +478,30 @@ func (s *TaskStorage) GetTasksForSomeday(ctx context.Context, userID string, pgn
 		return nil, le.ErrNoTasksFound
 	}
 
-	var taskGroups []model.TaskGroup
+	var groupsRaw []model.TaskGroupRaw
 
 	for _, group := range groups {
-		var taskGroup model.TaskGroup
+		var taskGroup model.TaskGroupRaw
 
-		var tasks []model.TaskResponseData
+		taskGroup.ListID = group.ListID
+		taskGroup.Tasks = group.Tasks
 
-		err = json.Unmarshal(group.Tasks, &tasks)
-		if err != nil {
-			return nil, fmt.Errorf("%s: failed to unmarshal tasks from postgres json object: %w", op, err)
-		}
-
-		if group.StartDate.Valid {
-			taskGroup.StartDate = group.StartDate.Time
-		}
-
-		taskGroup.Tasks = tasks
-
-		taskGroups = append(taskGroups, taskGroup)
+		groupsRaw = append(groupsRaw, taskGroup)
 	}
 
-	return taskGroups, nil
+	return groupsRaw, nil
 }
 
-func (s *TaskStorage) GetCompletedTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error) {
+func (s *TaskStorage) GetCompletedTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroupRaw, error) {
 	const op = "task.storage.GetCompletedTasks"
-
-	var afterDate time.Time
-
-	if pgn.AfterDate.IsZero() {
-		afterDate = time.Now()
-	} else {
-		afterDate = pgn.AfterDate
-	}
 
 	groups, err := s.Queries.GetCompletedTasks(ctx, sqlc.GetCompletedTasksParams{
 		UserID:      userID,
 		Limit:       pgn.Limit,
 		StatusTitle: model.StatusCompleted.String(),
-		AfterDate: pgtype.Timestamptz{
+		CursorDate: pgtype.Timestamptz{
 			Valid: true,
-			Time:  afterDate,
+			Time:  pgn.CursorDate,
 		},
 	})
 	if err != nil {
@@ -576,24 +511,16 @@ func (s *TaskStorage) GetCompletedTasks(ctx context.Context, userID string, pgn 
 		return nil, le.ErrNoTasksFound
 	}
 
-	var taskGroups []model.TaskGroup
+	var taskGroups []model.TaskGroupRaw
 
 	for _, group := range groups {
-		var taskGroup model.TaskGroup
+		var taskGroup model.TaskGroupRaw
 
-		var tasks []model.TaskResponseData
-
-		err = json.Unmarshal(group.Tasks, &tasks)
-		if err != nil {
-			return nil, fmt.Errorf("%s: failed to unmarshal tasks from postgres json object: %w", op, err)
-		}
-
-		// TODO: check the response for this field
 		if group.Month.Valid {
-			taskGroup.Month = group.Month.Months
+			taskGroup.Month = group.Month.Time
 		}
 
-		taskGroup.Tasks = tasks
+		taskGroup.Tasks = group.Tasks
 
 		taskGroups = append(taskGroups, taskGroup)
 	}
@@ -601,22 +528,22 @@ func (s *TaskStorage) GetCompletedTasks(ctx context.Context, userID string, pgn 
 	return taskGroups, nil
 }
 
-func (s *TaskStorage) GetArchivedTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error) {
+func (s *TaskStorage) GetArchivedTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroupRaw, error) {
 	const op = "task.storage.GetArchivedTasks"
 
 	var afterMonth time.Time
 
-	if pgn.AfterDate.IsZero() {
+	if pgn.CursorDate.IsZero() {
 		afterMonth = time.Now().Truncate(24 * time.Hour)
 	} else {
-		afterMonth = pgn.AfterDate
+		afterMonth = pgn.CursorDate
 	}
 
 	groups, err := s.Queries.GetArchivedTasks(ctx, sqlc.GetArchivedTasksParams{
 		UserID:      userID,
 		Limit:       pgn.Limit,
 		StatusTitle: model.StatusArchived.String(),
-		AfterMonth: pgtype.Timestamptz{
+		CursorDate: pgtype.Timestamptz{
 			Valid: true,
 			Time:  afterMonth,
 		},
@@ -628,47 +555,25 @@ func (s *TaskStorage) GetArchivedTasks(ctx context.Context, userID string, pgn m
 		return nil, le.ErrNoTasksFound
 	}
 
-	var taskGroups []model.TaskGroup
+	var taskGroups []model.TaskGroupRaw
 
 	for _, group := range groups {
-		var taskGroup model.TaskGroup
+		var taskGroup model.TaskGroupRaw
 
-		var tasks []model.TaskResponseData
-
-		err = json.Unmarshal(group.Tasks, &tasks)
-		if err != nil {
-			return nil, fmt.Errorf("%s: failed to unmarshal tasks from postgres json object: %w", op, err)
-		}
-
-		// TODO: check the response for this field
 		if group.Month.Valid {
-			taskGroup.Month = group.Month.Months
+			taskGroup.Month = group.Month.Time
 		}
 
-		taskGroup.Tasks = tasks
+		taskGroup.Tasks = group.Tasks
 
 		taskGroups = append(taskGroups, taskGroup)
 	}
+
 	return taskGroups, nil
 }
 
 func (s *TaskStorage) UpdateTask(ctx context.Context, task model.Task) error {
-	const (
-		op = "task.storage.UpdateTask"
-
-		queryGetHeadingID = `
-			SELECT heading_id
-			FROM tasks
-			WHERE id = $1
-			  AND user_id = $2`
-	)
-
-	var headingID string
-
-	err := s.QueryRow(ctx, queryGetHeadingID, task.ID, task.UserID).Scan(&headingID)
-	if err != nil {
-		return fmt.Errorf("%s: failed to get heading ID: %w", op, err)
-	}
+	const op = "task.storage.UpdateTask"
 
 	// Prepare the dynamic update query based on the provided fields
 	queryUpdate := "UPDATE tasks SET updated_at = $1"
@@ -690,10 +595,6 @@ func (s *TaskStorage) UpdateTask(ctx context.Context, task model.Task) error {
 	if !task.Deadline.IsZero() {
 		queryUpdate += ", deadline = $" + strconv.Itoa(len(queryParams)+1)
 		queryParams = append(queryParams, task.Deadline)
-	}
-	if task.HeadingID != headingID {
-		queryUpdate += ", heading_id = $" + strconv.Itoa(len(queryParams)+1)
-		queryParams = append(queryParams, task.HeadingID)
 	}
 
 	// Add condition for the specific user ID
@@ -719,9 +620,6 @@ func (s *TaskStorage) UpdateTask(ctx context.Context, task model.Task) error {
 func (s *TaskStorage) UpdateTaskTime(ctx context.Context, task model.Task) error {
 	const op = "task.storage.UpdateTaskTime"
 
-	// Get the statusID ID for the planned status
-	var statusID string
-
 	// Prepare the dynamic update query based on the provided fields
 	queryUpdate := "UPDATE tasks SET updated_at = $1"
 	queryParams := []interface{}{task.UpdatedAt}
@@ -737,7 +635,9 @@ func (s *TaskStorage) UpdateTaskTime(ctx context.Context, task model.Task) error
 		return le.ErrInvalidTaskTimeRange
 	}
 
-	// Add statusID ID to the query
+	// Add statusID to the query
+	statusID := strconv.Itoa(task.StatusID)
+
 	queryUpdate += ", status_id = $" + strconv.Itoa(len(queryParams)+1)
 	queryParams = append(queryParams, statusID)
 
@@ -751,7 +651,7 @@ func (s *TaskStorage) UpdateTaskTime(ctx context.Context, task model.Task) error
 	// Execute the update query
 	result, err := s.Exec(ctx, queryUpdate, queryParams...)
 	if err != nil {
-		return fmt.Errorf("%s: failed to update task: %w", op, err)
+		return fmt.Errorf("%s: failed to update task time: %w", op, err)
 	}
 
 	if result.RowsAffected() == 0 {
@@ -764,16 +664,42 @@ func (s *TaskStorage) UpdateTaskTime(ctx context.Context, task model.Task) error
 func (s *TaskStorage) MoveTaskToAnotherList(ctx context.Context, task model.Task) error {
 	const op = "task.storage.MoveTaskToAnotherList"
 
-	if err := s.Queries.MoveTaskToAnotherList(ctx, sqlc.MoveTaskToAnotherListParams{
+	_, err := s.Queries.MoveTaskToAnotherList(ctx, sqlc.MoveTaskToAnotherListParams{
 		ListID:    task.ListID,
 		HeadingID: task.HeadingID,
 		UpdatedAt: task.UpdatedAt,
 		ID:        task.ID,
 		UserID:    task.UserID,
-	}); err != nil {
-		return fmt.Errorf("%s: failed to move task: %w", op, err)
+	})
+
+	switch {
+	case errors.Is(err, pgx.ErrNoRows):
+		return le.ErrTaskNotFound
+	case err != nil:
+		return fmt.Errorf("%s: failed to move task to another list: %w", op, err)
+	default:
+		return nil
 	}
-	return nil
+}
+
+func (s *TaskStorage) MoveTaskToAnotherHeading(ctx context.Context, task model.Task) error {
+	const op = "task.storage.MoveTaskToAnotherHeading"
+
+	_, err := s.Queries.MoveTaskToAnotherHeading(ctx, sqlc.MoveTaskToAnotherHeadingParams{
+		HeadingID: task.HeadingID,
+		UpdatedAt: task.UpdatedAt,
+		ID:        task.ID,
+		UserID:    task.UserID,
+	})
+
+	switch {
+	case errors.Is(err, pgx.ErrNoRows):
+		return le.ErrTaskNotFound
+	case err != nil:
+		return fmt.Errorf("%s: failed to move task to another heading: %w", op, err)
+	default:
+		return nil
+	}
 }
 
 func (s *TaskStorage) MarkAsCompleted(ctx context.Context, task model.Task) error {

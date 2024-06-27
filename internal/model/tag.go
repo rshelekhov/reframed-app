@@ -10,6 +10,7 @@ type (
 		ID        string    `db:"id"`
 		Title     string    `db:"title"`
 		UserID    string    `db:"user_id"`
+		CreatedAt time.Time `db:"created_at"`
 		UpdatedAt time.Time `db:"updated_at"`
 		DeletedAt time.Time `db:"deleted_at"`
 	}
@@ -20,8 +21,9 @@ type (
 	}
 
 	TagResponseData struct {
-		ID        string    `json:"tag_id"`
-		Title     string    `json:"title"`
-		UpdatedAt time.Time `json:"updated_at"`
+		ID        string    `json:"tag_id,omitempty"`
+		Title     string    `json:"title,omitempty"`
+		CreatedAt time.Time `json:"created_at,omitempty"`
+		UpdatedAt time.Time `json:"updated_at,omitempty"`
 	}
 )

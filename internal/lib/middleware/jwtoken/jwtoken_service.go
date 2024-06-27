@@ -27,7 +27,7 @@ type TokenService struct {
 	mu        sync.RWMutex
 	AppID     int32
 	Cookie    cookie
-	// TODO: добавить jwt data из переменных окружения (?)
+	// TODO: add jwt data from env (?)
 }
 
 type cookie struct {

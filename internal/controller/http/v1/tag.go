@@ -39,22 +39,23 @@ func (c *tagController) GetTagsByUserID() http.HandlerFunc {
 		log := logger.LogWithRequest(c.logger, op, r)
 
 		userID, err := c.jwt.GetUserID(ctx)
-		if err != nil {
+		switch {
+		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
+				slog.String(key.UserID, userID))
+		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
-			return
 		}
 
 		tagsResp, err := c.usecase.GetTagsByUserID(ctx, userID)
 
 		switch {
 		case errors.Is(err, le.ErrNoTagsFound):
-			handleResponseError(w, r, log, http.StatusNotFound, le.ErrNoTagsFound)
-			return
+			handleResponseSuccess(w, r, log, "no tags found", nil)
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
-			return
 		default:
-			handleResponseSuccess(w, r, log, "tags found", tagsResp, slog.Int(key.Count, len(tagsResp)))
+			handleResponseSuccess(w, r, log, "tags found", tagsResp)
 		}
 	}
 }

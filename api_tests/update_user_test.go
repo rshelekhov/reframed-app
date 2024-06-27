@@ -12,7 +12,7 @@ import (
 
 func TestUpdateUser_HappyPath(t *testing.T) {
 	u := url.URL{
-		Scheme: "http",
+		Scheme: scheme,
 		Host:   host,
 	}
 	e := httpexpect.Default(t, u.String())
@@ -42,7 +42,7 @@ func TestUpdateUser_HappyPath(t *testing.T) {
 
 func TestUpdateUser_FailCases(t *testing.T) {
 	u := url.URL{
-		Scheme: "http",
+		Scheme: scheme,
 		Host:   host,
 	}
 	e := httpexpect.Default(t, u.String())
@@ -110,7 +110,7 @@ func TestUpdateUser_FailCases(t *testing.T) {
 
 func TestUpdateUserNotFound(t *testing.T) {
 	u := url.URL{
-		Scheme: "http",
+		Scheme: scheme,
 		Host:   host,
 	}
 	e := httpexpect.Default(t, u.String())
@@ -147,7 +147,7 @@ func TestUpdateUserNotFound(t *testing.T) {
 
 func TestUpdateUserEmailAlreadyTaken(t *testing.T) {
 	u := url.URL{
-		Scheme: "http",
+		Scheme: scheme,
 		Host:   host,
 	}
 	e := httpexpect.Default(t, u.String())

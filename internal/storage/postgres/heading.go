@@ -35,6 +35,7 @@ func (s *HeadingStorage) CreateHeading(ctx context.Context, heading model.Headin
 		ListID:    heading.ListID,
 		UserID:    heading.UserID,
 		IsDefault: heading.IsDefault,
+		CreatedAt: heading.CreatedAt,
 		UpdatedAt: heading.UpdatedAt,
 	}); err != nil {
 		return fmt.Errorf("%s: failed to create heading: %w", op, err)

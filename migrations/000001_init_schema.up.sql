@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS lists
     title      character varying NOT NULL,
     user_id    character varying NOT NULL,
     is_default boolean NOT NULL DEFAULT false,
+    created_at timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
     updated_at timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
     deleted_at timestamp WITH TIME ZONE DEFAULT NULL
 );
@@ -23,6 +24,7 @@ CREATE TABLE IF NOT EXISTS tasks
     list_id     character varying NOT NULL,
     heading_id  character varying NOT NULL,
     user_id     character varying NOT NULL,
+    created_at  timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
     updated_at  timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
     deleted_at  timestamp WITH TIME ZONE DEFAULT NULL
 );
@@ -42,6 +44,7 @@ CREATE TABLE IF NOT EXISTS headings
     list_id    character varying NOT NULL,
     user_id    character varying NOT NULL,
     is_default boolean NOT NULL DEFAULT false,
+    created_at timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
     updated_at timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
     deleted_at timestamp WITH TIME ZONE DEFAULT NULL
 );
@@ -51,6 +54,7 @@ CREATE TABLE IF NOT EXISTS tags
     id         character varying PRIMARY KEY,
     title      character varying NOT NULL,
     user_id    character varying NOT NULL,
+    created_at timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
     updated_at timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
     deleted_at timestamp WITH TIME ZONE DEFAULT NULL
 );
@@ -71,6 +75,7 @@ CREATE TABLE IF NOT EXISTS reminders
     read       boolean NOT NULL,
     task_id    character varying NOT NULL,
     user_id    character varying NOT NULL,
+    created_at timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
     updated_at timestamp WITH TIME ZONE NOT NULL DEFAULT now(),
     deleted_at timestamp WITH TIME ZONE DEFAULT NULL
 );

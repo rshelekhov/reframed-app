@@ -21,12 +21,15 @@ func NewListUsecase(listStorage port.ListStorage) *ListUsecase {
 }
 
 func (u *ListUsecase) CreateList(ctx context.Context, data *model.ListRequestData) (model.ListResponseData, error) {
+	currentTime := time.Now()
+
 	newList := model.List{
 		ID:        ksuid.New().String(),
 		Title:     data.Title,
 		IsDefault: false,
 		UserID:    data.UserID,
-		UpdatedAt: time.Now(),
+		CreatedAt: currentTime,
+		UpdatedAt: currentTime,
 	}
 
 	if err := u.storage.CreateList(ctx, newList); err != nil {
@@ -39,7 +42,7 @@ func (u *ListUsecase) CreateList(ctx context.Context, data *model.ListRequestDat
 		ListID:    newList.ID,
 		UserID:    data.UserID,
 		IsDefault: true,
-		UpdatedAt: time.Now(),
+		UpdatedAt: currentTime,
 	}
 
 	if err := u.HeadingUsecase.CreateDefaultHeading(ctx, defaultHeading); err != nil {
@@ -50,17 +53,20 @@ func (u *ListUsecase) CreateList(ctx context.Context, data *model.ListRequestDat
 		ID:        newList.ID,
 		Title:     newList.Title,
 		UserID:    newList.UserID,
+		CreatedAt: newList.CreatedAt,
 		UpdatedAt: newList.UpdatedAt,
 	}, nil
 }
 
 func (u *ListUsecase) CreateDefaultList(ctx context.Context, userID string) error {
+	currentTime := time.Now()
+
 	defaultList := model.List{
 		ID:        ksuid.New().String(),
 		Title:     model.DefaultInboxList.String(),
 		IsDefault: true,
 		UserID:    userID,
-		UpdatedAt: time.Now(),
+		UpdatedAt: currentTime,
 	}
 
 	if err := u.storage.CreateList(ctx, defaultList); err != nil {
@@ -73,7 +79,7 @@ func (u *ListUsecase) CreateDefaultList(ctx context.Context, userID string) erro
 		ListID:    defaultList.ID,
 		UserID:    userID,
 		IsDefault: true,
-		UpdatedAt: time.Now(),
+		UpdatedAt: currentTime,
 	}
 
 	if err := u.HeadingUsecase.CreateDefaultHeading(ctx, defaultHeading); err != nil {

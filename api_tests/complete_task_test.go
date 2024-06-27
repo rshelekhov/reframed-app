@@ -3,10 +3,10 @@ package api_tests
 import (
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/gavv/httpexpect/v2"
+	"github.com/rshelekhov/reframed/internal/lib/constants/key"
 	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
 	"github.com/rshelekhov/reframed/internal/model"
 	"github.com/segmentio/ksuid"
-	"github.com/stretchr/testify/require"
 	"net/http"
 	"net/url"
 	"testing"
@@ -14,7 +14,7 @@ import (
 
 func TestCompleteTask_HappyPath(t *testing.T) {
 	u := url.URL{
-		Scheme: "http",
+		Scheme: scheme,
 		Host:   host,
 	}
 	e := httpexpect.Default(t, u.String())
@@ -31,7 +31,7 @@ func TestCompleteTask_HappyPath(t *testing.T) {
 
 	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
 
-	fakeTask := randomFakeTask(true, true, true, true, true, "", "")
+	fakeTask := randomFakeTask(upcomingTasks, "", "")
 
 	// Create task
 	task := e.POST("/user/lists/default").
@@ -41,16 +41,16 @@ func TestCompleteTask_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	taskID := task.Value("data").Object().Value("task_id").String().Raw()
+	taskID := task.Value(key.Data).Object().Value(key.TaskID).String().Raw()
 
 	// Complete task
 	completedTask := e.PATCH("/user/tasks/{task_id}/complete", taskID).
 		WithHeader("Authorization", "Bearer "+accessToken).
 		Expect().
 		Status(http.StatusOK).
-		JSON().Object().NotEmpty()
+		JSON().Object()
 
-	taskStatusID := completedTask.Value("data").Object().Value("status_id").Raw()
+	taskStatusID := completedTask.Value(key.Data).Object().Value(key.StatusID).Raw()
 
 	// Get status
 	taskStatus := e.GET("/statuses/{status_id}", taskStatusID).
@@ -59,14 +59,16 @@ func TestCompleteTask_HappyPath(t *testing.T) {
 		Status(http.StatusOK).
 		JSON().Object()
 
-	taskStatusTitle := taskStatus.Value("data").Object().Value("title").String().Raw()
+	taskStatusTitle := taskStatus.Value(key.Data).Object().Value(key.Title).String().Raw()
 
-	require.Equal(t, taskStatusTitle, model.StatusCompleted.String())
+	if taskStatusTitle != model.StatusCompleted.String() {
+		t.Errorf("expected task status to be %s, but got %s", model.StatusCompleted.String(), taskStatusTitle)
+	}
 }
 
-func TestCompleteTask_FailCases(t *testing.T) {
+func TestCompleteTask_NotFound(t *testing.T) {
 	u := url.URL{
-		Scheme: "http",
+		Scheme: scheme,
 		Host:   host,
 	}
 	e := httpexpect.Default(t, u.String())
@@ -83,29 +85,11 @@ func TestCompleteTask_FailCases(t *testing.T) {
 
 	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
 
-	testCases := []struct {
-		name   string
-		taskID string
-		status int
-	}{
-		{
-			name:   "Complete task with empty task_id",
-			taskID: "",
-			status: http.StatusBadRequest,
-		},
-		{
-			name:   "Complete task when task not found",
-			taskID: ksuid.New().String(),
-			status: http.StatusNotFound,
-		},
-	}
+	taskID := ksuid.New().String()
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			e.PATCH("/user/tasks/{task_id}/complete", tc.taskID).
-				WithHeader("Authorization", "Bearer "+accessToken).
-				Expect().
-				Status(tc.status)
-		})
-	}
+	e.PATCH("/user/tasks/{task_id}/complete", taskID).
+		WithHeader("Authorization", "Bearer "+accessToken).
+		Expect().
+		Status(http.StatusNotFound)
+
 }

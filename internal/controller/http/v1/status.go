@@ -42,14 +42,11 @@ func (c *statusController) GetStatuses() http.HandlerFunc {
 
 		switch {
 		case errors.Is(err, le.ErrNoStatusesFound):
-			handleResponseError(w, r, log, http.StatusNotFound, le.ErrNoStatusesFound)
-			return
+			handleResponseSuccess(w, r, log, "no statuses found", nil)
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
-			return
 		default:
-			handleResponseSuccess(w, r, log, "statuses received", statuses, slog.Int(key.Count, len(statuses)))
-			return
+			handleResponseSuccess(w, r, log, "statuses found", statuses)
 		}
 	}
 }
@@ -62,30 +59,21 @@ func (c *statusController) GetStatusByID() http.HandlerFunc {
 		log := logger.LogWithRequest(c.logger, op, r)
 
 		rawStatusID := chi.URLParam(r, key.StatusID)
-		if rawStatusID == "" {
-			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryStatusID)
-			return
-		}
 
 		statusID, err := strconv.Atoi(rawStatusID)
 		if err != nil {
 			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrFailedToConvertStatusIDtoInt)
-			return
 		}
 		if statusID <= 0 {
 			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrInvalidStatusID)
-			return
 		}
 
 		status, err := c.usecase.GetStatusByID(ctx, statusID)
-
 		switch {
 		case errors.Is(err, le.ErrStatusNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrStatusNotFound)
-			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
-			return
 		default:
 			handleResponseSuccess(w, r, log, "status received", status, slog.Int(key.StatusID, status.ID))
 		}

@@ -8,6 +8,9 @@ import (
 	"github.com/rshelekhov/reframed/internal/model"
 	"log/slog"
 	"net/http"
+	"runtime"
+	"strings"
+	"time"
 )
 
 func decodeAndValidateJSON(w http.ResponseWriter, r *http.Request, log *slog.Logger, data any) error {
@@ -96,25 +99,58 @@ func handleResponseCreated(
 	responseSuccess(w, r, http.StatusCreated, message, data)
 }
 
+type errorResponse struct {
+	Error      le.LocalError `json:"error"`
+	StatusCode int           `json:"status_code"`
+	Location   string        `json:"location"`
+	Time       time.Time     `json:"time"`
+}
+
 // responseError renders an error response with the given status code and error
 func responseError(
 	w http.ResponseWriter,
 	r *http.Request,
-	statusCode int,
-	errorMessage le.LocalError,
+	status int,
+	localError le.LocalError,
+	resp *errorResponse,
 ) {
-	errorResponse := struct {
-		Code        int    `json:"code"`
-		StatusText  string `json:"status_text"`
-		Description string `json:"description"`
-	}{
-		Code:        statusCode,
-		StatusText:  http.StatusText(statusCode),
-		Description: fmt.Sprintf("%v", errorMessage),
+	_, file, line, ok := getCaller()
+	if !ok {
+		file = "unknown file"
+		line = -1
 	}
 
-	render.Status(r, statusCode)
-	render.JSON(w, r, errorResponse)
+	// op := runtime.FuncForPC(pc).Name()
+	location := fmt.Sprintf("%s:%d", file, line)
+
+	resp.Error = localError
+	resp.StatusCode = status
+	// resp.Operation = op
+	resp.Location = location
+	resp.Time = time.Now()
+
+	render.Status(r, status)
+	render.JSON(w, r, resp)
+}
+
+func getCaller() (pc uintptr, file string, line int, ok bool) {
+	i := 1
+	for {
+		p, f, l, o := runtime.Caller(i)
+		if !o {
+			return
+		}
+		fmt.Println(f)
+		if strings.Contains(f, "reframed") {
+			pc = p
+			file = f
+			line = l
+			ok = o
+		} else {
+			return
+		}
+		i += 1
+	}
 }
 
 // handleResponseError renders an error response with the given status code and error
@@ -123,20 +159,22 @@ func handleResponseError(
 	r *http.Request,
 	log *slog.Logger,
 	status int,
-	error le.LocalError,
+	err le.LocalError,
 	addLogData ...interface{},
 ) {
-	log.Error(fmt.Sprintf("%v", error), addLogData...)
-	responseError(w, r, status, error)
+	resp := &errorResponse{}
+	responseError(w, r, status, err, resp)
+	log.Error(fmt.Sprintf("err: %v (status %v). Where: %v", err, status, resp.Location), addLogData...)
 }
 
 func handleInternalServerError(
 	w http.ResponseWriter,
 	r *http.Request,
 	log *slog.Logger,
-	error le.LocalError,
-	addLogData ...interface{}, // TODO: use map instead (avoid !BADKEY in logs)
+	err le.LocalError,
+	errDetails error,
 ) {
-	log.Error("Internal Server Error: ", addLogData...)
-	responseError(w, r, http.StatusInternalServerError, error)
+	resp := &errorResponse{}
+	responseError(w, r, http.StatusInternalServerError, err, resp)
+	log.Error(fmt.Sprintf("error: %v (status %v). Details: %s.Where: %v", err, http.StatusInternalServerError, errDetails, resp.Location))
 }

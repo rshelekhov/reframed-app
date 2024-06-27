@@ -1,6 +1,6 @@
 -- name: CreateList :exec
-INSERT INTO lists (id, title, user_id, is_default, updated_at)
-VALUES ($1, $2, $3, $4, $5);
+INSERT INTO lists (id, title, user_id, is_default, created_at,updated_at)
+VALUES ($1, $2, $3, $4, $5, $6);
 
 -- name: GetListByID :one
 SELECT id, title, user_id, is_default, updated_at

@@ -1,6 +1,6 @@
 -- name: CreateHeading :exec
-INSERT INTO headings (id, title, list_id, user_id, is_default, updated_at)
-VALUES($1, $2, $3, $4, $5, $6);
+INSERT INTO headings (id, title, list_id, user_id, is_default, created_at,updated_at)
+VALUES($1, $2, $3, $4, $5, $6, $7);
 
 -- name: GetDefaultHeadingID :one
 SELECT id
