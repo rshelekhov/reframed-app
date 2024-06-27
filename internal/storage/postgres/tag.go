@@ -32,6 +32,7 @@ func (s *TagStorage) CreateTag(ctx context.Context, tag model.Tag) error {
 		ID:        tag.ID,
 		Title:     tag.Title,
 		UserID:    tag.UserID,
+		CreatedAt: tag.CreatedAt,
 		UpdatedAt: tag.UpdatedAt,
 	}); err != nil {
 		return fmt.Errorf("%s: failed to insert tag: %w", op, err)
