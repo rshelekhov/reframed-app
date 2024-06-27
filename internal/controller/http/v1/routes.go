@@ -66,7 +66,7 @@ func (ar *AppRouter) initRoutes() *chi.Mux {
 
 		r.Route("/user", func(r chi.Router) {
 			r.Get("/", ar.GetUser())
-			r.Put("/", ar.UpdateUser())
+			r.Patch("/", ar.UpdateUser())
 			r.Delete("/", ar.DeleteUser())
 
 			r.Route("/lists", func(r chi.Router) {
@@ -77,7 +77,7 @@ func (ar *AppRouter) initRoutes() *chi.Mux {
 
 				r.Route("/{list_id}", func(r chi.Router) {
 					r.Get("/", ar.GetListByID())
-					r.Put("/", ar.UpdateList())
+					r.Patch("/", ar.UpdateList())
 					r.Delete("/", ar.DeleteList())
 
 					r.Route("/tasks", func(r chi.Router) {
@@ -88,14 +88,13 @@ func (ar *AppRouter) initRoutes() *chi.Mux {
 					r.Route("/headings", func(r chi.Router) {
 						r.Post("/", ar.CreateHeading())
 						r.Get("/", ar.GetHeadingsByListID())
-						// TODO: don't forget to add tests for this handlers with tasks
 						r.Get("/tasks", ar.GetTasksGroupedByHeadings())
 
 						r.Route("/{heading_id}", func(r chi.Router) {
 							r.Post("/", ar.CreateTask())
 							r.Get("/", ar.GetHeadingByID())
-							r.Put("/", ar.UpdateHeading())
-							r.Put("/move", ar.MoveHeadingToAnotherList())
+							r.Patch("/", ar.UpdateHeading())
+							r.Patch("/move", ar.MoveHeadingToAnotherList())
 							r.Delete("/", ar.DeleteHeading())
 						})
 					})
@@ -111,7 +110,6 @@ func (ar *AppRouter) initRoutes() *chi.Mux {
 				r.Get("/completed", ar.GetCompletedTasks()) // grouped by month
 				r.Get("/archived", ar.GetArchivedTasks())   // grouped by month
 
-				// TODO: replace Put with Patch (here and for other handlers for updating data)
 				r.Route("/{task_id}", func(r chi.Router) {
 					r.Get("/", ar.GetTaskByID())
 					r.Patch("/", ar.UpdateTask())
