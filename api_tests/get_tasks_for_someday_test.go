@@ -164,7 +164,7 @@ func TestGetTasksForSomeday_WithPagination(t *testing.T) {
 	lastGroup := response.Value(key.Data).Array().Last().Object()
 	lastListID := lastGroup.Value(key.ListID).String().Raw()
 
-	// Second request to get tasks for someday with afterID set to last list_id from the first response
+	// Second request to get tasks for someday with cursor set to last list_id from the first response
 	nextResponse := e.GET("/user/tasks/someday").
 		WithHeader("Authorization", "Bearer "+accessToken).
 		WithQuery(key.Limit, limit).
