@@ -110,7 +110,6 @@ func (ar *AppRouter) initRoutes() *chi.Mux {
 				r.Get("/completed", ar.GetCompletedTasks()) // grouped by month
 				r.Get("/archived", ar.GetArchivedTasks())   // grouped by month
 
-				// TODO: replace Put with Patch (here and for other handlers for updating data)
 				r.Route("/{task_id}", func(r chi.Router) {
 					r.Get("/", ar.GetTaskByID())
 					r.Patch("/", ar.UpdateTask())
