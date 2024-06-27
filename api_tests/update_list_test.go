@@ -43,7 +43,7 @@ func TestUpdateList_HappyPath(t *testing.T) {
 	listID := c.Value(key.Data).Object().Value(key.ListID).String().Raw()
 
 	// Update list
-	e.PUT("/user/lists/{list_id}", listID).
+	e.PATCH("/user/lists/{list_id}", listID).
 		WithHeader("Authorization", "Bearer "+accessToken).
 		WithJSON(model.ListRequestData{
 			Title: gofakeit.Word(),
@@ -91,7 +91,7 @@ func TestUpdateList_NotFound(t *testing.T) {
 		Status(http.StatusOK)
 
 	// Update list
-	e.PUT("/user/lists/{list_id}", listID).
+	e.PATCH("/user/lists/{list_id}", listID).
 		WithHeader("Authorization", "Bearer "+accessToken).
 		WithJSON(model.ListRequestData{
 			Title: gofakeit.Word(),
@@ -132,7 +132,7 @@ func TestUpdateList_EmptyTitle(t *testing.T) {
 	listID := l.Value(key.Data).Object().Value(key.ListID).String().Raw()
 
 	// Try to update list
-	e.PUT("/user/lists/{list_id}", listID).
+	e.PATCH("/user/lists/{list_id}", listID).
 		WithHeader("Authorization", "Bearer "+accessToken).
 		WithJSON(model.ListRequestData{
 			Title: "",

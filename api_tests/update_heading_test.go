@@ -56,7 +56,7 @@ func TestUpdateHeading_HappyPath(t *testing.T) {
 	headingID := h.Value(key.Data).Object().Value(key.HeadingID).String().Raw()
 
 	// Update heading
-	e.PUT("/user/lists/{list_id}/headings/{heading_id}", listID, headingID).
+	e.PATCH("/user/lists/{list_id}/headings/{heading_id}", listID, headingID).
 		WithHeader("Authorization", "Bearer "+accessToken).
 		WithJSON(model.HeadingRequestData{
 			Title: gofakeit.Word(),
@@ -118,7 +118,7 @@ func TestUpdateHeading_NotFound(t *testing.T) {
 		JSON().Object()
 
 	// Try to update heading
-	e.PUT("/user/lists/{list_id}/headings/{heading_id}", listID, headingID).
+	e.PATCH("/user/lists/{list_id}/headings/{heading_id}", listID, headingID).
 		WithHeader("Authorization", "Bearer "+accessToken).
 		WithJSON(model.HeadingRequestData{
 			Title: gofakeit.Word(),
@@ -184,7 +184,7 @@ func TestMoveHeadingToAnotherList_HappyPath(t *testing.T) {
 	headingID := h.Value(key.Data).Object().Value(key.HeadingID).String().Raw()
 
 	// Move heading
-	e.PUT("/user/lists/{list_id}/headings/{heading_id}/move", initialListID, headingID).
+	e.PATCH("/user/lists/{list_id}/headings/{heading_id}/move", initialListID, headingID).
 		WithQuery(key.ListID, otherListID).
 		WithHeader("Authorization", "Bearer "+accessToken).
 		Expect().
@@ -258,7 +258,7 @@ func TestMoveHadingToAnotherList_FailCases(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			e.PUT("/user/lists/{list_id}/headings/{heading_id}/move", initialListID, tc.headingID).
+			e.PATCH("/user/lists/{list_id}/headings/{heading_id}/move", initialListID, tc.headingID).
 				WithQuery(key.ListID, tc.otherListID).
 				WithHeader("Authorization", "Bearer "+accessToken).
 				Expect().

@@ -30,7 +30,7 @@ func TestUpdateUser_HappyPath(t *testing.T) {
 	accessToken := resp.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	// Update user
-	e.PUT("/user/").
+	e.PATCH("/user/").
 		WithHeader("Authorization", "Bearer "+accessToken).
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
@@ -95,7 +95,7 @@ func TestUpdateUser_FailCases(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Update user
-			e.PUT("/user/").
+			e.PATCH("/user/").
 				WithHeader("Authorization", "Bearer "+accessToken).
 				WithJSON(model.UserRequestData{
 					Email:           tc.email,
@@ -134,7 +134,7 @@ func TestUpdateUserNotFound(t *testing.T) {
 		Status(http.StatusOK)
 
 	// Try to update user
-	e.PUT("/user/").
+	e.PATCH("/user/").
 		WithHeader("Authorization", "Bearer "+accessToken).
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
@@ -176,7 +176,7 @@ func TestUpdateUserEmailAlreadyTaken(t *testing.T) {
 		Status(http.StatusCreated)
 
 	// Try to update user
-	e.PUT("/user/").
+	e.PATCH("/user/").
 		WithHeader("Authorization", "Bearer "+accessToken).
 		WithJSON(model.UserRequestData{
 			Email:    email,
