@@ -205,7 +205,7 @@ func (u *TaskUsecase) GetTasksGroupedByHeading(ctx context.Context, data model.T
 	return taskGroups, nil
 }
 
-func (u *TaskUsecase) GetTasksForToday(ctx context.Context, userID string) ([]model.TaskGroup, error) {
+func (u *TaskUsecase) GetTasksForToday(ctx context.Context, userID string) ([]model.TodayTaskGroup, error) {
 	const op = "task.usecase.GetTasksForToday"
 
 	groupsRaw, err := u.storage.GetTasksForToday(ctx, userID)
@@ -213,10 +213,10 @@ func (u *TaskUsecase) GetTasksForToday(ctx context.Context, userID string) ([]mo
 		return nil, err
 	}
 
-	var taskGroups []model.TaskGroup
+	var taskGroups []model.TodayTaskGroup
 
 	for _, group := range groupsRaw {
-		var taskGroup model.TaskGroup
+		var taskGroup model.TodayTaskGroup
 
 		var tasks []model.TaskResponseData
 
