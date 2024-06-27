@@ -407,7 +407,6 @@ func (s *TaskStorage) GetUpcomingTasks(ctx context.Context, userID string, pgn m
 
 	groups, err := s.Queries.GetUpcomingTasks(ctx, sqlc.GetUpcomingTasksParams{
 		UserID: userID,
-		// TODO: rename to CursorDate and Cursor
 		AfterDate: pgtype.Timestamptz{
 			Valid: true,
 			Time:  pgn.CursorDate,
