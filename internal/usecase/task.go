@@ -263,7 +263,7 @@ func (u *TaskUsecase) GetUpcomingTasks(ctx context.Context, userID string, pgn m
 	return taskGroups, nil
 }
 
-func (u *TaskUsecase) GetOverdueTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error) {
+func (u *TaskUsecase) GetOverdueTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.OverdueTaskGroup, error) {
 	const op = "task.usecase.GetOverdueTasks"
 
 	groupsRaw, err := u.storage.GetOverdueTasks(ctx, userID, pgn)
@@ -271,10 +271,10 @@ func (u *TaskUsecase) GetOverdueTasks(ctx context.Context, userID string, pgn mo
 		return nil, err
 	}
 
-	var taskGroups []model.TaskGroup
+	var taskGroups []model.OverdueTaskGroup
 
 	for _, group := range groupsRaw {
-		var taskGroup model.TaskGroup
+		var taskGroup model.OverdueTaskGroup
 
 		var tasks []model.TaskResponseData
 

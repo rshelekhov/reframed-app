@@ -292,7 +292,7 @@ SELECT
             )
     ) AS tasks
 FROM lists l
-    LEFT JOIN (
+   JOIN (
         SELECT
             t.id,
             t.title,
@@ -314,7 +314,7 @@ FROM lists l
                 ON t.id = ttv.task_id
         WHERE t.user_id = $1
           AND t.deadline <= CURRENT_DATE
-          AND (t.deleted_at IS NULL OR l.id > $3::varchar)
+          AND t.deleted_at IS NULL
         GROUP BY
             t.id,
             t.title,
@@ -325,11 +325,13 @@ FROM lists l
             t.end_time,
             t.list_id,
             t.user_id,
+            ttv.tags,
             t.updated_at
         ) t ON l.id = t.list_id
 WHERE l.user_id = $1
-GROUP BY l.id
-ORDER BY l.id
+  AND l.id > $3::varchar
+GROUP BY l.id, l.created_at
+ORDER BY l.created_at
 LIMIT $2
 `
 

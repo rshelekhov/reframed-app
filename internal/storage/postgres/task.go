@@ -58,6 +58,7 @@ func (s *TaskStorage) CreateTask(ctx context.Context, task model.Task) error {
 		ListID:    task.ListID,
 		HeadingID: task.HeadingID,
 		UserID:    task.UserID,
+		CreatedAt: task.CreatedAt,
 		UpdatedAt: task.UpdatedAt,
 	}
 	if task.Description != "" {

@@ -15,7 +15,7 @@ type (
 		GetTasksGroupedByHeading(ctx context.Context, data model.TaskRequestData) ([]model.TaskGroupWithHeading, error)
 		GetTasksForToday(ctx context.Context, userID string) ([]model.TaskGroup, error)
 		GetUpcomingTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.UpcomingTaskGroup, error)
-		GetOverdueTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroup, error)
+		GetOverdueTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.OverdueTaskGroup, error)
 		GetTasksForSomeday(ctx context.Context, userID string, pgn model.Pagination) ([]model.TaskGroupForSomeday, error)
 		GetCompletedTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.CompletedTasksGroup, error)
 		GetArchivedTasks(ctx context.Context, userID string, pgn model.Pagination) ([]model.ArchivedTasksGroup, error)
