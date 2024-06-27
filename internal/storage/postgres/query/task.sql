@@ -70,10 +70,7 @@ FROM tasks t
         ON t.id = ttv.task_id
 WHERE t.user_id = $1
   AND t.deleted_at IS NULL
-  AND (
-      (@cursor::varchar IS NULL AND t.id > @cursor::varchar)
-          OR (@cursor::varchar IS NOT NULL AND t.id > @cursor::varchar)
-      )
+  AND t.id > @cursor::varchar
 GROUP BY
     t.id,
     t.title,
@@ -85,9 +82,10 @@ GROUP BY
     t.status_id,
     t.list_id,
     t.heading_id,
-    t.updated_at,
-    ttv.tags
-ORDER BY t.id
+    ttv.tags,
+    t.created_at,
+    t.updated_at
+ORDER BY t.id, t.created_at
 LIMIT $2;
 
 -- name: GetTasksByListID :many
