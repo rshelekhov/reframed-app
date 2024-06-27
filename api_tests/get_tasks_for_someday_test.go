@@ -163,8 +163,8 @@ func TestGetTasksForSomeday_WithPagination(t *testing.T) {
 	require.Equal(t, limit, totalGroups)
 
 	// Extract the last list_id from the response
-	lastGroup := response.Value("data").Array().Last().Object()
-	lastListID := lastGroup.Value("list_id").String().Raw()
+	lastGroup := response.Value(key.Data).Array().Last().Object()
+	lastListID := lastGroup.Value(key.ListID).String().Raw()
 
 	t.Log("lastListID", lastListID)
 
