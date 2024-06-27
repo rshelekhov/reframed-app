@@ -48,6 +48,133 @@ func TestGetTasksByUserID_HappyPath(t *testing.T) {
 		JSON().Object().NotEmpty()
 }
 
+func TestGetTasksByUserID_WithLimit(t *testing.T) {
+	u := url.URL{
+		Scheme: scheme,
+		Host:   host,
+	}
+	e := httpexpect.Default(t, u.String())
+
+	// Register user
+	r := e.POST("/register").
+		WithJSON(model.UserRequestData{
+			Email:    gofakeit.Email(),
+			Password: randomFakePassword(),
+		}).
+		Expect().
+		Status(http.StatusCreated).
+		JSON().Object()
+
+	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+
+	numberOfLists := 3
+	numberOfTasks := 3
+
+	// Create three lists
+	lists := createLists(e, accessToken, numberOfLists)
+
+	// Create three tasks in each list
+	_ = createTasks(e, accessToken, upcomingTasks, lists, numberOfTasks)
+
+	testCases := []struct {
+		name          string
+		limit         int
+		expectedTasks int
+	}{
+		{
+			name:          "Get tasks for someday with limit = 2",
+			limit:         2,
+			expectedTasks: 2,
+		},
+		{
+			name:          "Get tasks for someday with limit = 0",
+			limit:         0,
+			expectedTasks: numberOfLists * numberOfTasks,
+		},
+		{
+			name:  "Get tasks for someday with limit = -1",
+			limit: -1,
+			// Limit = -1 means no limit, will be used the default value
+			expectedTasks: numberOfLists * numberOfTasks,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Get tasks for someday
+			tasks := e.GET("/user/tasks/").
+				WithHeader("Authorization", "Bearer "+accessToken).
+				WithQuery(key.Limit, tc.limit).
+				Expect().
+				Status(http.StatusOK).
+				JSON().Object()
+
+			totalTasks := countTasks(t, tasks, false)
+			require.Equal(t, tc.expectedTasks, totalTasks)
+		})
+	}
+}
+
+func TestGetTasksByUserID_WithPagination(t *testing.T) {
+	u := url.URL{
+		Scheme: scheme,
+		Host:   host,
+	}
+	e := httpexpect.Default(t, u.String())
+
+	// Register user
+	r := e.POST("/register").
+		WithJSON(model.UserRequestData{
+			Email:    gofakeit.Email(),
+			Password: randomFakePassword(),
+		}).
+		Expect().
+		Status(http.StatusCreated).
+		JSON().Object()
+
+	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+
+	numberOfLists := 3
+	numberOfTasks := 3
+
+	// Create three lists
+	lists := createLists(e, accessToken, numberOfLists)
+
+	// Create three tasks in each list
+	_ = createTasks(e, accessToken, upcomingTasks, lists, numberOfTasks)
+
+	limit := 1
+
+	// First request to get tasks by userID
+	response := e.GET("/user/tasks").
+		WithHeader("Authorization", "Bearer "+accessToken).
+		WithQuery(key.Limit, limit).
+		Expect().
+		Status(http.StatusOK).
+		JSON().Object()
+
+	// Ensure we received tasks
+	totalTasks := countTasks(t, response, false)
+	require.Equal(t, limit, totalTasks)
+
+	// Extract the last task_id from the response
+	lastTask := response.Value(key.Data).Array().Last().Object()
+	lastTaskID := lastTask.Value(key.TaskID).String().Raw()
+
+	// Second request to get tasks for someday with cursor set to last task_id from the first response
+	nextResponse := e.GET("/user/tasks").
+		WithHeader("Authorization", "Bearer "+accessToken).
+		WithQuery(key.Cursor, lastTaskID).
+		Expect().
+		Status(http.StatusOK).
+		JSON().Object()
+
+	// Count the number of tasks in the second response
+	nextTotalTasks := countTasks(t, nextResponse, false)
+	expectedNextTasks := numberOfLists*numberOfTasks - 1 // Skip the last task of the first response
+	require.Equal(t, expectedNextTasks, nextTotalTasks)
+}
+
 func TestGetTasksByUserID_NotFound(t *testing.T) {
 	u := url.URL{
 		Scheme: scheme,
