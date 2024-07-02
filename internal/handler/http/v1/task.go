@@ -9,39 +9,39 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/rshelekhov/reframed/internal/lib/constants/key"
-	"github.com/rshelekhov/reframed/internal/lib/constants/le"
+	"github.com/rshelekhov/reframed/internal/lib/constant/key"
+	"github.com/rshelekhov/reframed/internal/lib/constant/le"
 	"github.com/rshelekhov/reframed/internal/lib/logger"
 	"github.com/rshelekhov/reframed/internal/model"
 	"github.com/rshelekhov/reframed/internal/port"
 )
 
-type taskController struct {
+type taskHandler struct {
 	logger  *slog.Logger
 	jwt     *jwtoken.TokenService
 	usecase port.TaskUsecase
 }
 
-func newTaskController(
+func newTaskHandler(
 	log *slog.Logger,
 	jwt *jwtoken.TokenService,
 	usecase port.TaskUsecase,
-) *taskController {
-	return &taskController{
+) *taskHandler {
+	return &taskHandler{
 		logger:  log,
 		jwt:     jwt,
 		usecase: usecase,
 	}
 }
 
-func (c *taskController) CreateTask() http.HandlerFunc {
+func (h *taskHandler) CreateTask() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "task.controller.CreateTask"
+		const op = "task.handler.CreateTask"
 
 		ctx := r.Context()
-		log := logger.LogWithRequest(c.logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := c.jwt.GetUserID(ctx)
+		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
 			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
@@ -62,7 +62,7 @@ func (c *taskController) CreateTask() http.HandlerFunc {
 		taskInput.ListID = listID
 		taskInput.UserID = userID
 
-		taskResponse, err := c.usecase.CreateTask(ctx, taskInput)
+		taskResponse, err := h.usecase.CreateTask(ctx, taskInput)
 		switch {
 		case errors.Is(err, le.ErrDefaultListNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrDefaultListNotFound)
@@ -76,14 +76,14 @@ func (c *taskController) CreateTask() http.HandlerFunc {
 	}
 }
 
-func (c *taskController) CreateTaskInDefaultList() http.HandlerFunc {
+func (h *taskHandler) CreateTaskInDefaultList() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "task.controller.CreateTask"
+		const op = "task.handler.CreateTask"
 
 		ctx := r.Context()
-		log := logger.LogWithRequest(c.logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := c.jwt.GetUserID(ctx)
+		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
 			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
@@ -99,7 +99,7 @@ func (c *taskController) CreateTaskInDefaultList() http.HandlerFunc {
 
 		taskInput.UserID = userID
 
-		taskResponse, err := c.usecase.CreateTask(ctx, taskInput)
+		taskResponse, err := h.usecase.CreateTask(ctx, taskInput)
 		switch {
 		case errors.Is(err, le.ErrDefaultListNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrDefaultListNotFound)
@@ -113,14 +113,14 @@ func (c *taskController) CreateTaskInDefaultList() http.HandlerFunc {
 	}
 }
 
-func (c *taskController) GetTaskByID() http.HandlerFunc {
+func (h *taskHandler) GetTaskByID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "task.controller.GetTaskByID"
+		const op = "task.handler.GetTaskByID"
 
 		ctx := r.Context()
-		log := logger.LogWithRequest(c.logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := c.jwt.GetUserID(ctx)
+		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
 			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
@@ -136,7 +136,7 @@ func (c *taskController) GetTaskByID() http.HandlerFunc {
 			UserID: userID,
 		}
 
-		taskResp, err := c.usecase.GetTaskByID(ctx, taskInput)
+		taskResp, err := h.usecase.GetTaskByID(ctx, taskInput)
 		switch {
 		case errors.Is(err, le.ErrTaskNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrTaskNotFound)
@@ -148,14 +148,14 @@ func (c *taskController) GetTaskByID() http.HandlerFunc {
 	}
 }
 
-func (c *taskController) GetTasksByUserID() http.HandlerFunc {
+func (h *taskHandler) GetTasksByUserID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "task.controller.GetTasksByUserID"
+		const op = "task.handler.GetTasksByUserID"
 
 		ctx := r.Context()
-		log := logger.LogWithRequest(c.logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := c.jwt.GetUserID(ctx)
+		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
 			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
@@ -169,7 +169,7 @@ func (c *taskController) GetTasksByUserID() http.HandlerFunc {
 			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrInvalidCursor)
 		}
 
-		tasksResp, err := c.usecase.GetTasksByUserID(ctx, userID, pagination)
+		tasksResp, err := h.usecase.GetTasksByUserID(ctx, userID, pagination)
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
 			handleResponseSuccess(w, r, log, "no tasks found", nil)
@@ -181,14 +181,14 @@ func (c *taskController) GetTasksByUserID() http.HandlerFunc {
 	}
 }
 
-func (c *taskController) GetTasksByListID() http.HandlerFunc {
+func (h *taskHandler) GetTasksByListID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "task.controller.GetTasksByListID"
+		const op = "task.handler.GetTasksByListID"
 
 		ctx := r.Context()
-		log := logger.LogWithRequest(c.logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := c.jwt.GetUserID(ctx)
+		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
 			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
@@ -204,7 +204,7 @@ func (c *taskController) GetTasksByListID() http.HandlerFunc {
 			UserID: userID,
 		}
 
-		tasksResp, err := c.usecase.GetTasksByListID(ctx, tasksInput)
+		tasksResp, err := h.usecase.GetTasksByListID(ctx, tasksInput)
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
 			handleResponseSuccess(w, r, log, "no tasks found for the list", nil)
@@ -216,14 +216,14 @@ func (c *taskController) GetTasksByListID() http.HandlerFunc {
 	}
 }
 
-func (c *taskController) GetTasksGroupedByHeadings() http.HandlerFunc {
+func (h *taskHandler) GetTasksGroupedByHeadings() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "task.controller.GetTasksGroupedByHeading"
+		const op = "task.handler.GetTasksGroupedByHeading"
 
 		ctx := r.Context()
-		log := logger.LogWithRequest(c.logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := c.jwt.GetUserID(ctx)
+		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
 			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
@@ -239,7 +239,7 @@ func (c *taskController) GetTasksGroupedByHeadings() http.HandlerFunc {
 			UserID: userID,
 		}
 
-		tasksResp, err := c.usecase.GetTasksGroupedByHeading(ctx, tasksInput)
+		tasksResp, err := h.usecase.GetTasksGroupedByHeading(ctx, tasksInput)
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
 			handleResponseSuccess(w, r, log, "no tasks grouped by headings found", nil)
@@ -251,14 +251,14 @@ func (c *taskController) GetTasksGroupedByHeadings() http.HandlerFunc {
 	}
 }
 
-func (c *taskController) GetTasksForToday() http.HandlerFunc {
+func (h *taskHandler) GetTasksForToday() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "task.controller.GetTasksForToday"
+		const op = "task.handler.GetTasksForToday"
 
 		ctx := r.Context()
-		log := logger.LogWithRequest(c.logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := c.jwt.GetUserID(ctx)
+		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
 			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
@@ -267,7 +267,7 @@ func (c *taskController) GetTasksForToday() http.HandlerFunc {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 		}
 
-		tasksResp, err := c.usecase.GetTasksForToday(ctx, userID)
+		tasksResp, err := h.usecase.GetTasksForToday(ctx, userID)
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
 			handleResponseSuccess(w, r, log, "no tasks found for today", nil)
@@ -279,14 +279,14 @@ func (c *taskController) GetTasksForToday() http.HandlerFunc {
 	}
 }
 
-func (c *taskController) GetUpcomingTasks() http.HandlerFunc {
+func (h *taskHandler) GetUpcomingTasks() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "task.controller.GetUpcomingTasks"
+		const op = "task.handler.GetUpcomingTasks"
 
 		ctx := r.Context()
-		log := logger.LogWithRequest(c.logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := c.jwt.GetUserID(ctx)
+		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
 			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
@@ -300,7 +300,7 @@ func (c *taskController) GetUpcomingTasks() http.HandlerFunc {
 			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrInvalidCursor)
 		}
 
-		tasksResp, err := c.usecase.GetUpcomingTasks(ctx, userID, pagination)
+		tasksResp, err := h.usecase.GetUpcomingTasks(ctx, userID, pagination)
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
 			handleResponseSuccess(w, r, log, "no upcoming tasks found", nil)
@@ -312,14 +312,14 @@ func (c *taskController) GetUpcomingTasks() http.HandlerFunc {
 	}
 }
 
-func (c *taskController) GetOverdueTasks() http.HandlerFunc {
+func (h *taskHandler) GetOverdueTasks() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "task.controller.GetOverdueTasks"
+		const op = "task.handler.GetOverdueTasks"
 
 		ctx := r.Context()
-		log := logger.LogWithRequest(c.logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := c.jwt.GetUserID(ctx)
+		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
 			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
@@ -333,7 +333,7 @@ func (c *taskController) GetOverdueTasks() http.HandlerFunc {
 			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrInvalidCursor)
 		}
 
-		tasksResp, err := c.usecase.GetOverdueTasks(ctx, userID, pagination)
+		tasksResp, err := h.usecase.GetOverdueTasks(ctx, userID, pagination)
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
 			handleResponseSuccess(w, r, log, "no overdue tasks found", nil)
@@ -345,14 +345,14 @@ func (c *taskController) GetOverdueTasks() http.HandlerFunc {
 	}
 }
 
-func (c *taskController) GetTasksForSomeday() http.HandlerFunc {
+func (h *taskHandler) GetTasksForSomeday() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "task.controller.GetTasksForSomeday"
+		const op = "task.handler.GetTasksForSomeday"
 
 		ctx := r.Context()
-		log := logger.LogWithRequest(c.logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := c.jwt.GetUserID(ctx)
+		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
 			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
@@ -366,7 +366,7 @@ func (c *taskController) GetTasksForSomeday() http.HandlerFunc {
 			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrInvalidCursor)
 		}
 
-		tasksResp, err := c.usecase.GetTasksForSomeday(ctx, userID, pagination)
+		tasksResp, err := h.usecase.GetTasksForSomeday(ctx, userID, pagination)
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
 			handleResponseSuccess(w, r, log, "no tasks for someday found", nil)
@@ -378,14 +378,14 @@ func (c *taskController) GetTasksForSomeday() http.HandlerFunc {
 	}
 }
 
-func (c *taskController) GetCompletedTasks() http.HandlerFunc {
+func (h *taskHandler) GetCompletedTasks() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "task.controller.GetCompletedTasks"
+		const op = "task.handler.GetCompletedTasks"
 
 		ctx := r.Context()
-		log := logger.LogWithRequest(c.logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := c.jwt.GetUserID(ctx)
+		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
 			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
@@ -399,7 +399,7 @@ func (c *taskController) GetCompletedTasks() http.HandlerFunc {
 			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrInvalidCursor)
 		}
 
-		tasksResp, err := c.usecase.GetCompletedTasks(ctx, userID, pagination)
+		tasksResp, err := h.usecase.GetCompletedTasks(ctx, userID, pagination)
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
 			handleResponseSuccess(w, r, log, "no completed tasks found", nil)
@@ -411,14 +411,14 @@ func (c *taskController) GetCompletedTasks() http.HandlerFunc {
 	}
 }
 
-func (c *taskController) GetArchivedTasks() http.HandlerFunc {
+func (h *taskHandler) GetArchivedTasks() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "task.controller.GetArchivedTasks"
+		const op = "task.handler.GetArchivedTasks"
 
 		ctx := r.Context()
-		log := logger.LogWithRequest(c.logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := c.jwt.GetUserID(ctx)
+		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
 			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
@@ -432,7 +432,7 @@ func (c *taskController) GetArchivedTasks() http.HandlerFunc {
 			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrInvalidCursor)
 		}
 
-		tasksResp, err := c.usecase.GetArchivedTasks(ctx, userID, pagination)
+		tasksResp, err := h.usecase.GetArchivedTasks(ctx, userID, pagination)
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
 			handleResponseSuccess(w, r, log, "no archived tasks found", nil)
@@ -444,14 +444,14 @@ func (c *taskController) GetArchivedTasks() http.HandlerFunc {
 	}
 }
 
-func (c *taskController) UpdateTask() http.HandlerFunc {
+func (h *taskHandler) UpdateTask() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "task.controller.UpdateTask"
+		const op = "task.handler.UpdateTask"
 
 		ctx := r.Context()
-		log := logger.LogWithRequest(c.logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := c.jwt.GetUserID(ctx)
+		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
 			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
@@ -470,7 +470,7 @@ func (c *taskController) UpdateTask() http.HandlerFunc {
 		taskInput.ID = taskID
 		taskInput.UserID = userID
 
-		taskResponse, err := c.usecase.UpdateTask(ctx, taskInput)
+		taskResponse, err := h.usecase.UpdateTask(ctx, taskInput)
 		switch {
 		case errors.Is(err, le.ErrTaskNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrTaskNotFound)
@@ -482,14 +482,14 @@ func (c *taskController) UpdateTask() http.HandlerFunc {
 	}
 }
 
-func (c *taskController) UpdateTaskTime() http.HandlerFunc {
+func (h *taskHandler) UpdateTaskTime() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "task.controller.UpdateTaskTimes"
+		const op = "task.handler.UpdateTaskTimes"
 
 		ctx := r.Context()
-		log := logger.LogWithRequest(c.logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := c.jwt.GetUserID(ctx)
+		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
 			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
@@ -508,7 +508,7 @@ func (c *taskController) UpdateTaskTime() http.HandlerFunc {
 		taskInput.ID = taskID
 		taskInput.UserID = userID
 
-		taskResponse, err := c.usecase.UpdateTaskTime(ctx, taskInput)
+		taskResponse, err := h.usecase.UpdateTaskTime(ctx, taskInput)
 		switch {
 		case errors.Is(err, le.ErrTaskNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrTaskNotFound)
@@ -522,14 +522,14 @@ func (c *taskController) UpdateTaskTime() http.HandlerFunc {
 	}
 }
 
-func (c *taskController) MoveTaskToAnotherList() http.HandlerFunc {
+func (h *taskHandler) MoveTaskToAnotherList() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "task.controller.MoveTaskToAnotherList"
+		const op = "task.handler.MoveTaskToAnotherList"
 
 		ctx := r.Context()
-		log := logger.LogWithRequest(c.logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := c.jwt.GetUserID(ctx)
+		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
 			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
@@ -551,7 +551,7 @@ func (c *taskController) MoveTaskToAnotherList() http.HandlerFunc {
 			UserID: userID,
 		}
 
-		taskResponse, err := c.usecase.MoveTaskToAnotherList(ctx, taskInput)
+		taskResponse, err := h.usecase.MoveTaskToAnotherList(ctx, taskInput)
 		switch {
 		case errors.Is(err, le.ErrTaskNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrTaskNotFound)
@@ -565,14 +565,14 @@ func (c *taskController) MoveTaskToAnotherList() http.HandlerFunc {
 	}
 }
 
-func (c *taskController) MoveTaskToAnotherHeading() http.HandlerFunc {
+func (h *taskHandler) MoveTaskToAnotherHeading() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "task.controller.MoveTaskToAnotherHeading"
+		const op = "task.handler.MoveTaskToAnotherHeading"
 
 		ctx := r.Context()
-		log := logger.LogWithRequest(c.logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := c.jwt.GetUserID(ctx)
+		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
 			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
@@ -594,7 +594,7 @@ func (c *taskController) MoveTaskToAnotherHeading() http.HandlerFunc {
 			UserID:    userID,
 		}
 
-		taskResponse, err := c.usecase.MoveTaskToAnotherHeading(ctx, taskInput)
+		taskResponse, err := h.usecase.MoveTaskToAnotherHeading(ctx, taskInput)
 		switch {
 		case errors.Is(err, le.ErrTaskNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrTaskNotFound)
@@ -608,14 +608,14 @@ func (c *taskController) MoveTaskToAnotherHeading() http.HandlerFunc {
 	}
 }
 
-func (c *taskController) CompleteTask() http.HandlerFunc {
+func (h *taskHandler) CompleteTask() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "task.controller.CompleteTask"
+		const op = "task.handler.CompleteTask"
 
 		ctx := r.Context()
-		log := logger.LogWithRequest(c.logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := c.jwt.GetUserID(ctx)
+		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
 			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
@@ -631,7 +631,7 @@ func (c *taskController) CompleteTask() http.HandlerFunc {
 			UserID: userID,
 		}
 
-		taskResponse, err := c.usecase.CompleteTask(ctx, taskInput)
+		taskResponse, err := h.usecase.CompleteTask(ctx, taskInput)
 		switch {
 		case errors.Is(err, le.ErrTaskNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrTaskNotFound)
@@ -643,14 +643,14 @@ func (c *taskController) CompleteTask() http.HandlerFunc {
 	}
 }
 
-func (c *taskController) ArchiveTask() http.HandlerFunc {
+func (h *taskHandler) ArchiveTask() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "task.controller.ArchiveTask"
+		const op = "task.handler.ArchiveTask"
 
 		ctx := r.Context()
-		log := logger.LogWithRequest(c.logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := c.jwt.GetUserID(ctx)
+		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
 			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
@@ -666,7 +666,7 @@ func (c *taskController) ArchiveTask() http.HandlerFunc {
 			UserID: userID,
 		}
 
-		taskResponse, err := c.usecase.ArchiveTask(ctx, taskInput)
+		taskResponse, err := h.usecase.ArchiveTask(ctx, taskInput)
 		switch {
 		case errors.Is(err, le.ErrTaskNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrTaskNotFound)

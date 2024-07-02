@@ -26,7 +26,7 @@ const (
 	ErrFailedToLogout             LocalError = "failed to logout"
 
 	// ===========================================================================
-	//   controller errors
+	//   handler errors
 	// ===========================================================================
 
 	ErrEmptyRequestBody         LocalError = "request body is empty"

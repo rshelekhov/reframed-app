@@ -7,38 +7,38 @@ import (
 
 	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
 
-	"github.com/rshelekhov/reframed/internal/lib/constants/key"
-	"github.com/rshelekhov/reframed/internal/lib/constants/le"
+	"github.com/rshelekhov/reframed/internal/lib/constant/key"
+	"github.com/rshelekhov/reframed/internal/lib/constant/le"
 	"github.com/rshelekhov/reframed/internal/lib/logger"
 	"github.com/rshelekhov/reframed/internal/port"
 )
 
-type tagController struct {
+type tagHandler struct {
 	logger  *slog.Logger
 	jwt     *jwtoken.TokenService
 	usecase port.TagUsecase
 }
 
-func newTagController(
+func newTagHandler(
 	log *slog.Logger,
 	jwt *jwtoken.TokenService,
 	usecase port.TagUsecase,
-) *tagController {
-	return &tagController{
+) *tagHandler {
+	return &tagHandler{
 		logger:  log,
 		jwt:     jwt,
 		usecase: usecase,
 	}
 }
 
-func (c *tagController) GetTagsByUserID() http.HandlerFunc {
+func (h *tagHandler) GetTagsByUserID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "tag.controller.GetTagsByUserID"
+		const op = "tag.handler.GetTagsByUserID"
 
 		ctx := r.Context()
-		log := logger.LogWithRequest(c.logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := c.jwt.GetUserID(ctx)
+		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
 			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
@@ -47,7 +47,7 @@ func (c *tagController) GetTagsByUserID() http.HandlerFunc {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 		}
 
-		tagsResp, err := c.usecase.GetTagsByUserID(ctx, userID)
+		tagsResp, err := h.usecase.GetTagsByUserID(ctx, userID)
 
 		switch {
 		case errors.Is(err, le.ErrNoTagsFound):

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/gavv/httpexpect/v2"
-	"github.com/rshelekhov/reframed/internal/lib/constants/key"
+	"github.com/rshelekhov/reframed/internal/lib/constant/key"
 	"github.com/rshelekhov/reframed/internal/model"
 	"math/rand"
 	"net/http"

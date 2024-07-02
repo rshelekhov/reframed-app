@@ -12,12 +12,12 @@ type AppRouter struct {
 	*config.ServerSettings
 	*slog.Logger
 	*jwtoken.TokenService
-	*authController
-	*listController
-	*headingController
-	*taskController
-	*tagController
-	*statusController
+	*authHandler
+	*listHandler
+	*headingHandler
+	*taskHandler
+	*tagHandler
+	*statusHandler
 }
 
 func NewRouter(
@@ -32,15 +32,15 @@ func NewRouter(
 	statusUsecase port.StatusUsecase,
 ) *chi.Mux {
 	ar := &AppRouter{
-		ServerSettings:    cfg,
-		Logger:            log,
-		TokenService:      jwt,
-		authController:    newAuthController(log, jwt, authUsecase),
-		listController:    newListController(log, jwt, listUsecase),
-		headingController: newHeadingController(log, jwt, headingUsecase),
-		taskController:    newTaskController(log, jwt, taskUsecase),
-		tagController:     newTagController(log, jwt, tagUsecase),
-		statusController:  newStatusController(log, jwt, statusUsecase),
+		ServerSettings: cfg,
+		Logger:         log,
+		TokenService:   jwt,
+		authHandler:    newAuthHandler(log, jwt, authUsecase),
+		listHandler:    newListHandler(log, jwt, listUsecase),
+		headingHandler: newHeadingHandler(log, jwt, headingUsecase),
+		taskHandler:    newTaskHandler(log, jwt, taskUsecase),
+		tagHandler:     newTagHandler(log, jwt, tagUsecase),
+		statusHandler:  newStatusHandler(log, jwt, statusUsecase),
 	}
 
 	return ar.initRoutes()

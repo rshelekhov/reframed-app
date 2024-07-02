@@ -9,7 +9,7 @@ import (
 	"fmt"
 	ssogrpc "github.com/rshelekhov/reframed/internal/clients/sso/grpc"
 	"github.com/rshelekhov/reframed/internal/lib/cache"
-	"github.com/rshelekhov/reframed/internal/lib/constants/key"
+	"github.com/rshelekhov/reframed/internal/lib/constant/key"
 	"google.golang.org/grpc/metadata"
 	"math/big"
 	"net/http"

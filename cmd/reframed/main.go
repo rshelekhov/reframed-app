@@ -10,7 +10,7 @@ import (
 	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
 
 	ssogrpc "github.com/rshelekhov/reframed/internal/clients/sso/grpc"
-	v1 "github.com/rshelekhov/reframed/internal/controller/http/v1"
+	v1 "github.com/rshelekhov/reframed/internal/handler/http/v1"
 	"github.com/rshelekhov/reframed/internal/lib/logger"
 	"github.com/rshelekhov/reframed/internal/storage/postgres"
 	"github.com/rshelekhov/reframed/internal/usecase"

@@ -9,39 +9,39 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/rshelekhov/reframed/internal/lib/constants/key"
-	"github.com/rshelekhov/reframed/internal/lib/constants/le"
+	"github.com/rshelekhov/reframed/internal/lib/constant/key"
+	"github.com/rshelekhov/reframed/internal/lib/constant/le"
 	"github.com/rshelekhov/reframed/internal/lib/logger"
 	"github.com/rshelekhov/reframed/internal/model"
 	"github.com/rshelekhov/reframed/internal/port"
 )
 
-type headingController struct {
+type headingHandler struct {
 	logger  *slog.Logger
 	jwt     *jwtoken.TokenService
 	usecase port.HeadingUsecase
 }
 
-func newHeadingController(
+func newHeadingHandler(
 	log *slog.Logger,
 	jwt *jwtoken.TokenService,
 	usecase port.HeadingUsecase,
-) *headingController {
-	return &headingController{
+) *headingHandler {
+	return &headingHandler{
 		logger:  log,
 		jwt:     jwt,
 		usecase: usecase,
 	}
 }
 
-func (c *headingController) CreateHeading() http.HandlerFunc {
+func (h *headingHandler) CreateHeading() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "heading.controller.CreateHeading"
+		const op = "heading.handler.CreateHeading"
 
 		ctx := r.Context()
-		log := logger.LogWithRequest(c.logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := c.jwt.GetUserID(ctx)
+		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
 			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
@@ -60,7 +60,7 @@ func (c *headingController) CreateHeading() http.HandlerFunc {
 		headingInput.ListID = listID
 		headingInput.UserID = userID
 
-		headingResponse, err := c.usecase.CreateHeading(ctx, headingInput)
+		headingResponse, err := h.usecase.CreateHeading(ctx, headingInput)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToCreateHeading, err)
 		}
@@ -70,14 +70,14 @@ func (c *headingController) CreateHeading() http.HandlerFunc {
 	}
 }
 
-func (c *headingController) GetHeadingByID() http.HandlerFunc {
+func (h *headingHandler) GetHeadingByID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "heading.controller.GetHeadingByID"
+		const op = "heading.handler.GetHeadingByID"
 
 		ctx := r.Context()
-		log := logger.LogWithRequest(c.logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := c.jwt.GetUserID(ctx)
+		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
 			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
@@ -93,7 +93,7 @@ func (c *headingController) GetHeadingByID() http.HandlerFunc {
 			UserID: userID,
 		}
 
-		headingResp, err := c.usecase.GetHeadingByID(ctx, headingInput)
+		headingResp, err := h.usecase.GetHeadingByID(ctx, headingInput)
 		switch {
 		case errors.Is(err, le.ErrHeadingNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrHeadingNotFound)
@@ -105,14 +105,14 @@ func (c *headingController) GetHeadingByID() http.HandlerFunc {
 	}
 }
 
-func (c *headingController) GetHeadingsByListID() http.HandlerFunc {
+func (h *headingHandler) GetHeadingsByListID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "heading.controller.GetHeadingsByListID"
+		const op = "heading.handler.GetHeadingsByListID"
 
 		ctx := r.Context()
-		log := logger.LogWithRequest(c.logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := c.jwt.GetUserID(ctx)
+		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
 			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
@@ -128,7 +128,7 @@ func (c *headingController) GetHeadingsByListID() http.HandlerFunc {
 			UserID: userID,
 		}
 
-		headingsResp, err := c.usecase.GetHeadingsByListID(ctx, headingsInput)
+		headingsResp, err := h.usecase.GetHeadingsByListID(ctx, headingsInput)
 		switch {
 		case errors.Is(err, le.ErrNoHeadingsFound):
 			handleResponseSuccess(w, r, log, "no headings found", nil)
@@ -140,14 +140,14 @@ func (c *headingController) GetHeadingsByListID() http.HandlerFunc {
 	}
 }
 
-func (c *headingController) UpdateHeading() http.HandlerFunc {
+func (h *headingHandler) UpdateHeading() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "heading.controller.UpdateHeading"
+		const op = "heading.handler.UpdateHeading"
 
 		ctx := r.Context()
-		log := logger.LogWithRequest(c.logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := c.jwt.GetUserID(ctx)
+		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
 			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
@@ -166,7 +166,7 @@ func (c *headingController) UpdateHeading() http.HandlerFunc {
 		headingInput.ID = headingID
 		headingInput.UserID = userID
 
-		headingResponse, err := c.usecase.UpdateHeading(ctx, headingInput)
+		headingResponse, err := h.usecase.UpdateHeading(ctx, headingInput)
 		switch {
 		case errors.Is(err, le.ErrHeadingNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrHeadingNotFound)
@@ -178,14 +178,14 @@ func (c *headingController) UpdateHeading() http.HandlerFunc {
 	}
 }
 
-func (c *headingController) MoveHeadingToAnotherList() http.HandlerFunc {
+func (h *headingHandler) MoveHeadingToAnotherList() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "heading.controller.MoveTaskToAnotherList"
+		const op = "heading.handler.MoveTaskToAnotherList"
 
 		ctx := r.Context()
-		log := logger.LogWithRequest(c.logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := c.jwt.GetUserID(ctx)
+		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
 			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
@@ -207,7 +207,7 @@ func (c *headingController) MoveHeadingToAnotherList() http.HandlerFunc {
 			UserID: userID,
 		}
 
-		headingResponse, err := c.usecase.MoveHeadingToAnotherList(ctx, headingInput)
+		headingResponse, err := h.usecase.MoveHeadingToAnotherList(ctx, headingInput)
 		switch {
 		case errors.Is(err, le.ErrHeadingNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrHeadingNotFound)
@@ -221,14 +221,14 @@ func (c *headingController) MoveHeadingToAnotherList() http.HandlerFunc {
 	}
 }
 
-func (c *headingController) DeleteHeading() http.HandlerFunc {
+func (h *headingHandler) DeleteHeading() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "heading.controller.DeleteHeading"
+		const op = "heading.handler.DeleteHeading"
 
 		ctx := r.Context()
-		log := logger.LogWithRequest(c.logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := c.jwt.GetUserID(ctx)
+		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
 			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
@@ -244,7 +244,7 @@ func (c *headingController) DeleteHeading() http.HandlerFunc {
 			UserID: userID,
 		}
 
-		err = c.usecase.DeleteHeading(ctx, headingInput)
+		err = h.usecase.DeleteHeading(ctx, headingInput)
 		switch {
 		case errors.Is(err, le.ErrHeadingNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrHeadingNotFound)
