@@ -28,7 +28,7 @@ func (ar *AppRouter) initRoutes() *chi.Mux {
 	// our own middleware to log requests:
 	r.Use(mwlogger.New(ar.Logger))
 
-	// If a panic happens somewhere inside the httpserver (request controller),
+	// If a panic happens somewhere inside the httpserver (request handler),
 	// the application should not crash.
 	r.Use(middleware.Recoverer)
 

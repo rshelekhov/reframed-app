@@ -9,25 +9,25 @@ import (
 
 	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
 
-	"github.com/rshelekhov/reframed/internal/lib/constants/key"
-	"github.com/rshelekhov/reframed/internal/lib/constants/le"
+	"github.com/rshelekhov/reframed/internal/lib/constant/key"
+	"github.com/rshelekhov/reframed/internal/lib/constant/le"
 	"github.com/rshelekhov/reframed/internal/lib/logger"
 	"github.com/rshelekhov/reframed/internal/model"
 	"github.com/rshelekhov/reframed/internal/port"
 )
 
-type authController struct {
+type authHandler struct {
 	logger  *slog.Logger
 	jwt     *jwtoken.TokenService
 	usecase port.AuthUsecase
 }
 
-func newAuthController(
+func newAuthHandler(
 	log *slog.Logger,
 	jwt *jwtoken.TokenService,
 	usecase port.AuthUsecase,
-) *authController {
-	return &authController{
+) *authHandler {
+	return &authHandler{
 		logger:  log,
 		jwt:     jwt,
 		usecase: usecase,
@@ -35,12 +35,12 @@ func newAuthController(
 }
 
 // Register creates a new user
-func (c *authController) Register() http.HandlerFunc {
+func (h *authHandler) Register() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.controller.RegisterNewUser"
+		const op = "user.handler.RegisterNewUser"
 
 		ctx := r.Context()
-		log := logger.LogWithRequest(c.logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
 		userInput := &model.UserRequestData{}
 		if err := decodeAndValidateJSON(w, r, log, userInput); err != nil {
@@ -52,7 +52,7 @@ func (c *authController) Register() http.HandlerFunc {
 			IP:        strings.Split(r.RemoteAddr, ":")[0],
 		}
 
-		tokenData, userID, err := c.usecase.RegisterNewUser(ctx, userInput, userDevice)
+		tokenData, userID, err := h.usecase.RegisterNewUser(ctx, userInput, userDevice)
 		switch {
 		case errors.Is(err, le.ErrUserAlreadyExists):
 			handleResponseError(w, r, log, http.StatusConflict, le.ErrUserAlreadyExists,
@@ -69,12 +69,12 @@ func (c *authController) Register() http.HandlerFunc {
 	}
 }
 
-func (c *authController) LoginWithPassword() http.HandlerFunc {
+func (h *authHandler) LoginWithPassword() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.controller.LoginWithPassword"
+		const op = "user.handler.LoginWithPassword"
 
 		ctx := r.Context()
-		log := logger.LogWithRequest(c.logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
 		userInput := &model.UserRequestData{}
 		if err := decodeAndValidateJSON(w, r, log, userInput); err != nil {
@@ -86,7 +86,7 @@ func (c *authController) LoginWithPassword() http.HandlerFunc {
 			IP:        strings.Split(r.RemoteAddr, ":")[0],
 		}
 
-		tokenData, userID, err := c.usecase.LoginUser(ctx, userInput, userDevice)
+		tokenData, userID, err := h.usecase.LoginUser(ctx, userInput, userDevice)
 		switch {
 		case errors.Is(err, le.ErrUserNotFound):
 			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrUserNotFound,
@@ -109,12 +109,12 @@ func (c *authController) LoginWithPassword() http.HandlerFunc {
 	}
 }
 
-func (c *authController) RefreshJWTokens() http.HandlerFunc {
+func (h *authHandler) RefreshJWTokens() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.controller.RefreshJWTokens"
+		const op = "user.handler.RefreshJWTokens"
 
 		ctx := r.Context()
-		log := logger.LogWithRequest(c.logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
 		refreshToken, err := jwtoken.FindRefreshToken(r)
 		if err != nil {
@@ -127,7 +127,7 @@ func (c *authController) RefreshJWTokens() http.HandlerFunc {
 			IP:        strings.Split(r.RemoteAddr, ":")[0],
 		}
 
-		tokenData, userID, err := c.usecase.Refresh(ctx, refreshToken, userDevice)
+		tokenData, userID, err := h.usecase.Refresh(ctx, refreshToken, userDevice)
 		switch {
 		case err != nil:
 			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrFailedToRefreshTokens,
@@ -144,19 +144,19 @@ func (c *authController) RefreshJWTokens() http.HandlerFunc {
 }
 
 // Logout removes user session
-func (c *authController) Logout() http.HandlerFunc {
+func (h *authHandler) Logout() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.controller.Logout"
+		const op = "user.handler.Logout"
 
 		ctx := r.Context()
-		log := logger.LogWithRequest(c.logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
 		userDevice := model.UserDeviceRequestData{
 			UserAgent: r.UserAgent(),
 			IP:        strings.Split(r.RemoteAddr, ":")[0],
 		}
 
-		err := c.usecase.LogoutUser(ctx, userDevice)
+		err := h.usecase.LogoutUser(ctx, userDevice)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToLogout, err)
 			return
@@ -181,14 +181,14 @@ func (c *authController) Logout() http.HandlerFunc {
 }
 
 // GetUser get a user by ID
-func (c *authController) GetUser() http.HandlerFunc {
+func (h *authHandler) GetUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.controller.GetUserData"
+		const op = "user.handler.GetUserData"
 
 		ctx := r.Context()
-		log := logger.LogWithRequest(c.logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := c.jwt.GetUserID(ctx)
+		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
 			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
@@ -197,7 +197,7 @@ func (c *authController) GetUser() http.HandlerFunc {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 		}
 
-		user, err := c.usecase.GetUserByID(ctx)
+		user, err := h.usecase.GetUserByID(ctx)
 		switch {
 		case errors.Is(err, le.ErrUserNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrUserNotFound, slog.String(key.UserID, userID))
@@ -210,14 +210,14 @@ func (c *authController) GetUser() http.HandlerFunc {
 }
 
 // UpdateUser updates a user by ID
-func (c *authController) UpdateUser() http.HandlerFunc {
+func (h *authHandler) UpdateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.controller.UpdateUser"
+		const op = "user.handler.UpdateUser"
 
 		ctx := r.Context()
-		log := logger.LogWithRequest(c.logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := c.jwt.GetUserID(ctx)
+		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
 			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
@@ -231,7 +231,7 @@ func (c *authController) UpdateUser() http.HandlerFunc {
 			return
 		}
 
-		err = c.usecase.UpdateUser(ctx, userInput)
+		err = h.usecase.UpdateUser(ctx, userInput)
 		switch {
 		case errors.Is(err, le.ErrUserNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrUserNotFound,
@@ -253,14 +253,14 @@ func (c *authController) UpdateUser() http.HandlerFunc {
 }
 
 // DeleteUser deletes a user by ID
-func (c *authController) DeleteUser() http.HandlerFunc {
+func (h *authHandler) DeleteUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.controller.DeleteUser"
+		const op = "user.handler.DeleteUser"
 
 		ctx := r.Context()
-		log := logger.LogWithRequest(c.logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := c.jwt.GetUserID(ctx)
+		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
 			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
@@ -274,7 +274,7 @@ func (c *authController) DeleteUser() http.HandlerFunc {
 			IP:        strings.Split(r.RemoteAddr, ":")[0],
 		}
 
-		err = c.usecase.DeleteUser(ctx, userDevice)
+		err = h.usecase.DeleteUser(ctx, userDevice)
 		switch {
 		case errors.Is(err, le.ErrUserNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrUserNotFound,

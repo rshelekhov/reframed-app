@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator/v10"
-	"github.com/rshelekhov/reframed/internal/lib/constants/le"
+	"github.com/rshelekhov/reframed/internal/lib/constant/le"
 	"github.com/rshelekhov/reframed/internal/model"
 	"log/slog"
 	"net/http"

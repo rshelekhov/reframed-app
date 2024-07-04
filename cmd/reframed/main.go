@@ -10,7 +10,7 @@ import (
 	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
 
 	ssogrpc "github.com/rshelekhov/reframed/internal/clients/sso/grpc"
-	v1 "github.com/rshelekhov/reframed/internal/controller/http/v1"
+	v1 "github.com/rshelekhov/reframed/internal/handler/http/v1"
 	"github.com/rshelekhov/reframed/internal/lib/logger"
 	"github.com/rshelekhov/reframed/internal/storage/postgres"
 	"github.com/rshelekhov/reframed/internal/usecase"
@@ -39,8 +39,7 @@ func main() {
 	)
 
 	// TODO: research where and how to set appID
-	var appID int32
-	appID = 1
+	appID := "test-app-id"
 	tokenAuth := jwtoken.NewService(ssoClient, appID)
 
 	// Storage

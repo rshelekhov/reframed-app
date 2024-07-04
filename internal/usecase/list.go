@@ -2,7 +2,7 @@ package usecase
 
 import (
 	"context"
-	"github.com/rshelekhov/reframed/internal/lib/constants/le"
+	"github.com/rshelekhov/reframed/internal/lib/constant/le"
 	"time"
 
 	"github.com/segmentio/ksuid"

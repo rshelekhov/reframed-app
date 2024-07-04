@@ -3,8 +3,8 @@ package v1
 import (
 	"errors"
 	"github.com/go-chi/chi/v5"
-	"github.com/rshelekhov/reframed/internal/lib/constants/key"
-	"github.com/rshelekhov/reframed/internal/lib/constants/le"
+	"github.com/rshelekhov/reframed/internal/lib/constant/key"
+	"github.com/rshelekhov/reframed/internal/lib/constant/le"
 	"github.com/rshelekhov/reframed/internal/lib/logger"
 	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
 	"github.com/rshelekhov/reframed/internal/port"
@@ -13,32 +13,32 @@ import (
 	"strconv"
 )
 
-type statusController struct {
+type statusHandler struct {
 	logger  *slog.Logger
 	jwt     *jwtoken.TokenService
 	usecase port.StatusUsecase
 }
 
-func newStatusController(
+func newStatusHandler(
 	log *slog.Logger,
 	jwt *jwtoken.TokenService,
 	usecase port.StatusUsecase,
-) *statusController {
-	return &statusController{
+) *statusHandler {
+	return &statusHandler{
 		logger:  log,
 		jwt:     jwt,
 		usecase: usecase,
 	}
 }
 
-func (c *statusController) GetStatuses() http.HandlerFunc {
+func (h *statusHandler) GetStatuses() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "status.controller.GetStatuses"
+		const op = "status.handler.GetStatuses"
 
 		ctx := r.Context()
-		log := logger.LogWithRequest(c.logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
-		statuses, err := c.usecase.GetStatuses(ctx)
+		statuses, err := h.usecase.GetStatuses(ctx)
 
 		switch {
 		case errors.Is(err, le.ErrNoStatusesFound):
@@ -51,12 +51,12 @@ func (c *statusController) GetStatuses() http.HandlerFunc {
 	}
 }
 
-func (c *statusController) GetStatusByID() http.HandlerFunc {
+func (h *statusHandler) GetStatusByID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "status.controller.GetStatusName"
+		const op = "status.handler.GetStatusName"
 
 		ctx := r.Context()
-		log := logger.LogWithRequest(c.logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
 		rawStatusID := chi.URLParam(r, key.StatusID)
 
@@ -68,7 +68,7 @@ func (c *statusController) GetStatusByID() http.HandlerFunc {
 			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrInvalidStatusID)
 		}
 
-		status, err := c.usecase.GetStatusByID(ctx, statusID)
+		status, err := h.usecase.GetStatusByID(ctx, statusID)
 		switch {
 		case errors.Is(err, le.ErrStatusNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrStatusNotFound)

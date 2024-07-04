@@ -9,39 +9,39 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/rshelekhov/reframed/internal/lib/constants/key"
-	"github.com/rshelekhov/reframed/internal/lib/constants/le"
+	"github.com/rshelekhov/reframed/internal/lib/constant/key"
+	"github.com/rshelekhov/reframed/internal/lib/constant/le"
 	"github.com/rshelekhov/reframed/internal/lib/logger"
 	"github.com/rshelekhov/reframed/internal/model"
 	"github.com/rshelekhov/reframed/internal/port"
 )
 
-type listController struct {
+type listHandler struct {
 	logger  *slog.Logger
 	jwt     *jwtoken.TokenService
 	usecase port.ListUsecase
 }
 
-func newListController(
+func newListHandler(
 	log *slog.Logger,
 	jwt *jwtoken.TokenService,
 	usecase port.ListUsecase,
-) *listController {
-	return &listController{
+) *listHandler {
+	return &listHandler{
 		logger:  log,
 		jwt:     jwt,
 		usecase: usecase,
 	}
 }
 
-func (c *listController) CreateList() http.HandlerFunc {
+func (h *listHandler) CreateList() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "list.controller.CreateList"
+		const op = "list.handler.CreateList"
 
 		ctx := r.Context()
-		log := logger.LogWithRequest(c.logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := c.jwt.GetUserID(ctx)
+		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
 			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
@@ -57,7 +57,7 @@ func (c *listController) CreateList() http.HandlerFunc {
 
 		listInput.UserID = userID
 
-		list, err := c.usecase.CreateList(ctx, listInput)
+		list, err := h.usecase.CreateList(ctx, listInput)
 		switch {
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToCreateList, err)
@@ -67,14 +67,14 @@ func (c *listController) CreateList() http.HandlerFunc {
 	}
 }
 
-func (c *listController) GetDefaultList() http.HandlerFunc {
+func (h *listHandler) GetDefaultList() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "list.controller.GetDefaultList"
+		const op = "list.handler.GetDefaultList"
 
 		ctx := r.Context()
-		log := logger.LogWithRequest(c.logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := c.jwt.GetUserID(ctx)
+		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
 			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
@@ -83,7 +83,7 @@ func (c *listController) GetDefaultList() http.HandlerFunc {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 		}
 
-		listID, err := c.usecase.GetDefaultListID(ctx, userID)
+		listID, err := h.usecase.GetDefaultListID(ctx, userID)
 		switch {
 		case errors.Is(err, le.ErrDefaultListNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrDefaultListNotFound)
@@ -96,7 +96,7 @@ func (c *listController) GetDefaultList() http.HandlerFunc {
 			UserID: userID,
 		}
 
-		listResp, err := c.usecase.GetListByID(ctx, listInput)
+		listResp, err := h.usecase.GetListByID(ctx, listInput)
 		switch {
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
@@ -106,14 +106,14 @@ func (c *listController) GetDefaultList() http.HandlerFunc {
 	}
 }
 
-func (c *listController) GetListByID() http.HandlerFunc {
+func (h *listHandler) GetListByID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "list.controller.GetListByID"
+		const op = "list.handler.GetListByID"
 
 		ctx := r.Context()
-		log := logger.LogWithRequest(c.logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := c.jwt.GetUserID(ctx)
+		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
 			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
@@ -129,7 +129,7 @@ func (c *listController) GetListByID() http.HandlerFunc {
 			UserID: userID,
 		}
 
-		listResp, err := c.usecase.GetListByID(ctx, listInput)
+		listResp, err := h.usecase.GetListByID(ctx, listInput)
 
 		switch {
 		case errors.Is(err, le.ErrListNotFound):
@@ -142,14 +142,14 @@ func (c *listController) GetListByID() http.HandlerFunc {
 	}
 }
 
-func (c *listController) GetListsByUserID() http.HandlerFunc {
+func (h *listHandler) GetListsByUserID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "list.controller.GetListsByUserID"
+		const op = "list.handler.GetListsByUserID"
 
 		ctx := r.Context()
-		log := logger.LogWithRequest(c.logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := c.jwt.GetUserID(ctx)
+		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
 			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
@@ -158,7 +158,7 @@ func (c *listController) GetListsByUserID() http.HandlerFunc {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 		}
 
-		listsResp, err := c.usecase.GetListsByUserID(ctx, userID)
+		listsResp, err := h.usecase.GetListsByUserID(ctx, userID)
 
 		switch {
 		case errors.Is(err, le.ErrNoListsFound):
@@ -171,14 +171,14 @@ func (c *listController) GetListsByUserID() http.HandlerFunc {
 	}
 }
 
-func (c *listController) UpdateList() http.HandlerFunc {
+func (h *listHandler) UpdateList() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "list.controller.UpdateList"
+		const op = "list.handler.UpdateList"
 
 		ctx := r.Context()
-		log := logger.LogWithRequest(c.logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := c.jwt.GetUserID(ctx)
+		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
 			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
@@ -197,7 +197,7 @@ func (c *listController) UpdateList() http.HandlerFunc {
 		listInput.ID = listID
 		listInput.UserID = userID
 
-		listResponse, err := c.usecase.UpdateList(ctx, listInput)
+		listResponse, err := h.usecase.UpdateList(ctx, listInput)
 
 		switch {
 		case errors.Is(err, le.ErrListNotFound):
@@ -210,14 +210,14 @@ func (c *listController) UpdateList() http.HandlerFunc {
 	}
 }
 
-func (c *listController) DeleteList() http.HandlerFunc {
+func (h *listHandler) DeleteList() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "list.controller.DeleteList"
+		const op = "list.handler.DeleteList"
 
 		ctx := r.Context()
-		log := logger.LogWithRequest(c.logger, op, r)
+		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := c.jwt.GetUserID(ctx)
+		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
 			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
@@ -233,7 +233,7 @@ func (c *listController) DeleteList() http.HandlerFunc {
 			UserID: userID,
 		}
 
-		err = c.usecase.DeleteList(ctx, listInput)
+		err = h.usecase.DeleteList(ctx, listInput)
 
 		switch {
 		case errors.Is(err, le.ErrListNotFound):

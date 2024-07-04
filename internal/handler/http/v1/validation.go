@@ -3,7 +3,7 @@ package v1
 import (
 	"errors"
 	"github.com/go-playground/validator/v10"
-	"github.com/rshelekhov/reframed/internal/lib/constants/le"
+	"github.com/rshelekhov/reframed/internal/lib/constant/le"
 	"github.com/rshelekhov/reframed/internal/lib/logger"
 	"log/slog"
 	"net/http"
