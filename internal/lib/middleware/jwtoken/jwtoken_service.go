@@ -25,7 +25,7 @@ type TokenService struct {
 	ssoClient *ssogrpc.Client
 	jwksCache *cache.Cache
 	mu        sync.RWMutex
-	AppID     int32
+	AppID     string
 	Cookie    cookie
 	// TODO: add jwt data from env (?)
 }
@@ -37,7 +37,7 @@ type cookie struct {
 	HttpOnly  bool
 }
 
-func NewService(ssoClient *ssogrpc.Client, appID int32) *TokenService {
+func NewService(ssoClient *ssogrpc.Client, appID string) *TokenService {
 	return &TokenService{
 		ssoClient: ssoClient,
 		jwksCache: cache.New(),

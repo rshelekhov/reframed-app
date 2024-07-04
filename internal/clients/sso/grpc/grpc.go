@@ -38,6 +38,8 @@ func New(
 	}
 
 	// TODO: updated to use secure transport
+
+	// TODO: use NewClient instead of DialContext
 	cc, err := grpc.DialContext(ctx, addr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithChainUnaryInterceptor(
