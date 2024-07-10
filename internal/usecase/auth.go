@@ -41,9 +41,7 @@ func (u *AuthUsecase) RegisterNewUser(
 	userID string,
 	err error,
 ) {
-	const op = "usecase.AuthUsecase.RegisterNewUser"
-
-	resp, err := u.ssoClient.Api.Register(ctx, &ssov1.RegisterRequest{
+	resp, err := u.ssoClient.Api.RegisterUser(ctx, &ssov1.RegisterUserRequest{
 		Email:    userData.Email,
 		Password: userData.Password,
 		AppId:    u.jwt.AppID,
