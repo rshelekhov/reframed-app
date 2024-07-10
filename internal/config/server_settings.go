@@ -7,9 +7,16 @@ import (
 type (
 	ServerSettings struct {
 		AppEnv     string           `mapstructure:"APP_ENV"`
+		AppData    AppDataConfig    `mapstructure:",squash"`
 		HTTPServer HTTPServerConfig `mapstructure:",squash"`
 		Postgres   PostgresConfig   `mapstructure:",squash"`
 		Clients    ClientsConfig    `mapstructure:",squash"`
+	}
+
+	AppDataConfig struct {
+		ID     string `mapstructure:"APP_ID"`
+		Name   string `mapstructure:"APP_NAME"`
+		Secret string `mapstructure:"APP_SECRET"`
 	}
 
 	HTTPServerConfig struct {
@@ -37,15 +44,15 @@ type (
 		DialTimeout  time.Duration `mapstructure:"DB_DIAL_TIMEOUT" envDefault:"10s"`
 	}
 
+	ClientsConfig struct {
+		SSO Client `mapstructure:",squash"`
+	}
+
 	Client struct {
 		Address      string        `mapstructure:"SSO_CLIENT_ADDRESS"`
 		Timeout      time.Duration `mapstructure:"SSO_CLIENT_TIMEOUT"`
 		RetriesCount int           `mapstructure:"SSO_CLIENT_RETRIES_COUNT"`
 		// TODO: implement secure transport
 		// Insecure     bool          `mapstructure:"SSO_CLIENT_INSECURE"`
-	}
-
-	ClientsConfig struct {
-		SSO Client `mapstructure:",squash"`
 	}
 )
