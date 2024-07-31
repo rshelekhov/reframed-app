@@ -55,7 +55,7 @@ func main() {
 	statusStorage := postgres.NewStatusStorage(pg)
 
 	// Usecases
-	authUsecase := usecase.NewAuthUsecase(ssoClient, tokenAuth)
+	authUsecase := usecase.NewAuthUsecase(cfg, ssoClient, tokenAuth)
 	headingUsecase := usecase.NewHeadingUsecase(headingStorage)
 	listUsecase := usecase.NewListUsecase(listStorage)
 	tagUsecase := usecase.NewTagUsecase(tagStorage)

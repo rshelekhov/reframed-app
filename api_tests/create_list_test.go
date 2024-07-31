@@ -18,7 +18,7 @@ func TestCreateList_HappyPath(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	r := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -27,7 +27,7 @@ func TestCreateList_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	// Create list
 	e.POST("/user/lists/").
@@ -39,6 +39,8 @@ func TestCreateList_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object().NotEmpty()
 
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }
 
 func TestCreateList_FailCases(t *testing.T) {
@@ -49,7 +51,7 @@ func TestCreateList_FailCases(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	r := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -58,7 +60,7 @@ func TestCreateList_FailCases(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	testCases := []struct {
 		name        string
@@ -91,4 +93,7 @@ func TestCreateList_FailCases(t *testing.T) {
 				Status(tc.status)
 		})
 	}
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }

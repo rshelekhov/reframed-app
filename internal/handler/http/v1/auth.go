@@ -69,6 +69,33 @@ func (h *authHandler) Register() http.HandlerFunc {
 	}
 }
 
+func (h *authHandler) VerifyEmail() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		const op = "user.handler.VerifyEmail"
+
+		ctx := r.Context()
+		log := logger.LogWithRequest(h.logger, op, r)
+
+		verificationToken := r.URL.Query().Get(key.Token)
+		if verificationToken == "" {
+			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmailVerificationTokenNotFoundInQuery)
+			return
+		}
+
+		err := h.usecase.VerifyEmail(ctx, verificationToken)
+		switch {
+		case errors.Is(err, le.ErrEmailVerificationTokenExpiredWithEmailResent):
+			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrEmailVerificationTokenExpiredWithEmailResent)
+		case errors.Is(err, le.ErrEmailVerificationTokenNotFound):
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrEmailVerificationTokenNotFound)
+		case err != nil:
+			handleInternalServerError(w, r, log, le.ErrFailedToVerifyEmail, err)
+		default:
+			handleResponseSuccess(w, r, log, "user verified", nil)
+		}
+	}
+}
+
 func (h *authHandler) LoginWithPassword() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "user.handler.LoginWithPassword"
@@ -131,8 +158,8 @@ func (h *authHandler) RefreshJWTokens() http.HandlerFunc {
 		switch {
 		case err != nil:
 			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrFailedToRefreshTokens,
-				slog.String(key.UserID, userID), // TODO: check if can return userID when error is here
-				slog.String(key.Error, err.Error()))
+				slog.String(key.UserID, userID),
+				slog.Any(key.Error, err))
 		default:
 			log.Info("tokens created",
 				slog.Any(key.UserID, userID),
@@ -269,12 +296,7 @@ func (h *authHandler) DeleteUser() http.HandlerFunc {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 		}
 
-		userDevice := model.UserDeviceRequestData{
-			UserAgent: r.UserAgent(),
-			IP:        strings.Split(r.RemoteAddr, ":")[0],
-		}
-
-		err = h.usecase.DeleteUser(ctx, userDevice)
+		err = h.usecase.DeleteUser(ctx)
 		switch {
 		case errors.Is(err, le.ErrUserNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrUserNotFound,

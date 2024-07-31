@@ -19,26 +19,30 @@ func TestRefreshTokenUsingCookie_HappyPath(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	tokenData := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
 		}).
 		Expect().
-		Status(http.StatusCreated).
-		Cookie(jwtoken.RefreshTokenKey)
+		Status(http.StatusCreated)
+
+	tokenData := user.Cookie(jwtoken.RefreshTokenKey)
 
 	var refreshToken string
 	tokenData.Value().Decode(&refreshToken)
 
 	// Refresh tokens using cookies and check if access token is returned
-	c := e.POST("/refresh-tokens").
+	resp := e.POST("/refresh-tokens").
 		WithCookie(jwtoken.RefreshTokenKey, refreshToken).
 		Expect().
 		Status(http.StatusOK).
 		JSON().Object()
 
-	c.Value(jwtoken.AccessTokenKey).String().NotEmpty()
+	resp.Value(jwtoken.AccessTokenKey).String().NotEmpty()
+
+	// Cleanup storage after testing
+	cleanupAuthService(e, user.JSON().Object())
 }
 
 func TestRefreshTokenUsingHeader_HappyPath(t *testing.T) {
@@ -49,26 +53,30 @@ func TestRefreshTokenUsingHeader_HappyPath(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	tokenData := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
 		}).
 		Expect().
-		Status(http.StatusCreated).
-		Cookie(jwtoken.RefreshTokenKey)
+		Status(http.StatusCreated)
+
+	tokenData := user.Cookie(jwtoken.RefreshTokenKey)
 
 	var refreshToken string
 	tokenData.Value().Decode(&refreshToken)
 
 	// Refresh tokens using HTTP header and check if access token is returned
-	h := e.POST("/refresh-tokens").
+	resp := e.POST("/refresh-tokens").
 		WithHeader(jwtoken.RefreshTokenKey, refreshToken).
 		Expect().
 		Status(http.StatusOK).
 		JSON().Object()
 
-	h.Value(jwtoken.AccessTokenKey).String().NotEmpty()
+	resp.Value(jwtoken.AccessTokenKey).String().NotEmpty()
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user.JSON().Object())
 }
 
 func TestRefreshToken_FailCases(t *testing.T) {
@@ -79,13 +87,14 @@ func TestRefreshToken_FailCases(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
 		}).
 		Expect().
-		Status(http.StatusCreated)
+		Status(http.StatusCreated).
+		JSON().Object()
 
 	testCases := []struct {
 		name         string
@@ -113,4 +122,7 @@ func TestRefreshToken_FailCases(t *testing.T) {
 				Status(tc.status)
 		})
 	}
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }

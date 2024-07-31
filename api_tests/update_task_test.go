@@ -20,7 +20,7 @@ func TestUpdateTask_HappyPath(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	r := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -29,7 +29,7 @@ func TestUpdateTask_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	fakeTask := randomFakeTask(upcomingTasks, "", "")
 
@@ -52,6 +52,9 @@ func TestUpdateTask_HappyPath(t *testing.T) {
 		Expect().
 		Status(http.StatusOK).
 		JSON().Object().NotEmpty()
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }
 
 func TestUpdateTask_NotFound(t *testing.T) {
@@ -62,7 +65,7 @@ func TestUpdateTask_NotFound(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	r := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -71,7 +74,7 @@ func TestUpdateTask_NotFound(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	fakeTask := randomFakeTask(upcomingTasks, "", "")
 
@@ -93,4 +96,7 @@ func TestUpdateTask_NotFound(t *testing.T) {
 		}).
 		Expect().
 		Status(http.StatusNotFound)
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }

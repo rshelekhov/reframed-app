@@ -18,7 +18,7 @@ func TestGetStatuses_HappyPath(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	r := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -27,7 +27,7 @@ func TestGetStatuses_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	// Get statuses
 	e.GET("/statuses").
@@ -35,6 +35,9 @@ func TestGetStatuses_HappyPath(t *testing.T) {
 		Expect().
 		Status(http.StatusOK).
 		JSON().Object().NotEmpty()
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }
 
 func TestGetStatusByID_HappyPath(t *testing.T) {
@@ -45,7 +48,7 @@ func TestGetStatusByID_HappyPath(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	r := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -54,7 +57,7 @@ func TestGetStatusByID_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	// Get status_id
 	e.GET("/statuses/{status_id}", statusID).
@@ -62,6 +65,9 @@ func TestGetStatusByID_HappyPath(t *testing.T) {
 		Expect().
 		Status(http.StatusOK).
 		JSON().Object().NotEmpty()
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }
 
 func TestGetStatusByID_FailCases(t *testing.T) {
@@ -72,7 +78,7 @@ func TestGetStatusByID_FailCases(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	r := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -81,7 +87,7 @@ func TestGetStatusByID_FailCases(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	testCases := []struct {
 		name       string
@@ -108,4 +114,7 @@ func TestGetStatusByID_FailCases(t *testing.T) {
 				Status(tc.httpStatus)
 		})
 	}
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }

@@ -18,7 +18,7 @@ func TestUpdateUser_HappyPath(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	resp := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -27,7 +27,7 @@ func TestUpdateUser_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := resp.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	// Update user
 	e.PATCH("/user/").
@@ -38,6 +38,9 @@ func TestUpdateUser_HappyPath(t *testing.T) {
 		}).
 		Expect().
 		Status(http.StatusOK)
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }
 
 func TestUpdateUser_FailCases(t *testing.T) {
@@ -51,7 +54,7 @@ func TestUpdateUser_FailCases(t *testing.T) {
 	password := randomFakePassword()
 
 	// Register user
-	resp := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    email,
 			Password: password,
@@ -60,7 +63,7 @@ func TestUpdateUser_FailCases(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := resp.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	testCases := []struct {
 		name        string
@@ -106,6 +109,9 @@ func TestUpdateUser_FailCases(t *testing.T) {
 				Status(tc.status)
 		})
 	}
+
+	// Clearing the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }
 
 func TestUpdateUserNotFound(t *testing.T) {
@@ -116,7 +122,7 @@ func TestUpdateUserNotFound(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	resp := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -125,7 +131,7 @@ func TestUpdateUserNotFound(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := resp.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	// Delete user
 	e.DELETE("/user/").
@@ -142,7 +148,6 @@ func TestUpdateUserNotFound(t *testing.T) {
 		}).
 		Expect().
 		Status(http.StatusOK)
-	//	status: http.StatusNotFound,
 }
 
 func TestUpdateUserEmailAlreadyTaken(t *testing.T) {
@@ -155,7 +160,7 @@ func TestUpdateUserEmailAlreadyTaken(t *testing.T) {
 	email := gofakeit.Email()
 
 	// Register first user
-	resp := e.POST("/register").
+	user1 := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -164,16 +169,17 @@ func TestUpdateUserEmailAlreadyTaken(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := resp.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user1.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	// Register second user
-	e.POST("/register").
+	user2 := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    email,
 			Password: randomFakePassword(),
 		}).
 		Expect().
-		Status(http.StatusCreated)
+		Status(http.StatusCreated).
+		JSON().Object()
 
 	// Try to update user
 	e.PATCH("/user/").
@@ -184,4 +190,10 @@ func TestUpdateUserEmailAlreadyTaken(t *testing.T) {
 		}).
 		Expect().
 		Status(http.StatusConflict)
+
+	// Cleanup the SSO gRPC service storage after testing
+	responses := []*httpexpect.Object{user1, user2}
+	for _, resp := range responses {
+		cleanupAuthService(e, resp)
+	}
 }

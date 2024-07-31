@@ -25,6 +25,11 @@ const (
 	ErrFailedGoGetClaimsFromToken LocalError = "failed to get claims from token"
 	ErrFailedToLogout             LocalError = "failed to logout"
 
+	ErrEmailVerificationTokenExpiredWithEmailResent LocalError = "verification token expired, a new email with a new token has been sent to the user"
+	ErrEmailVerificationTokenNotFound               LocalError = "email verification token not found"
+	ErrEmailVerificationTokenNotFoundInQuery        LocalError = "email verification token not found in query"
+	ErrFailedToVerifyEmail                          LocalError = "failed to verify email"
+
 	// ===========================================================================
 	//   handler errors
 	// ===========================================================================

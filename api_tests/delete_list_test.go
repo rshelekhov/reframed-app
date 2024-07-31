@@ -19,7 +19,7 @@ func TestDeleteList_HappyPath(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	r := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -28,10 +28,10 @@ func TestDeleteList_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	// Create list
-	l := e.POST("/user/lists/").
+	list := e.POST("/user/lists/").
 		WithHeader("Authorization", "Bearer "+accessToken).
 		WithJSON(model.ListRequestData{
 			Title: gofakeit.Word(),
@@ -40,13 +40,16 @@ func TestDeleteList_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	listID := l.Value(key.Data).Object().Value(key.ListID).String().Raw()
+	listID := list.Value(key.Data).Object().Value(key.ListID).String().Raw()
 
 	// Delete list
 	e.DELETE("/user/lists/{list_id}", listID).
 		WithHeader("Authorization", "Bearer "+accessToken).
 		Expect().
 		Status(http.StatusOK)
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }
 
 func TestDeleteDefaultList_BadRequest(t *testing.T) {
@@ -57,7 +60,7 @@ func TestDeleteDefaultList_BadRequest(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	r := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -66,16 +69,16 @@ func TestDeleteDefaultList_BadRequest(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	// Get default list
-	l := e.GET("/user/lists/default").
+	list := e.GET("/user/lists/default").
 		WithHeader("Authorization", "Bearer "+accessToken).
 		Expect().
 		Status(http.StatusOK).
 		JSON().Object()
 
-	defaultListID := l.Value(key.Data).Object().Value(key.ListID).String().Raw()
+	defaultListID := list.Value(key.Data).Object().Value(key.ListID).String().Raw()
 
 	// Remove default list
 	e.DELETE("/user/lists/{list_id}", defaultListID).
@@ -83,4 +86,6 @@ func TestDeleteDefaultList_BadRequest(t *testing.T) {
 		Expect().
 		Status(http.StatusBadRequest)
 
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }
