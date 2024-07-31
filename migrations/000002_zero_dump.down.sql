@@ -1,1 +1,1 @@
-DELETE FROM statuses;
+DELETE FROM statuses CASCADE;
