@@ -20,7 +20,7 @@ func TestMoveTaskToAnotherList_HappyPath(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	r := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -29,7 +29,7 @@ func TestMoveTaskToAnotherList_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	fakeTask := randomFakeTask(upcomingTasks, "", "")
 
@@ -68,6 +68,9 @@ func TestMoveTaskToAnotherList_HappyPath(t *testing.T) {
 	if movedTaskListID != listID {
 		t.Errorf("expected moved task list ID to be %s, but got %s", listID, movedTaskListID)
 	}
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }
 
 func TestMoveTaskToAnotherList_FailCases(t *testing.T) {
@@ -78,7 +81,7 @@ func TestMoveTaskToAnotherList_FailCases(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	r := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -87,7 +90,7 @@ func TestMoveTaskToAnotherList_FailCases(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	fakeTask := randomFakeTask(upcomingTasks, "", "")
 
@@ -148,6 +151,9 @@ func TestMoveTaskToAnotherList_FailCases(t *testing.T) {
 				Status(tc.status)
 		})
 	}
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }
 
 func TestMoveTaskToAnotherHeading_HappyPath(t *testing.T) {
@@ -158,7 +164,7 @@ func TestMoveTaskToAnotherHeading_HappyPath(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	r := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -167,7 +173,7 @@ func TestMoveTaskToAnotherHeading_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	fakeTask := randomFakeTask(upcomingTasks, "", "")
 
@@ -219,6 +225,9 @@ func TestMoveTaskToAnotherHeading_HappyPath(t *testing.T) {
 	if movedTaskHeadingID != headingID {
 		t.Errorf("expected moved task heading ID to be %s, but got %s", headingID, movedTaskHeadingID)
 	}
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }
 
 func TestMoveTaskToAnotherHeading_FailCases(t *testing.T) {
@@ -229,7 +238,7 @@ func TestMoveTaskToAnotherHeading_FailCases(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	r := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -238,7 +247,7 @@ func TestMoveTaskToAnotherHeading_FailCases(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	fakeTask := randomFakeTask(upcomingTasks, "", "")
 
@@ -316,4 +325,7 @@ func TestMoveTaskToAnotherHeading_FailCases(t *testing.T) {
 				Status(tc.status)
 		})
 	}
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }

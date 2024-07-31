@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/golang-jwt/jwt/v5"
 	ssogrpc "github.com/rshelekhov/reframed/internal/clients/sso/grpc"
+	"github.com/rshelekhov/reframed/internal/config"
 	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
 	ssov1 "github.com/rshelekhov/sso-protos/gen/go/sso"
 	"google.golang.org/grpc/codes"
@@ -16,6 +17,7 @@ import (
 )
 
 type AuthUsecase struct {
+	cfg            *config.ServerSettings
 	ssoClient      *ssogrpc.Client
 	jwt            *jwtoken.TokenService
 	ListUsecase    port.ListUsecase
@@ -23,10 +25,12 @@ type AuthUsecase struct {
 }
 
 func NewAuthUsecase(
+	cfg *config.ServerSettings,
 	ssoClient *ssogrpc.Client,
 	jwt *jwtoken.TokenService,
 ) *AuthUsecase {
 	return &AuthUsecase{
+		cfg:       cfg,
 		ssoClient: ssoClient,
 		jwt:       jwt,
 	}
@@ -41,10 +45,13 @@ func (u *AuthUsecase) RegisterNewUser(
 	userID string,
 	err error,
 ) {
+	verificationURL := u.cfg.AppData.BaseURL + "/verify-email/?token="
+
 	resp, err := u.ssoClient.Api.RegisterUser(ctx, &ssov1.RegisterUserRequest{
-		Email:    userData.Email,
-		Password: userData.Password,
-		AppId:    u.jwt.AppID,
+		Email:           userData.Email,
+		Password:        userData.Password,
+		AppId:           u.jwt.AppID,
+		VerificationURL: verificationURL,
 		UserDeviceData: &ssov1.UserDeviceData{
 			UserAgent: userDevice.UserAgent,
 			Ip:        userDevice.IP,
@@ -88,6 +95,27 @@ func (u *AuthUsecase) RegisterNewUser(
 	}
 
 	return tokenData, userID, nil
+}
+
+func (u *AuthUsecase) VerifyEmail(ctx context.Context, verificationToken string) error {
+	_, err := u.ssoClient.Api.VerifyEmail(ctx, &ssov1.VerifyEmailRequest{
+		VerificationToken: verificationToken,
+	})
+	if err != nil {
+		st, ok := status.FromError(err)
+		if !ok {
+			return err
+		}
+		switch st.Code() {
+		case codes.FailedPrecondition:
+			return le.ErrEmailVerificationTokenExpiredWithEmailResent
+		case codes.NotFound:
+			return le.ErrEmailVerificationTokenNotFound
+		default:
+			return err
+		}
+	}
+	return nil
 }
 
 func (u *AuthUsecase) LoginUser(
@@ -268,7 +296,7 @@ func (u *AuthUsecase) UpdateUser(ctx context.Context, data *model.UserRequestDat
 	return nil
 }
 
-func (u *AuthUsecase) DeleteUser(ctx context.Context, data model.UserDeviceRequestData) error {
+func (u *AuthUsecase) DeleteUser(ctx context.Context) error {
 	ctx, err := jwtoken.AddAccessTokenToMetadata(ctx)
 	if err != nil {
 		return err
@@ -276,13 +304,11 @@ func (u *AuthUsecase) DeleteUser(ctx context.Context, data model.UserDeviceReque
 
 	if _, err = u.ssoClient.Api.DeleteUser(ctx, &ssov1.DeleteUserRequest{
 		AppId: u.jwt.AppID,
-		UserDeviceData: &ssov1.UserDeviceData{
-			UserAgent: data.UserAgent,
-			Ip:        data.IP,
-		},
 	}); err != nil {
 		return err
 	}
+
+	// TODO: get userID, then delete tasks, lists and tags for the user
 
 	return nil
 }

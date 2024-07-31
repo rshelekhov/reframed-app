@@ -19,7 +19,7 @@ func TestGetUpcomingTasks_HappyPath(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	r := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -28,7 +28,7 @@ func TestGetUpcomingTasks_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	numberOfLists := 3
 	numberOfTasks := 3
@@ -49,6 +49,9 @@ func TestGetUpcomingTasks_HappyPath(t *testing.T) {
 	totalTasksInList := countTasksInGroups(t, tasks, false)
 
 	require.Equal(t, numberOfLists*numberOfTasks, totalTasksInList)
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }
 
 func TestGetUpcomingTasks_NotFound(t *testing.T) {
@@ -59,7 +62,7 @@ func TestGetUpcomingTasks_NotFound(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	r := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -68,7 +71,7 @@ func TestGetUpcomingTasks_NotFound(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	// Get upcoming tasks
 	tasks := e.GET("/user/tasks/upcoming").
@@ -78,4 +81,7 @@ func TestGetUpcomingTasks_NotFound(t *testing.T) {
 		JSON().Object()
 
 	printDataToJSON(t, tasks)
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }

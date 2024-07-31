@@ -6,6 +6,7 @@ import (
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/gavv/httpexpect/v2"
 	"github.com/rshelekhov/reframed/internal/lib/constant/key"
+	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
 	"github.com/rshelekhov/reframed/internal/model"
 	"math/rand"
 	"net/http"
@@ -93,9 +94,9 @@ func randomDays() time.Duration {
 }
 
 func randomTimeDuration() time.Duration {
-	min := rand.Intn(3600)
-	max := rand.Intn(3600) + 3600
-	return time.Duration(rand.Int63n(int64(max-min))+int64(min)) * time.Second
+	minValue := rand.Intn(3600)
+	maxValue := rand.Intn(3600) + 3600
+	return time.Duration(rand.Int63n(int64(maxValue-minValue))+int64(minValue)) * time.Second
 }
 
 func randomTimeInterval() (string, string) {
@@ -277,4 +278,13 @@ func countTasksInGroups(t *testing.T, response *httpexpect.Object, printDetails 
 	}
 
 	return totalTasks
+}
+
+// Clearing the SSO gRPC service storage after testing to avoid data collision
+func cleanupAuthService(e *httpexpect.Expect, o *httpexpect.Object) {
+	accessToken := o.Value(jwtoken.AccessTokenKey).String().Raw()
+	e.DELETE("/user/").
+		WithHeader("Authorization", "Bearer "+accessToken).
+		Expect().
+		Status(http.StatusOK)
 }

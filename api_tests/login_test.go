@@ -22,16 +22,17 @@ func TestLogin_HappyPath(t *testing.T) {
 	password := randomFakePassword()
 
 	// Register user
-	e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    email,
 			Password: password,
 		}).
 		Expect().
-		Status(http.StatusCreated)
+		Status(http.StatusCreated).
+		JSON().Object()
 
 	// Login user and check if access token is returned
-	at := e.POST("/login").
+	respLogin := e.POST("/login").
 		WithJSON(model.UserRequestData{
 			Email:    email,
 			Password: password,
@@ -40,10 +41,10 @@ func TestLogin_HappyPath(t *testing.T) {
 		Status(http.StatusOK).
 		JSON().Object()
 
-	at.Value(jwtoken.AccessTokenKey).String().NotEmpty()
+	respLogin.Value(jwtoken.AccessTokenKey).String().NotEmpty()
 
 	// Login user and check cookies
-	c := e.POST("/login").
+	cookie := e.POST("/login").
 		WithJSON(model.UserRequestData{
 			Email:    email,
 			Password: password,
@@ -52,10 +53,13 @@ func TestLogin_HappyPath(t *testing.T) {
 		Status(http.StatusOK).
 		Cookie(jwtoken.RefreshTokenKey)
 
-	c.Value().NotEmpty()
-	c.Domain().IsEqual(cookieDomain)
-	c.Path().IsEqual(cookiePath)
-	c.Expires().InRange(time.Now(), time.Now().Add(time.Hour*720))
+	cookie.Value().NotEmpty()
+	cookie.Domain().IsEqual(cookieDomain)
+	cookie.Path().IsEqual(cookiePath)
+	cookie.Expires().InRange(time.Now(), time.Now().Add(time.Hour*720))
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }
 
 func TestLogin_FailCases(t *testing.T) {
@@ -69,13 +73,14 @@ func TestLogin_FailCases(t *testing.T) {
 	password := randomFakePassword()
 
 	// Register user
-	e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    email,
 			Password: password,
 		}).
 		Expect().
-		Status(http.StatusCreated)
+		Status(http.StatusCreated).
+		JSON().Object()
 
 	testCases := []struct {
 		name     string
@@ -127,6 +132,9 @@ func TestLogin_FailCases(t *testing.T) {
 				Status(tc.status)
 		})
 	}
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }
 
 func TestLoginUserNotFound(t *testing.T) {
@@ -140,7 +148,7 @@ func TestLoginUserNotFound(t *testing.T) {
 	password := randomFakePassword()
 
 	// Register user
-	resp := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    email,
 			Password: password,
@@ -149,7 +157,7 @@ func TestLoginUserNotFound(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := resp.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	// Delete user
 	e.DELETE("/user/").

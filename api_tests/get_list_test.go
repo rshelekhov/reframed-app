@@ -19,7 +19,7 @@ func TestGetDefaultList_HappyPath(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	r := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -28,7 +28,7 @@ func TestGetDefaultList_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	// Get default list
 	e.GET("/user/lists/default").
@@ -36,6 +36,9 @@ func TestGetDefaultList_HappyPath(t *testing.T) {
 		Expect().
 		Status(http.StatusOK).
 		JSON().Object().NotEmpty()
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }
 
 func TestGetListByID_HappyPath(t *testing.T) {
@@ -46,7 +49,7 @@ func TestGetListByID_HappyPath(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	r := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -55,10 +58,10 @@ func TestGetListByID_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	// Create list
-	l := e.POST("/user/lists/").
+	list := e.POST("/user/lists/").
 		WithHeader("Authorization", "Bearer "+accessToken).
 		WithJSON(model.ListRequestData{
 			Title: gofakeit.Word(),
@@ -67,7 +70,7 @@ func TestGetListByID_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	listID := l.Value(key.Data).Object().Value(key.ListID).String().Raw()
+	listID := list.Value(key.Data).Object().Value(key.ListID).String().Raw()
 
 	// Get list by ID
 	e.GET("/user/lists/{list_id}", listID).
@@ -75,6 +78,9 @@ func TestGetListByID_HappyPath(t *testing.T) {
 		Expect().
 		Status(http.StatusOK).
 		JSON().Object().NotEmpty()
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }
 
 func TestGetListByID_NotFound(t *testing.T) {
@@ -85,7 +91,7 @@ func TestGetListByID_NotFound(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	r := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -94,10 +100,10 @@ func TestGetListByID_NotFound(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	// Create list
-	l := e.POST("/user/lists/").
+	list := e.POST("/user/lists/").
 		WithHeader("Authorization", "Bearer "+accessToken).
 		WithJSON(model.ListRequestData{
 			Title: gofakeit.Word(),
@@ -106,7 +112,7 @@ func TestGetListByID_NotFound(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	listID := l.Value(key.Data).Object().Value(key.ListID).String().Raw()
+	listID := list.Value(key.Data).Object().Value(key.ListID).String().Raw()
 
 	// Delete list
 	e.DELETE("/user/lists/{list_id}", listID).
@@ -119,6 +125,9 @@ func TestGetListByID_NotFound(t *testing.T) {
 		WithHeader("Authorization", "Bearer "+accessToken).
 		Expect().
 		Status(http.StatusNotFound)
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }
 
 func TestGetListsByUserID_HappyPath(t *testing.T) {
@@ -129,7 +138,7 @@ func TestGetListsByUserID_HappyPath(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	r := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -138,7 +147,7 @@ func TestGetListsByUserID_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	// Create lists
 	for i := 0; i < 5; i++ {
@@ -158,4 +167,7 @@ func TestGetListsByUserID_HappyPath(t *testing.T) {
 		Expect().
 		Status(http.StatusOK).
 		JSON().Object().NotEmpty()
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }
