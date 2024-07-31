@@ -19,7 +19,7 @@ func TestCreateTaskInDefaultList_HappyPath(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	r := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -28,7 +28,7 @@ func TestCreateTaskInDefaultList_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	fakeTask := randomFakeTask(upcomingTasks, "", "")
 
@@ -39,6 +39,9 @@ func TestCreateTaskInDefaultList_HappyPath(t *testing.T) {
 		Expect().
 		Status(http.StatusCreated).
 		JSON().Object().NotEmpty()
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }
 
 func TestCreateTaskOnSpecificList_HappyPath(t *testing.T) {
@@ -49,7 +52,7 @@ func TestCreateTaskOnSpecificList_HappyPath(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	r := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -58,9 +61,10 @@ func TestCreateTaskOnSpecificList_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
-	l := e.POST("/user/lists/").
+	// Create list
+	list := e.POST("/user/lists/").
 		WithHeader("Authorization", "Bearer "+accessToken).
 		WithJSON(model.ListRequestData{
 			Title: gofakeit.Word(),
@@ -69,7 +73,7 @@ func TestCreateTaskOnSpecificList_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	listID := l.Value(key.Data).Object().Value(key.ListID).String().Raw()
+	listID := list.Value(key.Data).Object().Value(key.ListID).String().Raw()
 
 	fakeTask := randomFakeTask(upcomingTasks, "", "")
 
@@ -94,6 +98,9 @@ func TestCreateTaskOnSpecificList_HappyPath(t *testing.T) {
 	if taskList != listID {
 		t.Errorf("expected task list to be %s, but got %s", listID, taskList)
 	}
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }
 
 func TestCreateTaskOnSpecificHeading_HappyPath(t *testing.T) {
@@ -104,7 +111,7 @@ func TestCreateTaskOnSpecificHeading_HappyPath(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	r := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -113,10 +120,10 @@ func TestCreateTaskOnSpecificHeading_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	// Create list
-	l := e.POST("/user/lists/").
+	list := e.POST("/user/lists/").
 		WithHeader("Authorization", "Bearer "+accessToken).
 		WithJSON(model.ListRequestData{
 			Title: gofakeit.Word(),
@@ -125,10 +132,10 @@ func TestCreateTaskOnSpecificHeading_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	listID := l.Value(key.Data).Object().Value(key.ListID).String().Raw()
+	listID := list.Value(key.Data).Object().Value(key.ListID).String().Raw()
 
 	// Create heading
-	h := e.POST("/user/lists/{list_id}/headings/", listID).
+	heading := e.POST("/user/lists/{list_id}/headings/", listID).
 		WithHeader("Authorization", "Bearer "+accessToken).
 		WithJSON(model.HeadingRequestData{
 			Title:  gofakeit.Word(),
@@ -138,7 +145,7 @@ func TestCreateTaskOnSpecificHeading_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	headingID := h.Value(key.Data).Object().Value(key.HeadingID).String().Raw()
+	headingID := heading.Value(key.Data).Object().Value(key.HeadingID).String().Raw()
 
 	fakeTask := randomFakeTask(upcomingTasks, "", "")
 
@@ -155,4 +162,7 @@ func TestCreateTaskOnSpecificHeading_HappyPath(t *testing.T) {
 	if taskHeadingID != headingID {
 		t.Errorf("expected task heading to be %s, but got %s", headingID, taskHeadingID)
 	}
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }

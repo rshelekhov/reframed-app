@@ -19,7 +19,7 @@ func TestCreateHeading_HappyPath(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	r := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -28,10 +28,10 @@ func TestCreateHeading_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	// Create list
-	l := e.POST("/user/lists/").
+	list := e.POST("/user/lists/").
 		WithHeader("Authorization", "Bearer "+accessToken).
 		WithJSON(model.ListRequestData{
 			Title: gofakeit.Word(),
@@ -40,7 +40,7 @@ func TestCreateHeading_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	listID := l.Value(key.Data).Object().Value(key.ListID).String().Raw()
+	listID := list.Value(key.Data).Object().Value(key.ListID).String().Raw()
 
 	// Create heading
 	e.POST("/user/lists/{list_id}/headings/", listID).
@@ -52,6 +52,9 @@ func TestCreateHeading_HappyPath(t *testing.T) {
 		Expect().
 		Status(http.StatusCreated).
 		JSON().Object().NotEmpty()
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }
 
 func TestCreateHeading_FailCases(t *testing.T) {
@@ -62,7 +65,7 @@ func TestCreateHeading_FailCases(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	r := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -71,7 +74,7 @@ func TestCreateHeading_FailCases(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	testCases := []struct {
 		name        string
@@ -96,7 +99,7 @@ func TestCreateHeading_FailCases(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Create list
-			c := e.POST("/user/lists/").
+			list := e.POST("/user/lists/").
 				WithHeader("Authorization", "Bearer "+accessToken).
 				WithJSON(model.ListRequestData{
 					Title: gofakeit.Word(),
@@ -105,7 +108,7 @@ func TestCreateHeading_FailCases(t *testing.T) {
 				Status(http.StatusCreated).
 				JSON().Object()
 
-			listID := c.Value(key.Data).Object().Value(key.ListID).String().Raw()
+			listID := list.Value(key.Data).Object().Value(key.ListID).String().Raw()
 
 			// Create heading
 			e.POST("/user/lists/{list_id}/headings/", listID).
@@ -118,4 +121,7 @@ func TestCreateHeading_FailCases(t *testing.T) {
 				Status(tc.status)
 		})
 	}
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }

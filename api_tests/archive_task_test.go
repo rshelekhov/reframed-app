@@ -20,7 +20,7 @@ func TestArchiveTask_HappyPath(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	r := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -29,7 +29,7 @@ func TestArchiveTask_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	fakeTask := randomFakeTask(upcomingTasks, "", "")
 
@@ -64,6 +64,9 @@ func TestArchiveTask_HappyPath(t *testing.T) {
 	if taskStatusTitle != model.StatusArchived.String() {
 		t.Errorf("expected task status to be %s, but got %s", model.StatusArchived.String(), taskStatusTitle)
 	}
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }
 
 func TestArchiveTask_NotFound(t *testing.T) {
@@ -74,7 +77,7 @@ func TestArchiveTask_NotFound(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	r := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -83,7 +86,7 @@ func TestArchiveTask_NotFound(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	taskID := ksuid.New().String()
 
@@ -91,4 +94,7 @@ func TestArchiveTask_NotFound(t *testing.T) {
 		WithHeader("Authorization", "Bearer "+accessToken).
 		Expect().
 		Status(http.StatusNotFound)
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }

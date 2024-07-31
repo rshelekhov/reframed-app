@@ -18,8 +18,8 @@ func TestRegisterNewUser_HappyPath(t *testing.T) {
 	}
 	e := httpexpect.Default(t, u.String())
 
-	// Check if access token is returned
-	at := e.POST("/register").
+	// Register user
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -28,10 +28,11 @@ func TestRegisterNewUser_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	at.Value(jwtoken.AccessTokenKey).String().NotEmpty()
+	// Check if access token is returned
+	user.Value(jwtoken.AccessTokenKey).String().NotEmpty()
 
 	// Check cookies
-	c := e.POST("/register").
+	cookie := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -40,10 +41,13 @@ func TestRegisterNewUser_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		Cookie(jwtoken.RefreshTokenKey)
 
-	c.Value().NotEmpty()
-	c.Domain().IsEqual(cookieDomain)
-	c.Path().IsEqual(cookiePath)
-	c.Expires().InRange(time.Now(), time.Now().Add(time.Hour*720))
+	cookie.Value().NotEmpty()
+	cookie.Domain().IsEqual(cookieDomain)
+	cookie.Path().IsEqual(cookiePath)
+	cookie.Expires().InRange(time.Now(), time.Now().Add(time.Hour*720))
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }
 
 func TestRegisterNewUser_FailCases(t *testing.T) {

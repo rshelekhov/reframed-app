@@ -20,7 +20,7 @@ func TestGetCompletedTasks_HappyPath(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	r := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -29,7 +29,7 @@ func TestGetCompletedTasks_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	numberOfLists := 3
 	numberOfTasks := 3
@@ -61,6 +61,9 @@ func TestGetCompletedTasks_HappyPath(t *testing.T) {
 	totalCompletedTasks := countTasksInGroups(t, completedTasks, false)
 
 	require.Equal(t, numberOfTasks*numberOfLists, totalCompletedTasks)
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }
 
 func TestGetCompletedTasks_NotFound(t *testing.T) {
@@ -71,7 +74,7 @@ func TestGetCompletedTasks_NotFound(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	r := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -80,7 +83,7 @@ func TestGetCompletedTasks_NotFound(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	// Get completed tasks
 	completedTasks := e.GET("/user/tasks/completed").
@@ -90,4 +93,7 @@ func TestGetCompletedTasks_NotFound(t *testing.T) {
 		JSON().Object()
 
 	printDataToJSON(t, completedTasks)
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }

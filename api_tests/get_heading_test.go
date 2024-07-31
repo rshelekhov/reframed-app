@@ -19,7 +19,7 @@ func TestGetHeadingByID_HappyPath(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	r := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -28,10 +28,10 @@ func TestGetHeadingByID_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	// Create list
-	l := e.POST("/user/lists/").
+	list := e.POST("/user/lists/").
 		WithHeader("Authorization", "Bearer "+accessToken).
 		WithJSON(model.ListRequestData{
 			Title: gofakeit.Word(),
@@ -40,10 +40,10 @@ func TestGetHeadingByID_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	listID := l.Value(key.Data).Object().Value(key.ListID).String().Raw()
+	listID := list.Value(key.Data).Object().Value(key.ListID).String().Raw()
 
 	// Create heading
-	h := e.POST("/user/lists/{list_id}/headings/", listID).
+	heading := e.POST("/user/lists/{list_id}/headings/", listID).
 		WithHeader("Authorization", "Bearer "+accessToken).
 		WithJSON(model.HeadingRequestData{
 			Title:  gofakeit.Word(),
@@ -53,7 +53,7 @@ func TestGetHeadingByID_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	headingID := h.Value(key.Data).Object().Value(key.HeadingID).String().Raw()
+	headingID := heading.Value(key.Data).Object().Value(key.HeadingID).String().Raw()
 
 	// Get heading
 	e.GET("/user/lists/{list_id}/headings/{heading_id}", listID, headingID).
@@ -61,6 +61,9 @@ func TestGetHeadingByID_HappyPath(t *testing.T) {
 		Expect().
 		Status(http.StatusOK).
 		JSON().Object().NotEmpty()
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }
 
 func TestGetHeadingByID_NotFound(t *testing.T) {
@@ -71,7 +74,7 @@ func TestGetHeadingByID_NotFound(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	r := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -80,10 +83,10 @@ func TestGetHeadingByID_NotFound(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	// Create list
-	l := e.POST("/user/lists/").
+	list := e.POST("/user/lists/").
 		WithHeader("Authorization", "Bearer "+accessToken).
 		WithJSON(model.ListRequestData{
 			Title: gofakeit.Word(),
@@ -92,10 +95,10 @@ func TestGetHeadingByID_NotFound(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	listID := l.Value(key.Data).Object().Value(key.ListID).String().Raw()
+	listID := list.Value(key.Data).Object().Value(key.ListID).String().Raw()
 
 	// Create heading
-	h := e.POST("/user/lists/{list_id}/headings/", listID).
+	heading := e.POST("/user/lists/{list_id}/headings/", listID).
 		WithHeader("Authorization", "Bearer "+accessToken).
 		WithJSON(model.HeadingRequestData{
 			Title:  gofakeit.Word(),
@@ -105,7 +108,7 @@ func TestGetHeadingByID_NotFound(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	headingID := h.Value(key.Data).Object().Value(key.HeadingID).String().Raw()
+	headingID := heading.Value(key.Data).Object().Value(key.HeadingID).String().Raw()
 
 	// Delete heading
 	e.DELETE("/user/lists/{list_id}/headings/{heading_id}", listID, headingID).
@@ -118,4 +121,7 @@ func TestGetHeadingByID_NotFound(t *testing.T) {
 		WithHeader("Authorization", "Bearer "+accessToken).
 		Expect().
 		Status(http.StatusNotFound)
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }

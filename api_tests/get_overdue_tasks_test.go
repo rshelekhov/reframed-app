@@ -20,7 +20,7 @@ func TestGetOverdueTasks_HappyPath(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	r := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -29,7 +29,7 @@ func TestGetOverdueTasks_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	numberOfLists := 3
 	numberOfTasks := 3
@@ -51,6 +51,9 @@ func TestGetOverdueTasks_HappyPath(t *testing.T) {
 
 	totalTasks := countTasksInGroups(t, tasks, false)
 	require.Equal(t, numberOfLists*numberOfTasks, totalTasks)
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }
 
 func TestGetOverdueTasks_WithLimit(t *testing.T) {
@@ -61,7 +64,7 @@ func TestGetOverdueTasks_WithLimit(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	r := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -70,7 +73,7 @@ func TestGetOverdueTasks_WithLimit(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	numberOfLists := 3
 	numberOfTasks := 3
@@ -118,6 +121,9 @@ func TestGetOverdueTasks_WithLimit(t *testing.T) {
 			require.Equal(t, tc.expectedLists, totalLists)
 		})
 	}
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }
 
 func TestGetOverdueTasks_WithPagination(t *testing.T) {
@@ -128,7 +134,7 @@ func TestGetOverdueTasks_WithPagination(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	r := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -137,7 +143,7 @@ func TestGetOverdueTasks_WithPagination(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	numberOfLists := 3
 	numberOfTasks := 3
@@ -179,6 +185,9 @@ func TestGetOverdueTasks_WithPagination(t *testing.T) {
 	nextTotalGroups := countGroups(t, nextResponse, false)
 	expectedNextGroups := numberOfLists - limit - 1 // Skip limit and the last group of the first response
 	require.Equal(t, expectedNextGroups, nextTotalGroups)
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }
 
 func TestGetOverdueTasks_NotFound(t *testing.T) {
@@ -189,7 +198,7 @@ func TestGetOverdueTasks_NotFound(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	r := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -198,7 +207,7 @@ func TestGetOverdueTasks_NotFound(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	// Get upcoming tasks
 	tasks := e.GET("/user/tasks/overdue").
@@ -208,4 +217,7 @@ func TestGetOverdueTasks_NotFound(t *testing.T) {
 		JSON().Object()
 
 	printDataToJSON(t, tasks)
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }

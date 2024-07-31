@@ -20,7 +20,7 @@ func TestGetTasksForSomeday_HappyPath(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	r := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -29,7 +29,7 @@ func TestGetTasksForSomeday_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	numberOfLists := 3
 	numberOfTasks := 3
@@ -49,6 +49,9 @@ func TestGetTasksForSomeday_HappyPath(t *testing.T) {
 
 	totalTasks := countTasksInGroups(t, tasks, false)
 	require.Equal(t, numberOfLists*numberOfTasks, totalTasks)
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }
 
 func TestGetTasksForSomeday_WithLimit(t *testing.T) {
@@ -59,7 +62,7 @@ func TestGetTasksForSomeday_WithLimit(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	r := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -68,7 +71,7 @@ func TestGetTasksForSomeday_WithLimit(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	numberOfLists := 3
 	numberOfTasks := 3
@@ -116,6 +119,9 @@ func TestGetTasksForSomeday_WithLimit(t *testing.T) {
 			require.Equal(t, tc.expectedLists, totalLists)
 		})
 	}
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }
 
 func TestGetTasksForSomeday_WithPagination(t *testing.T) {
@@ -126,7 +132,7 @@ func TestGetTasksForSomeday_WithPagination(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	r := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -135,7 +141,7 @@ func TestGetTasksForSomeday_WithPagination(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	numberOfLists := 3
 	numberOfTasks := 3
@@ -149,7 +155,7 @@ func TestGetTasksForSomeday_WithPagination(t *testing.T) {
 	limit := 1
 
 	// First request to get tasks for someday
-	response := e.GET("/user/tasks/someday").
+	firstResponse := e.GET("/user/tasks/someday").
 		WithHeader("Authorization", "Bearer "+accessToken).
 		WithQuery(key.Limit, limit).
 		Expect().
@@ -157,15 +163,15 @@ func TestGetTasksForSomeday_WithPagination(t *testing.T) {
 		JSON().Object()
 
 	// Ensure we received tasks
-	totalGroups := countGroups(t, response, false)
+	totalGroups := countGroups(t, firstResponse, false)
 	require.Equal(t, limit, totalGroups)
 
-	// Extract the last list_id from the response
-	lastGroup := response.Value(key.Data).Array().Last().Object()
+	// Extract the last list_id from the firstResponse
+	lastGroup := firstResponse.Value(key.Data).Array().Last().Object()
 	lastListID := lastGroup.Value(key.ListID).String().Raw()
 
-	// Second request to get tasks for someday with cursor set to last list_id from the first response
-	nextResponse := e.GET("/user/tasks/someday").
+	// Second request to get tasks for someday with cursor set to last list_id from the first firstResponse
+	secondResponse := e.GET("/user/tasks/someday").
 		WithHeader("Authorization", "Bearer "+accessToken).
 		WithQuery(key.Limit, limit).
 		WithQuery(key.Cursor, lastListID).
@@ -173,10 +179,13 @@ func TestGetTasksForSomeday_WithPagination(t *testing.T) {
 		Status(http.StatusOK).
 		JSON().Object()
 
-	// Count the number of task groups (lists) in the second response
-	nextTotalGroups := countGroups(t, nextResponse, false)
-	expectedNextGroups := numberOfLists - limit - 1 // Skip limit and the last group of the first response
+	// Count the number of task groups (lists) in the second firstResponse
+	nextTotalGroups := countGroups(t, secondResponse, false)
+	expectedNextGroups := numberOfLists - limit - 1 // Skip limit and the last group of the first firstResponse
 	require.Equal(t, expectedNextGroups, nextTotalGroups)
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }
 
 func TestGetTasksForSomeday_NotFound(t *testing.T) {
@@ -187,7 +196,7 @@ func TestGetTasksForSomeday_NotFound(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	// Register user
-	r := e.POST("/register").
+	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
 			Password: randomFakePassword(),
@@ -196,7 +205,7 @@ func TestGetTasksForSomeday_NotFound(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := r.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
 
 	// Get upcoming tasks
 	tasks := e.GET("/user/tasks/someday").
@@ -206,4 +215,7 @@ func TestGetTasksForSomeday_NotFound(t *testing.T) {
 		JSON().Object()
 
 	printDataToJSON(t, tasks)
+
+	// Cleanup the SSO gRPC service storage after testing
+	cleanupAuthService(e, user)
 }
