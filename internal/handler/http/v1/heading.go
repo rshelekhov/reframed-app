@@ -44,8 +44,7 @@ func (h *headingHandler) CreateHeading() http.HandlerFunc {
 		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
-				slog.String(key.UserID, userID))
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 		}
@@ -80,8 +79,7 @@ func (h *headingHandler) GetHeadingByID() http.HandlerFunc {
 		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
-				slog.String(key.UserID, userID))
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 		}
@@ -115,8 +113,7 @@ func (h *headingHandler) GetHeadingsByListID() http.HandlerFunc {
 		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
-				slog.String(key.UserID, userID))
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 		}
@@ -150,8 +147,7 @@ func (h *headingHandler) UpdateHeading() http.HandlerFunc {
 		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
-				slog.String(key.UserID, userID))
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 		}
@@ -188,8 +184,7 @@ func (h *headingHandler) MoveHeadingToAnotherList() http.HandlerFunc {
 		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
-				slog.String(key.UserID, userID))
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 		}
@@ -231,8 +226,7 @@ func (h *headingHandler) DeleteHeading() http.HandlerFunc {
 		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
-				slog.String(key.UserID, userID))
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 		}
