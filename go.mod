@@ -16,7 +16,7 @@ require (
 	github.com/golang-migrate/migrate/v4 v4.17.0
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.1.0
 	github.com/jackc/pgx/v5 v5.5.2
-	github.com/rshelekhov/sso-protos v0.0.32
+	github.com/rshelekhov/sso-protos v0.0.34
 	github.com/segmentio/ksuid v1.0.4
 	github.com/spf13/viper v1.18.2
 	github.com/stretchr/testify v1.9.0
@@ -80,9 +80,9 @@ require (
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d // indirect
 	golang.org/x/net v0.27.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
-	golang.org/x/sys v0.22.0 // indirect
+	golang.org/x/sys v0.23.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240725223205-93522f1f2a9f // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240805194559-2c9e96a0b5d4 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

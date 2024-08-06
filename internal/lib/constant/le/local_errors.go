@@ -6,29 +6,34 @@ func (l LocalError) Error() string {
 	return string(l)
 }
 
-// TODO: add unwrapping
-
 const (
 	// ===========================================================================
 	//   auth errors
 	// ===========================================================================
 
-	ErrAppIDDoesNotExists         LocalError = "app_id does not exists"
-	ErrUserNotFound               LocalError = "user not found"
-	ErrUserUnauthenticated        LocalError = "user is not authenticated"
-	ErrFailedToLoginUser          LocalError = "failed to login user"
-	ErrFailedToCreateUser         LocalError = "failed to create user"
-	ErrFailedToGetTokenData       LocalError = "failed to get token data"
-	ErrFailedToGetUserIDFromToken LocalError = "failed to get user id from token"
-	ErrFailedToGetRefreshToken    LocalError = "failed to get refresh token from context"
-	ErrFailedToRefreshTokens      LocalError = "failed to refresh tokens"
-	ErrFailedGoGetClaimsFromToken LocalError = "failed to get claims from token"
-	ErrFailedToLogout             LocalError = "failed to logout"
+	ErrAppIDDoesNotExists           LocalError = "app_id does not exists"
+	ErrUserNotFound                 LocalError = "user not found"
+	ErrUserUnauthenticated          LocalError = "user is not authenticated"
+	ErrFailedToLoginUser            LocalError = "failed to login user"
+	ErrFailedToCreateUser           LocalError = "failed to create user"
+	ErrFailedToRequestResetPassword LocalError = "failed to request reset password"
+	ErrFailedToGetTokenData         LocalError = "failed to get token data"
+	ErrFailedToGetUserIDFromToken   LocalError = "failed to get user id from token"
+	ErrFailedToGetRefreshToken      LocalError = "failed to get refresh token from context"
+	ErrFailedToRefreshTokens        LocalError = "failed to refresh tokens"
+	ErrFailedGoGetClaimsFromToken   LocalError = "failed to get claims from token"
+	ErrFailedToLogout               LocalError = "failed to logout"
 
 	ErrEmailVerificationTokenExpiredWithEmailResent LocalError = "verification token expired, a new email with a new token has been sent to the user"
 	ErrEmailVerificationTokenNotFound               LocalError = "email verification token not found"
 	ErrEmailVerificationTokenNotFoundInQuery        LocalError = "email verification token not found in query"
 	ErrFailedToVerifyEmail                          LocalError = "failed to verify email"
+
+	ErrResetPasswordTokenExpiredWithEmailResent LocalError = "reset password token expired, a new email with a new token has been sent to the user"
+	ErrResetPasswordTokenNotFound               LocalError = "reset password token not found"
+	ErrResetPasswordTokenNotFoundInQuery        LocalError = "reset password token not found in query"
+	ErrFailedToChangePassword                   LocalError = "failed to change password"
+	ErrUpdatedPasswordMustNotMatchTheCurrent    LocalError = "updated password must not match the current password"
 
 	// ===========================================================================
 	//   handler errors

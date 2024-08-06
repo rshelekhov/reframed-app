@@ -50,11 +50,10 @@ func (ar *AppRouter) initRoutes() *chi.Mux {
 		r.Post("/register", ar.Register())
 		r.Post("/verify-email", ar.VerifyEmail())
 		r.Post("/refresh-tokens", ar.RefreshJWTokens())
-		// TODO: implement password reset
-		//r.Route("/password", func(r chi.Router) {
-		//	r.Get("/reset", ar.RequestResetPassword())
-		//	r.Post("/change", ar.ChangePassword())
-		//})
+		r.Route("/password", func(r chi.Router) {
+			r.Get("/reset", ar.RequestResetPassword())
+			r.Post("/change", ar.ChangePassword())
+		})
 	})
 
 	// Protected routes
