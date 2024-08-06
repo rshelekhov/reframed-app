@@ -145,8 +145,6 @@ func (u *AuthUsecase) LoginUser(
 		switch st.Code() {
 		case codes.NotFound:
 			return nil, "", le.ErrUserNotFound
-		case codes.Unauthenticated:
-			return nil, "", le.ErrUserUnauthenticated
 		default:
 			return nil, "", err
 		}
@@ -170,6 +168,56 @@ func (u *AuthUsecase) LoginUser(
 	userID = claims[key.UserID].(string)
 
 	return tokenData, userID, nil
+}
+
+func (u *AuthUsecase) RequestResetPassword(ctx context.Context, email string) error {
+	confirmChangePasswordURL := u.cfg.AppData.BaseURL + "/password/change?token="
+
+	_, err := u.ssoClient.Api.ResetPassword(ctx, &ssov1.ResetPasswordRequest{
+		Email:                    email,
+		AppId:                    u.jwt.AppID,
+		ConfirmChangePasswordURL: confirmChangePasswordURL,
+	})
+	if err != nil {
+		st, ok := status.FromError(err)
+		if !ok {
+			return err
+		}
+
+		switch st.Code() {
+		case codes.Unauthenticated:
+			return le.ErrAppIDDoesNotExists
+		case codes.NotFound:
+			return le.ErrUserNotFound
+		default:
+			return err
+		}
+	}
+	return nil
+}
+
+func (u *AuthUsecase) ChangePassword(ctx context.Context, password, resetPasswordToken string) error {
+	_, err := u.ssoClient.Api.ChangePassword(ctx, &ssov1.ChangePasswordRequest{
+		ResetPasswordToken: resetPasswordToken,
+		AppId:              u.jwt.AppID,
+		UpdatedPassword:    password,
+	})
+	if err != nil {
+		st, ok := status.FromError(err)
+		if !ok {
+			return err
+		}
+
+		switch st.Code() {
+		case codes.FailedPrecondition:
+			return le.ErrResetPasswordTokenExpiredWithEmailResent
+		case codes.InvalidArgument:
+			return le.ErrUpdatedPasswordMustNotMatchTheCurrent
+		default:
+			return err
+		}
+	}
+	return nil
 }
 
 func (u *AuthUsecase) Refresh(
@@ -287,7 +335,7 @@ func (u *AuthUsecase) UpdateUser(ctx context.Context, data *model.UserRequestDat
 		case codes.AlreadyExists:
 			return le.ErrEmailAlreadyTaken
 		case codes.InvalidArgument:
-			return le.ErrNoChangesDetected
+			return err
 		default:
 			return err
 		}

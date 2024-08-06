@@ -37,7 +37,7 @@ func newAuthHandler(
 // Register creates a new user
 func (h *authHandler) Register() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.handler.RegisterNewUser"
+		const op = "auth.handler.RegisterNewUser"
 
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
@@ -71,7 +71,7 @@ func (h *authHandler) Register() http.HandlerFunc {
 
 func (h *authHandler) VerifyEmail() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.handler.VerifyEmail"
+		const op = "auth.handler.VerifyEmail"
 
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
@@ -98,7 +98,7 @@ func (h *authHandler) VerifyEmail() http.HandlerFunc {
 
 func (h *authHandler) LoginWithPassword() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.handler.LoginWithPassword"
+		const op = "auth.handler.LoginWithPassword"
 
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
@@ -136,9 +136,66 @@ func (h *authHandler) LoginWithPassword() http.HandlerFunc {
 	}
 }
 
+func (h *authHandler) RequestResetPassword() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		const op = "auth.handler.RequestResetPassword"
+
+		ctx := r.Context()
+		log := logger.LogWithRequest(h.logger, op, r)
+
+		userInput := &model.ResetPasswordRequestData{}
+		if err := decodeAndValidateJSON(w, r, log, userInput); err != nil {
+			return
+		}
+
+		err := h.usecase.RequestResetPassword(ctx, userInput.Email)
+		switch {
+		case errors.Is(err, le.ErrUserNotFound):
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrUserNotFound,
+				slog.String(key.Email, userInput.Email))
+		case err != nil:
+			handleInternalServerError(w, r, log, le.ErrFailedToRequestResetPassword, err)
+		default:
+			handleResponseSuccess(w, r, log, "reset password email sent", nil)
+		}
+	}
+}
+
+func (h *authHandler) ChangePassword() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		const op = "auth.handler.ChangePassword"
+
+		ctx := r.Context()
+		log := logger.LogWithRequest(h.logger, op, r)
+
+		userInput := &model.ChangePasswordRequestData{}
+		if err := decodeAndValidateJSON(w, r, log, userInput); err != nil {
+			return
+		}
+
+		resetPasswordToken := r.URL.Query().Get(key.Token)
+		if resetPasswordToken == "" {
+			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrResetPasswordTokenNotFoundInQuery)
+			return
+		}
+
+		err := h.usecase.ChangePassword(ctx, userInput.Password, resetPasswordToken)
+		switch {
+		case errors.Is(err, le.ErrResetPasswordTokenExpiredWithEmailResent):
+			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrResetPasswordTokenExpiredWithEmailResent)
+		case errors.Is(err, le.ErrUpdatedPasswordMustNotMatchTheCurrent):
+			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrUpdatedPasswordMustNotMatchTheCurrent)
+		case err != nil:
+			handleInternalServerError(w, r, log, le.ErrFailedToChangePassword, err)
+		default:
+			handleResponseSuccess(w, r, log, "password changed", nil)
+		}
+	}
+}
+
 func (h *authHandler) RefreshJWTokens() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.handler.RefreshJWTokens"
+		const op = "auth.handler.RefreshJWTokens"
 
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
@@ -173,17 +230,25 @@ func (h *authHandler) RefreshJWTokens() http.HandlerFunc {
 // Logout removes user session
 func (h *authHandler) Logout() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.handler.Logout"
+		const op = "auth.handler.Logout"
 
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
+
+		userID, err := h.jwt.GetUserID(ctx)
+		switch {
+		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
+		case err != nil:
+			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+		}
 
 		userDevice := model.UserDeviceRequestData{
 			UserAgent: r.UserAgent(),
 			IP:        strings.Split(r.RemoteAddr, ":")[0],
 		}
 
-		err := h.usecase.LogoutUser(ctx, userDevice)
+		err = h.usecase.LogoutUser(ctx, userDevice)
 		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToLogout, err)
 			return
@@ -204,13 +269,15 @@ func (h *authHandler) Logout() http.HandlerFunc {
 			handleInternalServerError(w, r, log, le.ErrFailedToWriteResponse, err)
 			return
 		}
+
+		log.Info("user logged out", slog.String(key.UserID, userID))
 	}
 }
 
 // GetUser get a user by ID
 func (h *authHandler) GetUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.handler.GetUserData"
+		const op = "auth.handler.GetUserData"
 
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
@@ -218,8 +285,7 @@ func (h *authHandler) GetUser() http.HandlerFunc {
 		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
-				slog.String(key.UserID, userID))
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 		}
@@ -239,7 +305,7 @@ func (h *authHandler) GetUser() http.HandlerFunc {
 // UpdateUser updates a user by ID
 func (h *authHandler) UpdateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.handler.UpdateUser"
+		const op = "auth.handler.UpdateUser"
 
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
@@ -247,8 +313,7 @@ func (h *authHandler) UpdateUser() http.HandlerFunc {
 		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
-				slog.String(key.UserID, userID))
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 		}
@@ -282,7 +347,7 @@ func (h *authHandler) UpdateUser() http.HandlerFunc {
 // DeleteUser deletes a user by ID
 func (h *authHandler) DeleteUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "user.handler.DeleteUser"
+		const op = "auth.handler.DeleteUser"
 
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
@@ -290,8 +355,7 @@ func (h *authHandler) DeleteUser() http.HandlerFunc {
 		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
-				slog.String(key.UserID, userID))
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 		}

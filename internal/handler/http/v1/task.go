@@ -44,8 +44,7 @@ func (h *taskHandler) CreateTask() http.HandlerFunc {
 		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
-				slog.String(key.UserID, userID))
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 		}
@@ -86,8 +85,7 @@ func (h *taskHandler) CreateTaskInDefaultList() http.HandlerFunc {
 		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
-				slog.String(key.UserID, userID))
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 		}
@@ -123,8 +121,7 @@ func (h *taskHandler) GetTaskByID() http.HandlerFunc {
 		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
-				slog.String(key.UserID, userID))
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 		}
@@ -158,8 +155,7 @@ func (h *taskHandler) GetTasksByUserID() http.HandlerFunc {
 		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
-				slog.String(key.UserID, userID))
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 		}
@@ -191,8 +187,7 @@ func (h *taskHandler) GetTasksByListID() http.HandlerFunc {
 		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
-				slog.String(key.UserID, userID))
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 		}
@@ -226,8 +221,7 @@ func (h *taskHandler) GetTasksGroupedByHeadings() http.HandlerFunc {
 		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
-				slog.String(key.UserID, userID))
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 		}
@@ -261,8 +255,7 @@ func (h *taskHandler) GetTasksForToday() http.HandlerFunc {
 		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
-				slog.String(key.UserID, userID))
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 		}
@@ -289,8 +282,7 @@ func (h *taskHandler) GetUpcomingTasks() http.HandlerFunc {
 		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
-				slog.String(key.UserID, userID))
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 		}
@@ -322,8 +314,7 @@ func (h *taskHandler) GetOverdueTasks() http.HandlerFunc {
 		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
-				slog.String(key.UserID, userID))
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 		}
@@ -355,8 +346,7 @@ func (h *taskHandler) GetTasksForSomeday() http.HandlerFunc {
 		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
-				slog.String(key.UserID, userID))
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 		}
@@ -388,8 +378,7 @@ func (h *taskHandler) GetCompletedTasks() http.HandlerFunc {
 		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
-				slog.String(key.UserID, userID))
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 		}
@@ -421,8 +410,7 @@ func (h *taskHandler) GetArchivedTasks() http.HandlerFunc {
 		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
-				slog.String(key.UserID, userID))
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 		}
@@ -454,8 +442,7 @@ func (h *taskHandler) UpdateTask() http.HandlerFunc {
 		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
-				slog.String(key.UserID, userID))
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 		}
@@ -492,8 +479,7 @@ func (h *taskHandler) UpdateTaskTime() http.HandlerFunc {
 		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
-				slog.String(key.UserID, userID))
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 		}
@@ -532,8 +518,7 @@ func (h *taskHandler) MoveTaskToAnotherList() http.HandlerFunc {
 		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
-				slog.String(key.UserID, userID))
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 		}
@@ -575,8 +560,7 @@ func (h *taskHandler) MoveTaskToAnotherHeading() http.HandlerFunc {
 		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
-				slog.String(key.UserID, userID))
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 		}
@@ -618,8 +602,7 @@ func (h *taskHandler) CompleteTask() http.HandlerFunc {
 		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
-				slog.String(key.UserID, userID))
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 		}
@@ -653,8 +636,7 @@ func (h *taskHandler) ArchiveTask() http.HandlerFunc {
 		userID, err := h.jwt.GetUserID(ctx)
 		switch {
 		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()),
-				slog.String(key.UserID, userID))
+			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
 		}
