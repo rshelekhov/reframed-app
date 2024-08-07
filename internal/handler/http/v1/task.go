@@ -41,12 +41,9 @@ func (h *taskHandler) CreateTask() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := h.jwt.GetUserID(ctx)
-		switch {
-		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
-		case err != nil:
-			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+		userID, err := getUserIDFromContext(ctx, w, r, h.jwt, log)
+		if err != nil {
+			return
 		}
 
 		listID := chi.URLParam(r, key.ListID)
@@ -82,12 +79,9 @@ func (h *taskHandler) CreateTaskInDefaultList() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := h.jwt.GetUserID(ctx)
-		switch {
-		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
-		case err != nil:
-			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+		userID, err := getUserIDFromContext(ctx, w, r, h.jwt, log)
+		if err != nil {
+			return
 		}
 
 		taskInput := &model.TaskRequestData{}
@@ -118,12 +112,9 @@ func (h *taskHandler) GetTaskByID() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := h.jwt.GetUserID(ctx)
-		switch {
-		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
-		case err != nil:
-			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+		userID, err := getUserIDFromContext(ctx, w, r, h.jwt, log)
+		if err != nil {
+			return
 		}
 
 		taskID := chi.URLParam(r, key.TaskID)
@@ -152,12 +143,9 @@ func (h *taskHandler) GetTasksByUserID() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := h.jwt.GetUserID(ctx)
-		switch {
-		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
-		case err != nil:
-			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+		userID, err := getUserIDFromContext(ctx, w, r, h.jwt, log)
+		if err != nil {
+			return
 		}
 
 		pagination, err := ParseLimitAndCursor(r)
@@ -184,12 +172,9 @@ func (h *taskHandler) GetTasksByListID() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := h.jwt.GetUserID(ctx)
-		switch {
-		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
-		case err != nil:
-			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+		userID, err := getUserIDFromContext(ctx, w, r, h.jwt, log)
+		if err != nil {
+			return
 		}
 
 		listID := chi.URLParam(r, key.ListID)
@@ -218,12 +203,9 @@ func (h *taskHandler) GetTasksGroupedByHeadings() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := h.jwt.GetUserID(ctx)
-		switch {
-		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
-		case err != nil:
-			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+		userID, err := getUserIDFromContext(ctx, w, r, h.jwt, log)
+		if err != nil {
+			return
 		}
 
 		listID := chi.URLParam(r, key.ListID)
@@ -252,12 +234,9 @@ func (h *taskHandler) GetTasksForToday() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := h.jwt.GetUserID(ctx)
-		switch {
-		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
-		case err != nil:
-			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+		userID, err := getUserIDFromContext(ctx, w, r, h.jwt, log)
+		if err != nil {
+			return
 		}
 
 		tasksResp, err := h.usecase.GetTasksForToday(ctx, userID)
@@ -279,12 +258,9 @@ func (h *taskHandler) GetUpcomingTasks() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := h.jwt.GetUserID(ctx)
-		switch {
-		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
-		case err != nil:
-			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+		userID, err := getUserIDFromContext(ctx, w, r, h.jwt, log)
+		if err != nil {
+			return
 		}
 
 		pagination, err := ParseLimitAndCursor(r)
@@ -311,12 +287,9 @@ func (h *taskHandler) GetOverdueTasks() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := h.jwt.GetUserID(ctx)
-		switch {
-		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
-		case err != nil:
-			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+		userID, err := getUserIDFromContext(ctx, w, r, h.jwt, log)
+		if err != nil {
+			return
 		}
 
 		pagination, err := ParseLimitAndCursor(r)
@@ -343,12 +316,9 @@ func (h *taskHandler) GetTasksForSomeday() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := h.jwt.GetUserID(ctx)
-		switch {
-		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
-		case err != nil:
-			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+		userID, err := getUserIDFromContext(ctx, w, r, h.jwt, log)
+		if err != nil {
+			return
 		}
 
 		pagination, err := ParseLimitAndCursor(r)
@@ -375,12 +345,9 @@ func (h *taskHandler) GetCompletedTasks() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := h.jwt.GetUserID(ctx)
-		switch {
-		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
-		case err != nil:
-			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+		userID, err := getUserIDFromContext(ctx, w, r, h.jwt, log)
+		if err != nil {
+			return
 		}
 
 		pagination, err := ParseLimitAndCursor(r)
@@ -407,12 +374,9 @@ func (h *taskHandler) GetArchivedTasks() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := h.jwt.GetUserID(ctx)
-		switch {
-		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
-		case err != nil:
-			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+		userID, err := getUserIDFromContext(ctx, w, r, h.jwt, log)
+		if err != nil {
+			return
 		}
 
 		pagination, err := ParseLimitAndCursor(r)
@@ -439,12 +403,9 @@ func (h *taskHandler) UpdateTask() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := h.jwt.GetUserID(ctx)
-		switch {
-		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
-		case err != nil:
-			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+		userID, err := getUserIDFromContext(ctx, w, r, h.jwt, log)
+		if err != nil {
+			return
 		}
 
 		taskID := chi.URLParam(r, key.TaskID)
@@ -476,12 +437,9 @@ func (h *taskHandler) UpdateTaskTime() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := h.jwt.GetUserID(ctx)
-		switch {
-		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
-		case err != nil:
-			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+		userID, err := getUserIDFromContext(ctx, w, r, h.jwt, log)
+		if err != nil {
+			return
 		}
 
 		taskID := chi.URLParam(r, key.TaskID)
@@ -515,12 +473,9 @@ func (h *taskHandler) MoveTaskToAnotherList() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := h.jwt.GetUserID(ctx)
-		switch {
-		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
-		case err != nil:
-			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+		userID, err := getUserIDFromContext(ctx, w, r, h.jwt, log)
+		if err != nil {
+			return
 		}
 
 		taskID := chi.URLParam(r, key.TaskID)
@@ -557,12 +512,9 @@ func (h *taskHandler) MoveTaskToAnotherHeading() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := h.jwt.GetUserID(ctx)
-		switch {
-		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
-		case err != nil:
-			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+		userID, err := getUserIDFromContext(ctx, w, r, h.jwt, log)
+		if err != nil {
+			return
 		}
 
 		taskID := chi.URLParam(r, key.TaskID)
@@ -599,12 +551,9 @@ func (h *taskHandler) CompleteTask() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := h.jwt.GetUserID(ctx)
-		switch {
-		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
-		case err != nil:
-			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+		userID, err := getUserIDFromContext(ctx, w, r, h.jwt, log)
+		if err != nil {
+			return
 		}
 
 		taskID := chi.URLParam(r, key.TaskID)
@@ -633,12 +582,9 @@ func (h *taskHandler) ArchiveTask() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := h.jwt.GetUserID(ctx)
-		switch {
-		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
-		case err != nil:
-			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+		userID, err := getUserIDFromContext(ctx, w, r, h.jwt, log)
+		if err != nil {
+			return
 		}
 
 		taskID := chi.URLParam(r, key.TaskID)

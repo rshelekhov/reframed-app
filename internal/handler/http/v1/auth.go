@@ -236,7 +236,7 @@ func (h *authHandler) Logout() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := getUserID(ctx, w, r, h.jwt, log)
+		userID, err := getUserIDFromContext(ctx, w, r, h.jwt, log)
 		if err != nil {
 			return
 		}
@@ -280,7 +280,7 @@ func (h *authHandler) GetUser() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := getUserID(ctx, w, r, h.jwt, log)
+		userID, err := getUserIDFromContext(ctx, w, r, h.jwt, log)
 		if err != nil {
 			return
 		}
@@ -305,7 +305,7 @@ func (h *authHandler) UpdateUser() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := getUserID(ctx, w, r, h.jwt, log)
+		userID, err := getUserIDFromContext(ctx, w, r, h.jwt, log)
 		if err != nil {
 			return
 		}
@@ -349,7 +349,7 @@ func (h *authHandler) DeleteUser() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := getUserID(ctx, w, r, h.jwt, log)
+		userID, err := getUserIDFromContext(ctx, w, r, h.jwt, log)
 		if err != nil {
 			return
 		}
