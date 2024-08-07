@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"fmt"
 	"github.com/golang-jwt/jwt/v5"
 	ssogrpc "github.com/rshelekhov/reframed/internal/clients/sso/grpc"
 	"github.com/rshelekhov/reframed/internal/config"
@@ -335,7 +336,7 @@ func (u *AuthUsecase) UpdateUser(ctx context.Context, data *model.UserRequestDat
 		case codes.AlreadyExists:
 			return le.ErrEmailAlreadyTaken
 		case codes.InvalidArgument:
-			return err
+			return fmt.Errorf("%w: %s", le.ErrBadRequest, st.Message())
 		default:
 			return err
 		}

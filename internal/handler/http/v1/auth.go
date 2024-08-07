@@ -2,6 +2,7 @@ package v1
 
 import (
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -235,12 +236,9 @@ func (h *authHandler) Logout() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := h.jwt.GetUserID(ctx)
-		switch {
-		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
-		case err != nil:
-			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+		userID, err := getUserID(ctx, w, r, h.jwt, log)
+		if err != nil {
+			return
 		}
 
 		userDevice := model.UserDeviceRequestData{
@@ -282,12 +280,9 @@ func (h *authHandler) GetUser() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := h.jwt.GetUserID(ctx)
-		switch {
-		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
-		case err != nil:
-			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+		userID, err := getUserID(ctx, w, r, h.jwt, log)
+		if err != nil {
+			return
 		}
 
 		user, err := h.usecase.GetUserByID(ctx)
@@ -310,12 +305,9 @@ func (h *authHandler) UpdateUser() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := h.jwt.GetUserID(ctx)
-		switch {
-		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
-		case err != nil:
-			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+		userID, err := getUserID(ctx, w, r, h.jwt, log)
+		if err != nil {
+			return
 		}
 
 		userInput := &model.UserRequestData{}
@@ -333,9 +325,14 @@ func (h *authHandler) UpdateUser() http.HandlerFunc {
 			handleResponseError(w, r, log, http.StatusConflict, le.ErrEmailAlreadyTaken,
 				slog.String(key.UserID, userID),
 				slog.String(key.Email, userInput.Email))
-		case errors.Is(err, le.ErrNoChangesDetected):
-			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrNoChangesDetected,
-				slog.String(key.UserID, userID))
+		case err != nil:
+			errStr := fmt.Sprint(err)
+			if strings.Contains(errStr, "bad request") {
+				handleResponseError(w, r, log, http.StatusBadRequest, le.LocalError(errStr),
+					slog.String(key.UserID, userID))
+			} else {
+				handleInternalServerError(w, r, log, le.ErrFailedToUpdateUser, err)
+			}
 		default:
 			handleResponseSuccess(w, r, log, "user updated",
 				model.UserResponseData{ID: userID},
@@ -352,12 +349,9 @@ func (h *authHandler) DeleteUser() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := h.jwt.GetUserID(ctx)
-		switch {
-		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
-		case err != nil:
-			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+		userID, err := getUserID(ctx, w, r, h.jwt, log)
+		if err != nil {
+			return
 		}
 
 		err = h.usecase.DeleteUser(ctx)
