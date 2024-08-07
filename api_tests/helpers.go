@@ -116,11 +116,25 @@ func randomTimeInterval() (string, string) {
 
 func randomTags() []string {
 	tagCount := rand.Intn(5) + 3
-	tags := make([]string, tagCount)
-	for i := 0; i < tagCount; i++ {
-		tags[i] = gofakeit.Word()
+	var tags []string
+
+	for len(tags) < tagCount {
+		tag := gofakeit.Word()
+		if checkUnique(tags, tag) {
+			tags = append(tags, tag)
+		}
 	}
+
 	return tags
+}
+
+func checkUnique(slice []string, tag string) bool {
+	for _, t := range slice {
+		if t == tag {
+			return false
+		}
+	}
+	return true
 }
 
 func createLists(e *httpexpect.Expect, accessToken string, n int) []*httpexpect.Object {
