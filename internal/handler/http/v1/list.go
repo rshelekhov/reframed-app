@@ -41,12 +41,9 @@ func (h *listHandler) CreateList() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := h.jwt.GetUserID(ctx)
-		switch {
-		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
-		case err != nil:
-			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+		userID, err := getUserIDFromContext(ctx, w, r, h.jwt, log)
+		if err != nil {
+			return
 		}
 
 		listInput := &model.ListRequestData{}
@@ -73,12 +70,9 @@ func (h *listHandler) GetDefaultList() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := h.jwt.GetUserID(ctx)
-		switch {
-		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
-		case err != nil:
-			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+		userID, err := getUserIDFromContext(ctx, w, r, h.jwt, log)
+		if err != nil {
+			return
 		}
 
 		listID, err := h.usecase.GetDefaultListID(ctx, userID)
@@ -111,12 +105,9 @@ func (h *listHandler) GetListByID() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := h.jwt.GetUserID(ctx)
-		switch {
-		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
-		case err != nil:
-			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+		userID, err := getUserIDFromContext(ctx, w, r, h.jwt, log)
+		if err != nil {
+			return
 		}
 
 		listID := chi.URLParam(r, "list_id")
@@ -146,12 +137,9 @@ func (h *listHandler) GetListsByUserID() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := h.jwt.GetUserID(ctx)
-		switch {
-		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
-		case err != nil:
-			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+		userID, err := getUserIDFromContext(ctx, w, r, h.jwt, log)
+		if err != nil {
+			return
 		}
 
 		listsResp, err := h.usecase.GetListsByUserID(ctx, userID)
@@ -174,12 +162,9 @@ func (h *listHandler) UpdateList() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := h.jwt.GetUserID(ctx)
-		switch {
-		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
-		case err != nil:
-			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+		userID, err := getUserIDFromContext(ctx, w, r, h.jwt, log)
+		if err != nil {
+			return
 		}
 
 		listID := chi.URLParam(r, key.ListID)
@@ -212,12 +197,9 @@ func (h *listHandler) DeleteList() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := h.jwt.GetUserID(ctx)
-		switch {
-		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
-		case err != nil:
-			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+		userID, err := getUserIDFromContext(ctx, w, r, h.jwt, log)
+		if err != nil {
+			return
 		}
 
 		listID := chi.URLParam(r, key.ListID)

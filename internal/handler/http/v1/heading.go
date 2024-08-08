@@ -41,12 +41,9 @@ func (h *headingHandler) CreateHeading() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := h.jwt.GetUserID(ctx)
-		switch {
-		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
-		case err != nil:
-			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+		userID, err := getUserIDFromContext(ctx, w, r, h.jwt, log)
+		if err != nil {
+			return
 		}
 
 		listID := chi.URLParam(r, key.ListID)
@@ -76,12 +73,9 @@ func (h *headingHandler) GetHeadingByID() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := h.jwt.GetUserID(ctx)
-		switch {
-		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
-		case err != nil:
-			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+		userID, err := getUserIDFromContext(ctx, w, r, h.jwt, log)
+		if err != nil {
+			return
 		}
 
 		headingID := chi.URLParam(r, key.HeadingID)
@@ -110,12 +104,9 @@ func (h *headingHandler) GetHeadingsByListID() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := h.jwt.GetUserID(ctx)
-		switch {
-		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
-		case err != nil:
-			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+		userID, err := getUserIDFromContext(ctx, w, r, h.jwt, log)
+		if err != nil {
+			return
 		}
 
 		listID := chi.URLParam(r, key.ListID)
@@ -144,12 +135,9 @@ func (h *headingHandler) UpdateHeading() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := h.jwt.GetUserID(ctx)
-		switch {
-		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
-		case err != nil:
-			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+		userID, err := getUserIDFromContext(ctx, w, r, h.jwt, log)
+		if err != nil {
+			return
 		}
 
 		headingID := chi.URLParam(r, key.HeadingID)
@@ -181,12 +169,9 @@ func (h *headingHandler) MoveHeadingToAnotherList() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := h.jwt.GetUserID(ctx)
-		switch {
-		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
-		case err != nil:
-			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+		userID, err := getUserIDFromContext(ctx, w, r, h.jwt, log)
+		if err != nil {
+			return
 		}
 
 		headingID := chi.URLParam(r, key.HeadingID)
@@ -223,12 +208,9 @@ func (h *headingHandler) DeleteHeading() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		userID, err := h.jwt.GetUserID(ctx)
-		switch {
-		case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
-			handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
-		case err != nil:
-			handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+		userID, err := getUserIDFromContext(ctx, w, r, h.jwt, log)
+		if err != nil {
+			return
 		}
 
 		headingID := chi.URLParam(r, key.HeadingID)

@@ -1,10 +1,13 @@
 package v1
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator/v10"
 	"github.com/rshelekhov/reframed/internal/lib/constant/le"
+	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
 	"github.com/rshelekhov/reframed/internal/model"
 	"log/slog"
 	"net/http"
@@ -21,6 +24,20 @@ func decodeAndValidateJSON(w http.ResponseWriter, r *http.Request, log *slog.Log
 		return err
 	}
 	return nil
+}
+
+// getUserIDFromContext retrieves the userID from context and handles any errors.
+func getUserIDFromContext(ctx context.Context, w http.ResponseWriter, r *http.Request, jwt *jwtoken.TokenService, log *slog.Logger) (userID string, err error) {
+	userID, err = jwt.GetUserID(ctx)
+	switch {
+	case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
+		handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
+		return "", err
+	case err != nil:
+		handleInternalServerError(w, r, log, le.ErrFailedToGetUserIDFromToken, err)
+		return "", err
+	}
+	return userID, nil
 }
 
 // ValidationError returns a Response with StatusError and a comma-separated list of errors

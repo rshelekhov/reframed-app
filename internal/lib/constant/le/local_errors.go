@@ -55,6 +55,7 @@ const (
 	ErrUserAlreadyExists  LocalError = "user with this email already exists"
 	ErrEmailAlreadyTaken  LocalError = "this email already taken"
 	ErrNoChangesDetected  LocalError = "no changes detected"
+	ErrFailedToUpdateUser LocalError = "failed to update user"
 	ErrFailedToDeleteUser LocalError = "failed to delete user"
 
 	// ===========================================================================
@@ -120,4 +121,5 @@ const (
 	// ===========================================================================
 
 	ErrFailedToWriteResponse LocalError = "failed to write response"
+	ErrBadRequest            LocalError = "bad request"
 )
