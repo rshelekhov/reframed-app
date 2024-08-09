@@ -15,6 +15,7 @@ type Querier interface {
 	CreateTask(ctx context.Context, arg CreateTaskParams) error
 	DeleteHeading(ctx context.Context, arg DeleteHeadingParams) error
 	DeleteList(ctx context.Context, arg DeleteListParams) error
+	DeleteUserRelatedData(ctx context.Context, deletingUserID string) error
 	GetArchivedTasks(ctx context.Context, arg GetArchivedTasksParams) ([]GetArchivedTasksRow, error)
 	GetCompletedTasks(ctx context.Context, arg GetCompletedTasksParams) ([]GetCompletedTasksRow, error)
 	GetDefaultHeadingID(ctx context.Context, arg GetDefaultHeadingIDParams) (string, error)

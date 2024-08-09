@@ -21,6 +21,7 @@ type AuthUsecase struct {
 	cfg            *config.ServerSettings
 	ssoClient      *ssogrpc.Client
 	jwt            *jwtoken.TokenService
+	UserUsecase    port.UserUsecase
 	ListUsecase    port.ListUsecase
 	HeadingUsecase port.HeadingUsecase
 }
@@ -345,19 +346,33 @@ func (u *AuthUsecase) UpdateUser(ctx context.Context, data *model.UserRequestDat
 	return nil
 }
 
-func (u *AuthUsecase) DeleteUser(ctx context.Context) error {
+func (u *AuthUsecase) DeleteUser(ctx context.Context, userID string) error {
 	ctx, err := jwtoken.AddAccessTokenToMetadata(ctx)
 	if err != nil {
 		return err
 	}
 
-	if _, err = u.ssoClient.Api.DeleteUser(ctx, &ssov1.DeleteUserRequest{
+	_, err = u.ssoClient.Api.DeleteUser(ctx, &ssov1.DeleteUserRequest{
 		AppId: u.jwt.AppID,
-	}); err != nil {
-		return err
+	})
+
+	if err != nil {
+		st, ok := status.FromError(err)
+		if !ok {
+			return err
+		}
+
+		switch st.Code() {
+		case codes.NotFound:
+			return le.ErrUserNotFound
+		default:
+			return err
+		}
 	}
 
-	// TODO: get userID, then delete tasks, lists and tags for the user
+	if err = u.UserUsecase.DeleteUserRelatedData(ctx, userID); err != nil {
+		return err
+	}
 
 	return nil
 }
