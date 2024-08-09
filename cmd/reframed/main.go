@@ -48,6 +48,7 @@ func main() {
 
 	log.Debug("storage initiated")
 
+	userStorage := postgres.NewUserStorage(pg)
 	headingStorage := postgres.NewHeadingStorage(pg)
 	listStorage := postgres.NewListStorage(pg)
 	taskStorage := postgres.NewTaskStorage(pg)
@@ -55,6 +56,7 @@ func main() {
 	statusStorage := postgres.NewStatusStorage(pg)
 
 	// Usecases
+	userUsecase := usecase.NewUserUsecase(userStorage)
 	authUsecase := usecase.NewAuthUsecase(cfg, ssoClient, tokenAuth)
 	headingUsecase := usecase.NewHeadingUsecase(headingStorage)
 	listUsecase := usecase.NewListUsecase(listStorage)
@@ -62,6 +64,7 @@ func main() {
 	taskUsecase := usecase.NewTaskUsecase(taskStorage)
 	statusUsecase := usecase.NewStatusUsecase(statusStorage)
 
+	authUsecase.UserUsecase = userUsecase
 	authUsecase.ListUsecase = listUsecase
 	authUsecase.HeadingUsecase = headingUsecase
 	headingUsecase.ListUsecase = listUsecase

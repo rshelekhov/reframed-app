@@ -5,11 +5,11 @@ const (
 	//  general
 	// ===========================================================================
 
-	Error = "error"
-	Data  = "data"
-	Title = "title"
-	Tasks = "tasks"
-	Month = "month"
+	Error       = "error"
+	Data        = "data"
+	Title       = "title"
+	Tasks       = "tasks"
+	Description = "description"
 
 	// ===========================================================================
 	//  auth keys

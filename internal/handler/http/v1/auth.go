@@ -354,7 +354,7 @@ func (h *authHandler) DeleteUser() http.HandlerFunc {
 			return
 		}
 
-		err = h.usecase.DeleteUser(ctx)
+		err = h.usecase.DeleteUser(ctx, userID)
 		switch {
 		case errors.Is(err, le.ErrUserNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrUserNotFound,

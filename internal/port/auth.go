@@ -16,5 +16,5 @@ type AuthUsecase interface {
 	LogoutUser(ctx context.Context, data model.UserDeviceRequestData) error
 	GetUserByID(ctx context.Context) (model.UserResponseData, error)
 	UpdateUser(ctx context.Context, data *model.UserRequestData) error
-	DeleteUser(ctx context.Context) error
+	DeleteUser(ctx context.Context, userID string) error
 }
