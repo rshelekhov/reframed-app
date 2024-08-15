@@ -16,19 +16,6 @@
 - The usage of [sqlc](https://github.com/sqlc-dev/sqlc) as the generator type-safe code from SQL.
 - The usage of [golangci-lint](https://github.com/golangci/golangci-lint) as a Go linters runner.
 
-## Endpoints
-
-| Name        | HTTP Method | Route         |
-|-------------|-------------|---------------|
-| Health      | GET         | /health       |
-|             |             |               |
-| Create user | POST        | /users        |
-| Get user    | GET         | /users/{id}   |
-| Get users   | GET         | /users/       |
-| Update user | PUT         | /users/{id}   |
-| Delete user | DELETE      | /users/{id}   |
-
-
 ## Reframed App UI design
 
 ![alt text](https://github.com/rshelekhov/reframed/blob/main/internal/lib/img/browser-1.png)
