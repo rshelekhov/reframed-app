@@ -27,14 +27,6 @@ migrate:
 		echo "postgresql-client is already installed."; \
 	fi
 
-	@echo "Checking if golang-migrate is installed..."
-	@if ! which migrate > /dev/null 2>&1; then \
-		echo "golang-migrate not found. Installing..."; \
-		go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest; \
-	else \
-		echo "golang-migrate is already installed."; \
-	fi
-
 	@echo "Checking if migrations are needed..."
 		@if psql $(POSTGRESQL_URL) -c "SELECT 1 FROM pg_tables WHERE tablename = 'tasks';" | grep -q 1; then \
 			echo "Migrations are not needed."; \
