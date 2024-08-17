@@ -59,9 +59,15 @@ jobs:
       - name: Install dependencies
         run: go mod download
 
+      - name: Ensure config/reframed directory exists
+        run: mkdir -p ./config/reframed
+
       - name: Create .env file for Reframed App
         run: |
           echo "${{ secrets.ENV_CONFIG_TEST_REFRAMED }}" > ./config/reframed/.env
+
+      - name: Ensure config/grpc-sso directory exists
+        run: mkdir -p ./config/grpc-sso
 
       - name: Create .env file for gRPC SSO service
         run: |
