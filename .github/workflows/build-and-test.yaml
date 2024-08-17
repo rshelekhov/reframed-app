@@ -1,0 +1,103 @@
+name: Build and test with gRPC SSO service
+
+on:
+  pull_request:
+    branches:
+      - main
+      - dev
+
+env:
+  REGISTRY_IMAGE: rshelekhov/grpc-sso
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_USER: root
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: reframed_dev
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      postgres-sso:
+        image: postgres:latest
+        env:
+          POSTGRES_USER: root
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: sso_dev
+        ports:
+          - 5433:5432  # Changed external port for the second instance of PostgreSQL
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.22'
+
+      - name: Install golang-migrate
+        run: |
+          go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+          export PATH=$PATH:$(go env GOPATH)/bin
+          which migrate
+
+      - name: Install dependencies
+        run: go mod download
+
+      - name: Create .env file for Reframed App
+        run: |
+          echo "${{ secrets.ENV_CONFIG_TEST_REFRAMED }}" > ./config/reframed/.env
+
+      - name: Create .env file for gRPC SSO service
+        run: |
+          echo "${{ secrets.ENV_CONFIG_TEST_SSO }}" > ./config/grpc-sso/.env
+
+      - name: Wait for PostgreSQL to be ready (Reframed and SSO)
+        run: sleep 10
+
+      - name: Check PostgreSQL connection for Reframed
+        run: pg_isready -h localhost -p 5432
+
+      - name: Check PostgreSQL connection for SSO
+        run: pg_isready -h localhost -p 5433
+
+      - name: Run gRPC Auth service container
+        env:
+          POSTGRESQL_URL_SSO: postgres://root:password@localhost:5433/sso_dev?sslmode=disable
+        run: |
+          echo "Starting gRPC Auth service..."
+          docker pull ${{ env.REGISTRY_IMAGE }}:latest
+          docker run -d \
+            -v ${PWD}/config/grpc-sso:/src/config \
+            -e CONFIG_PATH=src/config/.env \
+            -e POSTGRESQL_URL=$POSTGRESQL_URL_SSO \
+            --name grpc-sso-service \
+            rshelekhov/grpc-sso:latest
+
+      - name: Setup gRPC SSO service (make setup-dev)
+        run: |
+          echo "Running setup-dev for gRPC SSO service..."
+          docker exec grpc-sso-service sh -c "make setup-dev"
+
+      - name: Run tests
+        env:
+          POSTGRESQL_URL: postgres://root:password@localhost:5432/reframed_dev?sslmode=disable
+        run: make test
+
+      - name: Notify results
+        run: echo "Tests completed!"
