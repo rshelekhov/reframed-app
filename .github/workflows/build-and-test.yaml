@@ -76,6 +76,9 @@ jobs:
       - name: Check if .env file for gRPC SSO service exists
         run: ls -la ./config/grpc-sso
 
+      - name: Check .env file
+        run: cat ./config/grpc-sso/.env
+
       - name: Wait for PostgreSQL to be ready (Reframed and SSO)
         run: sleep 10
 
