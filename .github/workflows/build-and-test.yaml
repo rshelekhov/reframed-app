@@ -95,6 +95,12 @@ jobs:
             --name grpc-sso-service \
             rshelekhov/grpc-sso:latest
 
+      - name: Check gRPC SSO service container status
+        run: docker ps -a
+
+      - name: Check gRPC SSO service container logs
+        run: docker logs grpc-sso-service
+
       - name: Setup gRPC SSO service (make setup-dev)
         run: |
           echo "Running setup-dev for gRPC SSO service..."
