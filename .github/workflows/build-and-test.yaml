@@ -73,6 +73,9 @@ jobs:
         run: |
           echo "${{ secrets.ENV_CONFIG_TEST_SSO }}" > ./config/grpc-sso/.env
 
+      - name: Check if .env file for gRPC SSO service exists
+        run: ls -la ./config/grpc-sso
+
       - name: Wait for PostgreSQL to be ready (Reframed and SSO)
         run: sleep 10
 
