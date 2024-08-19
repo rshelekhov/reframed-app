@@ -96,7 +96,7 @@ jobs:
           docker pull ${{ env.REGISTRY_IMAGE }}:latest
           docker run -d \
             -v ${PWD}/config/grpc-sso:/config \
-            -e CONFIG_PATH=src/config/.env \
+            -e CONFIG_PATH=/config/.env \
             -e POSTGRESQL_URL=$POSTGRESQL_URL_SSO \
             --name grpc-sso-service \
             rshelekhov/grpc-sso:latest
