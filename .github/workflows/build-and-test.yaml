@@ -119,5 +119,8 @@ jobs:
           CONFIG_PATH: ./config/reframed/.env
         run: make test
 
+      - name: Check gRPC SSO service container logs after tests
+        run: docker logs grpc-sso-service
+
       - name: Notify results
         run: echo "Tests completed!"
