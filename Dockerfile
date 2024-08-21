@@ -30,5 +30,6 @@ COPY --from=builder /app ./
 COPY --from=builder /src/Makefile ./
 COPY --from=builder /src/migrations ./migrations
 COPY --from=builder /go/bin/migrate /usr/local/bin/migrate
+COPY --from=builder /go.mod /go.sum ./
 
 CMD ["./app"]
