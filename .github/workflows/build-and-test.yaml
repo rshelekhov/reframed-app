@@ -88,6 +88,9 @@ jobs:
       - name: Check PostgreSQL connection for SSO
         run: pg_isready -h localhost -p 5433
 
+      - name: Check PostgreSQL logs for SSO
+        run: docker logs postgres-sso
+
       - name: Run gRPC Auth service container
         env:
           POSTGRESQL_URL_SSO: postgres://root:password@localhost:5433/sso_dev?sslmode=disable
@@ -101,6 +104,9 @@ jobs:
             -p 44044:44044 \
             --name grpc-sso-service \
             rshelekhov/grpc-sso:latest
+
+      - name: Install golang-migrate in container
+        run: docker exec grpc-sso-service sh -c "go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest"
 
       - name: Check gRPC SSO service container status
         run: docker ps -a
