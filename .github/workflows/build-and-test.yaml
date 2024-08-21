@@ -102,9 +102,6 @@ jobs:
             --name grpc-sso-service \
             rshelekhov/grpc-sso:latest
 
-      - name: Install golang-migrate in container
-        run: docker exec grpc-sso-service sh -c "go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest"
-
       - name: Check gRPC SSO service container status
         run: docker ps -a
 
