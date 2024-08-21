@@ -4,9 +4,9 @@ SERVER_PORT ?= 8082
 # Don't forget to set POSTGRESQL_URL with your credentials
 POSTGRESQL_URL ?='postgres://app:p%40ssw0rd@localhost:5432/reframed_dev?sslmode=disable'
 
-.PHONY: migrate migrate-down run-server stop-server build test cover
+.PHONY: setup-dev migrate migrate-down run-server stop-server build test cover
 
-setup: migrate
+setup-dev: migrate
 
 # Run migrations only if not already applied
 migrate:
@@ -60,15 +60,15 @@ stop-server:
     		echo "No server is running on port $(SERVER_PORT)."; \
     	fi
 
-build: setup
+build:
 	go build -v ./cmd/reframed
 
-test: setup run-server
+test:
 	@echo "Running tests..."
 	@go test -v -timeout 60s -parallel=1 ./api_tests
 	@echo "Tests completed."
 
-cover: setup run-server
+cover: run-server
 	@echo "Running tests with coverage..."
 	go test -short -count=1 -race -coverprofile=coverage.out ./...
 	go tool cover -html=coverage.out
