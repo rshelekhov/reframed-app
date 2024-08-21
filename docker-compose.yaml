@@ -27,7 +27,7 @@ services:
     image: rshelekhov/grpc-sso:latest
     environment:
       CONFIG_PATH: /config/grpc-sso/.env
-      POSTGRESQL_URL: postgres://root:password@postgres-sso:5433/sso_dev?sslmode=disable
+      POSTGRESQL_URL: postgres://root:password@postgres-sso:5432/sso_dev?sslmode=disable
     volumes:
       - ./config/grpc-sso:/config
     networks:
