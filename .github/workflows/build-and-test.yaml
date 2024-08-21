@@ -51,7 +51,7 @@ jobs:
         run: cat ./config/grpc-sso/.env
 
       - name: Create Docker network
-        run: docker network create test_network
+        run: docker network create test_network || true
 
       - name: Run PostgreSQL for Reframed
         run: |
@@ -111,10 +111,10 @@ jobs:
           docker exec grpc-sso-service sh -c "make setup-dev"
 
       - name: Check PostgreSQL logs for Reframed
-        run: docker logs $(docker ps -q --filter "publish=5432")
+        run: docker logs postgres-reframed
 
       - name: Check PostgreSQL logs for SSO
-        run: docker logs $(docker ps -q --filter "publish=5433")
+        run: docker logs postgres-sso
 
       - name: Run tests
         env:
