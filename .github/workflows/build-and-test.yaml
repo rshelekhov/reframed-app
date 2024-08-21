@@ -88,9 +88,6 @@ jobs:
       - name: Check PostgreSQL connection for SSO
         run: pg_isready -h localhost -p 5433
 
-      - name: Check PostgreSQL logs for SSO
-        run: docker logs postgres-sso
-
       - name: Run gRPC Auth service container
         env:
           POSTGRESQL_URL_SSO: postgres://root:password@localhost:5433/sso_dev?sslmode=disable
