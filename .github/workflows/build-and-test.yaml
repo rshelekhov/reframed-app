@@ -113,6 +113,12 @@ jobs:
           echo "Running setup-dev for gRPC SSO service..."
           docker exec grpc-sso-service sh -c "make setup-dev"
 
+      - name: Check PostgreSQL logs for Reframed
+        run: docker logs $(docker ps -q --filter "publish=5432")
+
+      - name: Check PostgreSQL logs for SSO
+        run: docker logs $(docker ps -q --filter "publish=5433")
+
       - name: Run tests
         env:
           POSTGRESQL_URL: postgres://user:password@localhost:5432/reframed_dev?sslmode=disable
