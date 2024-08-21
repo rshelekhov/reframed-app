@@ -13,35 +13,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    services:
-      postgres-reframed:
-        image: postgres:latest
-        env:
-          POSTGRES_USER: root
-          POSTGRES_PASSWORD: password
-          POSTGRES_DB: reframed_dev
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-      postgres-sso:
-        image: postgres:latest
-        env:
-          POSTGRES_USER: root
-          POSTGRES_PASSWORD: password
-          POSTGRES_DB: sso_dev
-        ports:
-          - 5433:5432  # Changed external port for the second instance of PostgreSQL
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - uses: actions/checkout@v3
 
@@ -79,6 +50,31 @@ jobs:
       - name: Check .env file
         run: cat ./config/grpc-sso/.env
 
+      - name: Create Docker network
+        run: docker network create test_network
+
+      - name: Run PostgreSQL for Reframed
+        run: |
+          docker run -d \
+            --name postgres-reframed \
+            --network test_network \
+            -e POSTGRES_USER=root \
+            -e POSTGRES_PASSWORD=password \
+            -e POSTGRES_DB=reframed_dev \
+            -p 5432:5432 \
+            postgres:latest
+
+      - name: Run PostgreSQL for SSO
+        run: |
+          docker run -d \
+            --name postgres-sso \
+            --network test_network \
+            -e POSTGRES_USER=root \
+            -e POSTGRES_PASSWORD=password \
+            -e POSTGRES_DB=sso_dev \
+            -p 5433:5432 \
+            postgres:latest
+
       - name: Wait for PostgreSQL to be ready (Reframed and SSO)
         run: sleep 10
 
@@ -90,17 +86,18 @@ jobs:
 
       - name: Run gRPC Auth service container
         env:
-          POSTGRESQL_URL_SSO: postgres://root:password@postgres-sso:5433/sso_dev?sslmode=disable
+          POSTGRESQL_URL_SSO: postgres://root:password@postgres-sso:5432/sso_dev?sslmode=disable
         run: |
           echo "Starting gRPC Auth service..."
           docker pull ${{ env.REGISTRY_IMAGE }}:latest
           docker run -d \
+            --name grpc-sso-service \
+            --network test_network \
             -v ${PWD}/config/grpc-sso:/config \
             -e CONFIG_PATH=/config/.env \
             -e POSTGRESQL_URL=$POSTGRESQL_URL_SSO \
             -p 44044:44044 \
-            --name grpc-sso-service \
-            rshelekhov/grpc-sso:latest
+            ${{ env.REGISTRY_IMAGE }}:latest
 
       - name: Check gRPC SSO service container status
         run: docker ps -a
