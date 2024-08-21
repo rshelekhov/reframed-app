@@ -17,7 +17,7 @@ jobs:
       postgres:
         image: postgres:latest
         env:
-          POSTGRES_USER: root
+          POSTGRES_USER: user
           POSTGRES_PASSWORD: password
           POSTGRES_DB: reframed_dev
         ports:
@@ -31,7 +31,7 @@ jobs:
       postgres-sso:
         image: postgres:latest
         env:
-          POSTGRES_USER: root
+          POSTGRES_USER: user
           POSTGRES_PASSWORD: password
           POSTGRES_DB: sso_dev
         ports:
@@ -90,7 +90,7 @@ jobs:
 
       - name: Run gRPC Auth service container
         env:
-          POSTGRESQL_URL_SSO: postgres://root:password@localhost:5433/sso_dev?sslmode=disable
+          POSTGRESQL_URL_SSO: postgres://user:password@localhost:5433/sso_dev?sslmode=disable
         run: |
           echo "Starting gRPC Auth service..."
           docker pull ${{ env.REGISTRY_IMAGE }}:latest
@@ -115,7 +115,7 @@ jobs:
 
       - name: Run tests
         env:
-          POSTGRESQL_URL: postgres://root:password@localhost:5432/reframed_dev?sslmode=disable
+          POSTGRESQL_URL: postgres://user:password@localhost:5432/reframed_dev?sslmode=disable
           CONFIG_PATH: ./config/reframed/.env
         run: make test
 
