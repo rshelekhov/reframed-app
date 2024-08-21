@@ -57,7 +57,7 @@ jobs:
         run: |
           docker run -d \
             --name postgres-reframed \
-            --network test_network \
+            --network host \
             -e POSTGRES_USER=root \
             -e POSTGRES_PASSWORD=password \
             -e POSTGRES_DB=reframed_dev \
@@ -68,7 +68,7 @@ jobs:
         run: |
           docker run -d \
             --name postgres-sso \
-            --network test_network \
+            --network host \
             -e POSTGRES_USER=root \
             -e POSTGRES_PASSWORD=password \
             -e POSTGRES_DB=sso_dev \
@@ -92,7 +92,7 @@ jobs:
           docker pull ${{ env.REGISTRY_IMAGE }}:latest
           docker run -d \
             --name grpc-sso-service \
-            --network test_network \
+            --network host \
             -v ${PWD}/config/grpc-sso:/config \
             -e CONFIG_PATH=/config/.env \
             -e POSTGRESQL_URL=$POSTGRESQL_URL_SSO \
@@ -109,11 +109,6 @@ jobs:
         run: |
           echo "Running setup-dev for gRPC SSO service..."
           docker exec grpc-sso-service sh -c "make setup-dev"
-
-      - name: Run gRPC SSO service (make run-server)
-        run: |
-          echo "Running run-server for gRPC SSO service..."
-          docker exec grpc-sso-service sh -c "make run-server"
 
       - name: Check PostgreSQL logs for Reframed
         run: docker logs postgres-reframed
