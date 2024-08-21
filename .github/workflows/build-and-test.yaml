@@ -118,7 +118,7 @@ jobs:
 
       - name: Run tests
         env:
-          POSTGRESQL_URL: postgres://root:password@postgres-reframed:5432/reframed_dev?sslmode=disable
+          POSTGRESQL_URL: postgres://root:password@localhost:5432/reframed_dev?sslmode=disable
           CONFIG_PATH: ./config/reframed/.env
         run: make test
 
