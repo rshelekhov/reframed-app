@@ -57,7 +57,6 @@ jobs:
         run: |
           docker run -d \
             --name postgres-reframed \
-            --network host \
             -e POSTGRES_USER=root \
             -e POSTGRES_PASSWORD=password \
             -e POSTGRES_DB=reframed_dev \
@@ -68,7 +67,6 @@ jobs:
         run: |
           docker run -d \
             --name postgres-sso \
-            --network host \
             -e POSTGRES_USER=root \
             -e POSTGRES_PASSWORD=password \
             -e POSTGRES_DB=sso_dev \
@@ -92,7 +90,6 @@ jobs:
           docker pull ${{ env.REGISTRY_IMAGE }}:latest
           docker run -d \
             --name grpc-sso-service \
-            --network host \
             -v ${PWD}/config/grpc-sso:/config \
             -e CONFIG_PATH=/config/.env \
             -e POSTGRESQL_URL=$POSTGRESQL_URL_SSO \
