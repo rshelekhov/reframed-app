@@ -20,7 +20,7 @@ COPY . .
 RUN go build -o /app ./cmd/reframed
 
 # Stage 2: Prepare the final runtime image
-FROM golang:1.22-alpine:3.19 AS runner
+FROM golang:1.22-alpine3.19 AS runner
 
 RUN apk update && apk add --no-cache ca-certificates make postgresql-client
 
