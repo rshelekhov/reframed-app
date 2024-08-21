@@ -29,6 +29,7 @@ WORKDIR /src
 COPY --from=builder /app ./
 COPY --from=builder /src/Makefile ./
 COPY --from=builder /src/migrations ./migrations
+COPY --from=builder /src/api_tests ./api_tests
 COPY --from=builder /go/bin/migrate /usr/local/bin/migrate
 COPY --from=builder /src/go.mod ./
 COPY --from=builder /src/go.sum ./
