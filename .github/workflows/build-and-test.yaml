@@ -110,6 +110,11 @@ jobs:
           echo "Running setup-dev for gRPC SSO service..."
           docker exec grpc-sso-service sh -c "make setup-dev"
 
+      - name: Run gRPC SSO service (make run-server)
+        run: |
+          echo "Running run-server for gRPC SSO service..."
+          docker exec grpc-sso-service sh -c "make run-server"
+
       - name: Check PostgreSQL logs for Reframed
         run: docker logs postgres-reframed
 

@@ -65,7 +65,7 @@ build: setup
 
 test: setup run-server
 	@echo "Running tests..."
-	go test ./api_tests
+	@go test -v -timeout 60s -parallel=1 ./api_tests
 	@echo "Tests completed."
 
 cover: setup run-server
