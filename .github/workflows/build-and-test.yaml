@@ -35,13 +35,13 @@ jobs:
         run: sleep 20
 
       - name: Run make setup-dev for gRPC SSO service
-        run: docker-compose exec grpc-sso-service make setup-dev
+        run: docker-compose run grpc-sso-service make setup-dev
 
       - name: Run make setup-dev for Reframed service
-        run: docker-compose exec reframed make setup-dev
+        run: docker-compose run reframed make setup-dev
 
       - name: Run tests for Reframed service
-        run: docker-compose exec reframed make test
+        run: docker-compose run reframed make test
 
       - name: Check logs for gRPC SSO service
         run: docker-compose logs grpc-sso-service
