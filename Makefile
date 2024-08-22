@@ -47,6 +47,8 @@ run-server: stop-server
 	@echo "Running the server..."
 	@CONFIG_PATH=$(CONFIG_PATH) go run github.com/rshelekhov/reframed/cmd/reframed
 	@sleep 10
+	@echo "Server logs:"
+	@cat server.log
 	@echo "Server is running with PID $$(lsof -t -i :$(SERVER_PORT))."
 
 # Stop server
