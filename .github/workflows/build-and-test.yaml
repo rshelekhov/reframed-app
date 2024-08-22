@@ -70,7 +70,7 @@ jobs:
           docker run -d --name grpc-sso-service \
             -v $(pwd)/config/grpc-sso:/config \
             -e CONFIG_PATH=/config/.env \
-            -e POSTGRESQL_URL=postgres://root:password@localhost:5433/sso_dev?sslmode=disable \
+            -e POSTGRESQL_URL=postgres://root:password@postgres-sso:5433/sso_dev?sslmode=disable \
             -p 44044:44044 \
             rshelekhov/grpc-sso:latest
 
@@ -100,7 +100,7 @@ jobs:
           docker run -d --name reframed-service \
             -v $(pwd)/config/reframed:/config \
             -e CONFIG_PATH=/config/.env \
-            -e POSTGRESQL_URL=postgres://root:password@localhost:5432/reframed_dev?sslmode=disable \
+            -e POSTGRESQL_URL=postgres://root:password@postgres-reframed:5432/reframed_dev?sslmode=disable \
             -p 8080:8080 \
             reframed:latest
 
