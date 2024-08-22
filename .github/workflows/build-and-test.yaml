@@ -54,11 +54,12 @@ jobs:
           which migrate
 
       - name: Install dependencies
-        run: go mod download
+        run: |
+          go mod tidy
+          go mod vendor
 
       - name: Create .env files
         run: |
-          set -x
           mkdir -p ./config/reframed ./config/grpc-sso
           echo "${{ secrets.ENV_CONFIG_TEST_REFRAMED }}" > ./config/reframed/.env
           echo "${{ secrets.ENV_CONFIG_TEST_SSO }}" > ./config/grpc-sso/.env
@@ -82,7 +83,7 @@ jobs:
           fi
 
       - name: Wait for services to be ready
-        run: sleep 20
+        run: sleep 30
 
       - name: Check PostgreSQL connections
         run: |
@@ -108,6 +109,8 @@ jobs:
           docker exec reframed-service make setup-dev
 
       - name: Run tests for Reframed service
+        env:
+          GOFLAGS: "-mod=vendor"
         run: docker exec reframed-service make test
 
       - name: Check logs for gRPC SSO service
