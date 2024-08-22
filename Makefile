@@ -45,8 +45,10 @@ migrate-down:
 # Run server
 run-server: stop-server
 	@echo "Running the server..."
-	@CONFIG_PATH=$(CONFIG_PATH) go run github.com/rshelekhov/reframed/cmd/reframed &
-	@sleep 5 # Wait for the server to start
+	@CONFIG_PATH=$(CONFIG_PATH) go run github.com/rshelekhov/reframed/cmd/reframed > server.log 2>&1 &
+	@sleep 10
+	@echo "Server logs:"
+	@cat server.log
 	@echo "Server is running with PID $$(lsof -t -i :$(SERVER_PORT))."
 
 # Stop server
@@ -70,7 +72,7 @@ test-all-app: setup-dev run-server
 
 test-api: setup-dev run-server
 	@echo "Running tests..."
-	@go test -v -timeout 60s -parallel=1 ./api_tests
+	@go test -v -count=1 ./api_tests
 	@echo "Tests completed."
 
 cover: setup-dev run-server
