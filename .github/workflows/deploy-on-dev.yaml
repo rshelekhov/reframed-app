@@ -14,12 +14,15 @@ env:
 
 jobs:
   deploy:
+    if: github.event.pull_request.merged == true
     name: Deploy on DEV server
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out the repo into the Go module directory
+      - name: Check out code from dev branch
         uses: actions/checkout@v3
+        with:
+          ref: dev
 
       - name: Build Docker image
         run: |
@@ -27,7 +30,6 @@ jobs:
 
       - name: Create a temporary SSH key file
         run: |
-          mkdir -p ~/.ssh
           echo "$DEV_SERVER_SSH_KEY" > /tmp/ssh_key
           chmod 600 /tmp/ssh_key
 
@@ -63,9 +65,9 @@ jobs:
               -v ${PWD}/config/reframed-app:/src/config \
               -e CONFIG_PATH=/src/config/.env \
               -e POSTGRESQL_URL=${{ secrets.POSTGRESQL_URL }} \
-              -p 44044:44044 \
+              -p 8082:8082 \
               --name reframed-app \
-              grpc-sso:latest
+              reframed-app:latest
 
             # Wait for a few seconds to ensure the container is running
             sleep 10
