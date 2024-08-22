@@ -89,7 +89,7 @@ jobs:
         env:
           CONFIG_PATH: ./config/reframed/.env
           POSTGRESQL_URL: postgres://root:password@localhost:5432/reframed_dev?sslmode=disable
-        run: make test-all-app
+        run: make test-api
 
       - name: Check logs for gRPC SSO service
         run: docker logs grpc-sso-service
