@@ -10,44 +10,103 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    services:
+      postgres-reframed:
+        image: postgres:latest
+        env:
+          POSTGRES_USER: root
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: reframed_dev
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      postgres-sso:
+        image: postgres:latest
+        env:
+          POSTGRES_USER: root
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: sso_dev
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v3
 
-      - name: Set up Docker Compose
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y docker-compose
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.22'
 
-      - name: Ensure config directories exist
+      - name: Install golang-migrate
         run: |
-          mkdir -p ./config/reframed
-          mkdir -p ./config/grpc-sso
+          go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+          export PATH=$PATH:$(go env GOPATH)/bin
+          which migrate
+
+      - name: Install dependencies
+        run: go mod download
 
       - name: Create .env files
         run: |
+          mkdir -p ./config/reframed
+          mkdir -p ./config/grpc-sso
           echo "${{ secrets.ENV_CONFIG_TEST_REFRAMED }}" > ./config/reframed/.env
           echo "${{ secrets.ENV_CONFIG_TEST_SSO }}" > ./config/grpc-sso/.env
 
-      - name: Start services with Docker Compose
-        run: docker-compose up -d
+      - name: Pull and run gRPC SSO service container
+        run: |
+          docker pull rshelekhov/grpc-sso:latest
+          docker run -d --name grpc-sso-service \
+            -e CONFIG_PATH=/config/grpc-sso/.env \
+            -e POSTGRESQL_URL=postgres://root:password@localhost:5433/sso_dev?sslmode=disable \
+            -v $(pwd)/config/grpc-sso:/config \
+            -p 44044:44044 \
+            rshelekhov/grpc-sso:latest
 
       - name: Wait for services to be ready
         run: sleep 20
 
+      - name: Check PostgreSQL connections
+        run: |
+          pg_isready -h localhost -p 5432
+          pg_isready -h localhost -p 5433
+
       - name: Run make setup-dev for gRPC SSO service
-        run: docker-compose run grpc-sso-service make setup-dev
+        run: |
+          docker exec grpc-sso-service make setup-dev
+
+      - name: Build and run Reframed service
+        run: |
+          docker build -t reframed:latest -f Dockerfile .
+          docker run -d --name reframed-service \
+            -e CONFIG_PATH=/config/reframed/.env \
+            -e POSTGRESQL_URL=postgres://root:password@localhost:5432/reframed_dev?sslmode=disable \
+            -v $(pwd)/config/reframed:/config \
+            -p 8080:8080 \
+            reframed:latest
 
       - name: Run make setup-dev for Reframed service
-        run: docker-compose run reframed make setup-dev
+        run: |
+          docker exec reframed-service make setup-dev
 
       - name: Run tests for Reframed service
-        run: docker-compose run reframed make test
+        run: docker exec reframed-service make test
 
       - name: Check logs for gRPC SSO service
-        run: docker-compose logs grpc-sso-service
+        run: docker logs grpc-sso-service
 
       - name: Check logs for Reframed service
-        run: docker-compose logs reframed
+        run: docker logs reframed-service
 
       - name: Notify results
         run: echo "Tests completed!"
