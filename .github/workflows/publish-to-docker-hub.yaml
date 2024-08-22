@@ -12,7 +12,6 @@ on:
 env:
   REGISTRY_IMAGE: rshelekhov/reframed-app
 
-
 jobs:
   build:
     name: Publish to Docker Hub
