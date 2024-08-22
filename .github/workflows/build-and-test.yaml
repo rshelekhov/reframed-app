@@ -85,14 +85,6 @@ jobs:
       - name: Run make setup-dev for gRPC SSO service
         run: docker exec grpc-sso-service make setup-dev
 
-      - name: Check container status and logs if it failed
-        run: |
-          if [ "$(docker inspect -f {{.State.Running}} grpc-sso-service)" != "true" ]; then
-            echo "Container grpc-sso-service failed to start. Displaying logs:"
-            docker logs grpc-sso-service
-            exit 1
-          fi
-
       - name: Run tests for Reframed service
         env:
           CONFIG_PATH: ./config/reframed/.env
@@ -100,6 +92,7 @@ jobs:
         run: make test-api
 
       - name: Check logs for gRPC SSO service
+        if: ${{ always() }}
         run: docker logs grpc-sso-service
 
       - name: Notify results
