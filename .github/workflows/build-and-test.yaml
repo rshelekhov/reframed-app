@@ -78,29 +78,14 @@ jobs:
       - name: Run make setup-dev for gRPC SSO service
         run: docker exec grpc-sso-service make setup-dev
 
-      - name: Build and run Reframed service
-        run: |
-          docker build -t reframed:latest -f Dockerfile .
-          docker run -d --name reframed-service --network test-network \
-            -v $(pwd)/config/reframed:/config \
-            -e CONFIG_PATH=/config/.env \
-            -e POSTGRESQL_URL=postgres://root:password@postgres-reframed:5432/reframed_dev?sslmode=disable \
-            -p 8080:8080 \
-            reframed:latest
-
-      - name: Run make setup-dev for Reframed service
-        run: docker exec reframed-service make setup-dev
-
       - name: Run tests for Reframed service
         env:
-          GOFLAGS: "-mod=vendor"
-        run: docker exec reframed-service make test
+          CONFIG_PATH: ./config/reframed/.env
+          POSTGRESQL_URL: postgres://root:password@postgres-reframed:5432/reframed_dev?sslmode=disable
+        run: make test-all-app
 
       - name: Check logs for gRPC SSO service
         run: docker logs grpc-sso-service
-
-      - name: Check logs for Reframed service
-        run: docker logs reframed-service
 
       - name: Notify results
         run: echo "Tests completed!"
