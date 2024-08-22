@@ -29,6 +29,12 @@ jobs:
           go mod tidy
           go mod vendor
 
+      - name: Create .env files
+        run: |
+          mkdir -p ./config/reframed ./config/grpc-sso
+          echo "${{ secrets.ENV_CONFIG_TEST_REFRAMED }}" > ./config/reframed/.env
+          echo "${{ secrets.ENV_CONFIG_TEST_SSO }}" > ./config/grpc-sso/.env
+
       - name: Create Docker network
         run: docker network create test-network
 
