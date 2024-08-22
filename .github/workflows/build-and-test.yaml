@@ -80,10 +80,18 @@ jobs:
           fi
 
       - name: Wait for services to be ready
-        run: sleep 30
+        run: sleep 10
 
       - name: Run make setup-dev for gRPC SSO service
         run: docker exec grpc-sso-service make setup-dev
+
+      - name: Check container status and logs if it failed
+        run: |
+          if [ "$(docker inspect -f {{.State.Running}} grpc-sso-service)" != "true" ]; then
+            echo "Container grpc-sso-service failed to start. Displaying logs:"
+            docker logs grpc-sso-service
+            exit 1
+          fi
 
       - name: Run tests for Reframed service
         env:
