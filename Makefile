@@ -4,7 +4,7 @@ SERVER_PORT ?= 8082
 # Don't forget to set POSTGRESQL_URL with your credentials
 POSTGRESQL_URL ?='postgres://app:p%40ssw0rd@localhost:5432/reframed_dev?sslmode=disable'
 
-.PHONY: setup-dev migrate migrate-down run-server stop-server build test cover
+.PHONY: setup-dev migrate migrate-down run-server stop-server build test-api cover
 
 setup-dev: migrate
 
@@ -63,12 +63,17 @@ stop-server:
 build:
 	go build -v ./cmd/reframed
 
-test:
+test-all-app: setup-dev run-server
+	@echo "Running tests..."
+	@go test -v -timeout 60s -parallel=1 ./...
+	@echo "Tests completed."
+
+test-api: setup-dev run-server
 	@echo "Running tests..."
 	@go test -v -timeout 60s -parallel=1 ./api_tests
 	@echo "Tests completed."
 
-cover: run-server
+cover: setup-dev run-server
 	@echo "Running tests with coverage..."
 	go test -short -count=1 -race -coverprofile=coverage.out ./...
 	go tool cover -html=coverage.out
