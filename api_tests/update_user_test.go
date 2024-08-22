@@ -147,7 +147,7 @@ func TestUpdateUserNotFound(t *testing.T) {
 			Password: randomFakePassword(),
 		}).
 		Expect().
-		Status(http.StatusOK)
+		Status(http.StatusNotFound)
 }
 
 func TestUpdateUserEmailAlreadyTaken(t *testing.T) {
