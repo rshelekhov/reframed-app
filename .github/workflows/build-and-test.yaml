@@ -10,6 +10,21 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_USER: root
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: reframed_dev
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v3
 
@@ -46,14 +61,6 @@ jobs:
             -e POSTGRES_DB=sso_dev \
             postgres:latest
 
-      - name: Run PostgreSQL container for Reframed
-        run: |
-          docker run -d --name postgres-reframed --network test-network \
-            -e POSTGRES_USER=root \
-            -e POSTGRES_PASSWORD=password \
-            -e POSTGRES_DB=reframed_dev \
-            postgres:latest
-
       - name: Pull and run gRPC SSO service container
         run: |
           docker pull rshelekhov/grpc-sso:latest
@@ -81,7 +88,7 @@ jobs:
       - name: Run tests for Reframed service
         env:
           CONFIG_PATH: ./config/reframed/.env
-          POSTGRESQL_URL: postgres://root:password@postgres-reframed:5432/reframed_dev?sslmode=disable
+          POSTGRESQL_URL: postgres://root:password@localhost:5432/reframed_dev?sslmode=disable
         run: make test-all-app
 
       - name: Check logs for gRPC SSO service
