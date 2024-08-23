@@ -44,7 +44,7 @@ jobs:
           docker save reframed-app:latest -o reframed-app.tar
           
           # Transfer Docker image tar file to DEV server
-          scp -i /tmp/ssh_key reframed-app.tar $DEV_SERVER_USER@DEV_SERVER_HOST:/tmp/
+          scp -i /tmp/ssh_key reframed-app.tar $DEV_SERVER_USER@$DEV_SERVER_HOST:/tmp/
 
       - name: Deploy Docker image to DEV server
         run: |
