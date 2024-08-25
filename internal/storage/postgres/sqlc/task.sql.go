@@ -330,8 +330,8 @@ FROM lists l
         ) t ON l.id = t.list_id
 WHERE l.user_id = $1
   AND l.id > $3::varchar
-GROUP BY l.id, l.created_at
-ORDER BY l.created_at
+GROUP BY l.id
+ORDER BY l.id
 LIMIT $2
 `
 
@@ -699,8 +699,8 @@ JOIN (
 ) t ON l.id = t.list_id
 WHERE l.user_id = $1
   AND l.id > $3::varchar
-GROUP BY l.id, l.created_at
-ORDER BY l.created_at
+GROUP BY l.id
+ORDER BY l.id
 LIMIT $2
 `
 
