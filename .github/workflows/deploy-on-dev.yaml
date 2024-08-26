@@ -49,6 +49,9 @@ jobs:
       - name: Deploy Docker image to DEV server
         run: |
           ssh -i /tmp/ssh_key $DEV_SERVER_USER@$DEV_SERVER_HOST << 'EOF'
+          
+            mkdir -p ./config/reframed-app
+            
             # Create config file on the server
             echo "${{ secrets.ENV_CONFIG_DEV }}" > ./config/reframed-app/.env
 
