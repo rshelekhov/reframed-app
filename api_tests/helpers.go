@@ -3,15 +3,16 @@ package api_tests
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand"
+	"net/http"
+	"testing"
+	"time"
+
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/gavv/httpexpect/v2"
 	"github.com/rshelekhov/reframed/internal/lib/constant/key"
 	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
 	"github.com/rshelekhov/reframed/internal/model"
-	"math/rand"
-	"net/http"
-	"testing"
-	"time"
 )
 
 const (
@@ -215,7 +216,7 @@ func countTasks(t *testing.T, response *httpexpect.Object, printDetails bool) in
 			fmt.Println("Error: 'item' is not a map")
 			continue
 		}
-		totalTasks += 1
+		totalTasks++
 	}
 
 	if printDetails {
@@ -243,6 +244,10 @@ func countGroups(t *testing.T, response *httpexpect.Object, printDetails bool) i
 	if !ok {
 		fmt.Println("Error: 'data' is not an array")
 		return 0
+	}
+
+	if printDetails {
+		fmt.Printf("Total groups: %d\n", len(data))
 	}
 
 	return len(data)
