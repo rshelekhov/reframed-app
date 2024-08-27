@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+
 	"github.com/rshelekhov/reframed/internal/port"
 )
 

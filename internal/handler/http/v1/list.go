@@ -54,6 +54,7 @@ func (h *listHandler) CreateList() http.HandlerFunc {
 		listInput.UserID = userID
 
 		list, err := h.usecase.CreateList(ctx, listInput)
+
 		switch {
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToCreateList, err)
@@ -76,6 +77,7 @@ func (h *listHandler) GetDefaultList() http.HandlerFunc {
 		}
 
 		listID, err := h.usecase.GetDefaultListID(ctx, userID)
+
 		switch {
 		case errors.Is(err, le.ErrDefaultListNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrDefaultListNotFound)
@@ -89,6 +91,7 @@ func (h *listHandler) GetDefaultList() http.HandlerFunc {
 		}
 
 		listResp, err := h.usecase.GetListByID(ctx, listInput)
+
 		switch {
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)

@@ -59,6 +59,7 @@ func (h *taskHandler) CreateTask() http.HandlerFunc {
 		taskInput.UserID = userID
 
 		taskResponse, err := h.usecase.CreateTask(ctx, taskInput)
+
 		switch {
 		case errors.Is(err, le.ErrDefaultListNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrDefaultListNotFound)
@@ -92,6 +93,7 @@ func (h *taskHandler) CreateTaskInDefaultList() http.HandlerFunc {
 		taskInput.UserID = userID
 
 		taskResponse, err := h.usecase.CreateTask(ctx, taskInput)
+
 		switch {
 		case errors.Is(err, le.ErrDefaultListNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrDefaultListNotFound)
@@ -125,6 +127,7 @@ func (h *taskHandler) GetTaskByID() http.HandlerFunc {
 		}
 
 		taskResp, err := h.usecase.GetTaskByID(ctx, taskInput)
+
 		switch {
 		case errors.Is(err, le.ErrTaskNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrTaskNotFound)
@@ -154,6 +157,7 @@ func (h *taskHandler) GetTasksByUserID() http.HandlerFunc {
 		}
 
 		tasksResp, err := h.usecase.GetTasksByUserID(ctx, userID, pagination)
+
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
 			handleResponseSuccess(w, r, log, "no tasks found", nil)
@@ -185,6 +189,7 @@ func (h *taskHandler) GetTasksByListID() http.HandlerFunc {
 		}
 
 		tasksResp, err := h.usecase.GetTasksByListID(ctx, tasksInput)
+
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
 			handleResponseSuccess(w, r, log, "no tasks found for the list", nil)
@@ -216,6 +221,7 @@ func (h *taskHandler) GetTasksGroupedByHeadings() http.HandlerFunc {
 		}
 
 		tasksResp, err := h.usecase.GetTasksGroupedByHeading(ctx, tasksInput)
+
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
 			handleResponseSuccess(w, r, log, "no tasks grouped by headings found", nil)
@@ -240,6 +246,7 @@ func (h *taskHandler) GetTasksForToday() http.HandlerFunc {
 		}
 
 		tasksResp, err := h.usecase.GetTasksForToday(ctx, userID)
+
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
 			handleResponseSuccess(w, r, log, "no tasks found for today", nil)
@@ -269,6 +276,7 @@ func (h *taskHandler) GetUpcomingTasks() http.HandlerFunc {
 		}
 
 		tasksResp, err := h.usecase.GetUpcomingTasks(ctx, userID, pagination)
+
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
 			handleResponseSuccess(w, r, log, "no upcoming tasks found", nil)
@@ -298,6 +306,7 @@ func (h *taskHandler) GetOverdueTasks() http.HandlerFunc {
 		}
 
 		tasksResp, err := h.usecase.GetOverdueTasks(ctx, userID, pagination)
+
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
 			handleResponseSuccess(w, r, log, "no overdue tasks found", nil)
@@ -327,6 +336,7 @@ func (h *taskHandler) GetTasksForSomeday() http.HandlerFunc {
 		}
 
 		tasksResp, err := h.usecase.GetTasksForSomeday(ctx, userID, pagination)
+
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
 			handleResponseSuccess(w, r, log, "no tasks for someday found", nil)
@@ -356,6 +366,7 @@ func (h *taskHandler) GetCompletedTasks() http.HandlerFunc {
 		}
 
 		tasksResp, err := h.usecase.GetCompletedTasks(ctx, userID, pagination)
+
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
 			handleResponseSuccess(w, r, log, "no completed tasks found", nil)
@@ -385,6 +396,7 @@ func (h *taskHandler) GetArchivedTasks() http.HandlerFunc {
 		}
 
 		tasksResp, err := h.usecase.GetArchivedTasks(ctx, userID, pagination)
+
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
 			handleResponseSuccess(w, r, log, "no archived tasks found", nil)
@@ -419,6 +431,7 @@ func (h *taskHandler) UpdateTask() http.HandlerFunc {
 		taskInput.UserID = userID
 
 		taskResponse, err := h.usecase.UpdateTask(ctx, taskInput)
+
 		switch {
 		case errors.Is(err, le.ErrTaskNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrTaskNotFound)
@@ -453,6 +466,7 @@ func (h *taskHandler) UpdateTaskTime() http.HandlerFunc {
 		taskInput.UserID = userID
 
 		taskResponse, err := h.usecase.UpdateTaskTime(ctx, taskInput)
+
 		switch {
 		case errors.Is(err, le.ErrTaskNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrTaskNotFound)
@@ -492,6 +506,7 @@ func (h *taskHandler) MoveTaskToAnotherList() http.HandlerFunc {
 		}
 
 		taskResponse, err := h.usecase.MoveTaskToAnotherList(ctx, taskInput)
+
 		switch {
 		case errors.Is(err, le.ErrTaskNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrTaskNotFound)
@@ -531,6 +546,7 @@ func (h *taskHandler) MoveTaskToAnotherHeading() http.HandlerFunc {
 		}
 
 		taskResponse, err := h.usecase.MoveTaskToAnotherHeading(ctx, taskInput)
+
 		switch {
 		case errors.Is(err, le.ErrTaskNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrTaskNotFound)
@@ -564,6 +580,7 @@ func (h *taskHandler) CompleteTask() http.HandlerFunc {
 		}
 
 		taskResponse, err := h.usecase.CompleteTask(ctx, taskInput)
+
 		switch {
 		case errors.Is(err, le.ErrTaskNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrTaskNotFound)
@@ -595,6 +612,7 @@ func (h *taskHandler) ArchiveTask() http.HandlerFunc {
 		}
 
 		taskResponse, err := h.usecase.ArchiveTask(ctx, taskInput)
+
 		switch {
 		case errors.Is(err, le.ErrTaskNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrTaskNotFound)

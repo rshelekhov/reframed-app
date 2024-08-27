@@ -2,15 +2,16 @@ package v1
 
 import (
 	"errors"
+	"log/slog"
+	"net/http"
+	"strconv"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/rshelekhov/reframed/internal/lib/constant/key"
 	"github.com/rshelekhov/reframed/internal/lib/constant/le"
 	"github.com/rshelekhov/reframed/internal/lib/logger"
 	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
 	"github.com/rshelekhov/reframed/internal/port"
-	"log/slog"
-	"net/http"
-	"strconv"
 )
 
 type statusHandler struct {
@@ -69,6 +70,7 @@ func (h *statusHandler) GetStatusByID() http.HandlerFunc {
 		}
 
 		status, err := h.usecase.GetStatusByID(ctx, statusID)
+
 		switch {
 		case errors.Is(err, le.ErrStatusNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrStatusNotFound)

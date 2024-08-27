@@ -1,11 +1,12 @@
 package v1
 
 import (
+	"log/slog"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/rshelekhov/reframed/internal/config"
 	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
 	"github.com/rshelekhov/reframed/internal/port"
-	"log/slog"
 )
 
 type AppRouter struct {

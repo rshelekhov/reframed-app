@@ -54,6 +54,7 @@ func (h *authHandler) Register() http.HandlerFunc {
 		}
 
 		tokenData, userID, err := h.usecase.RegisterNewUser(ctx, userInput, userDevice)
+
 		switch {
 		case errors.Is(err, le.ErrUserAlreadyExists):
 			handleResponseError(w, r, log, http.StatusConflict, le.ErrUserAlreadyExists,
@@ -84,6 +85,7 @@ func (h *authHandler) VerifyEmail() http.HandlerFunc {
 		}
 
 		err := h.usecase.VerifyEmail(ctx, verificationToken)
+
 		switch {
 		case errors.Is(err, le.ErrEmailVerificationTokenExpiredWithEmailResent):
 			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrEmailVerificationTokenExpiredWithEmailResent)
@@ -115,6 +117,7 @@ func (h *authHandler) LoginWithPassword() http.HandlerFunc {
 		}
 
 		tokenData, userID, err := h.usecase.LoginUser(ctx, userInput, userDevice)
+
 		switch {
 		case errors.Is(err, le.ErrUserNotFound):
 			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrUserNotFound,
@@ -150,6 +153,7 @@ func (h *authHandler) RequestResetPassword() http.HandlerFunc {
 		}
 
 		err := h.usecase.RequestResetPassword(ctx, userInput.Email)
+
 		switch {
 		case errors.Is(err, le.ErrUserNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrUserNotFound,
@@ -181,6 +185,7 @@ func (h *authHandler) ChangePassword() http.HandlerFunc {
 		}
 
 		err := h.usecase.ChangePassword(ctx, userInput.Password, resetPasswordToken)
+
 		switch {
 		case errors.Is(err, le.ErrResetPasswordTokenExpiredWithEmailResent):
 			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrResetPasswordTokenExpiredWithEmailResent)
@@ -213,6 +218,7 @@ func (h *authHandler) RefreshJWTokens() http.HandlerFunc {
 		}
 
 		tokenData, userID, err := h.usecase.Refresh(ctx, refreshToken, userDevice)
+
 		switch {
 		case err != nil:
 			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrFailedToRefreshTokens,
@@ -286,6 +292,7 @@ func (h *authHandler) GetUser() http.HandlerFunc {
 		}
 
 		user, err := h.usecase.GetUserByID(ctx)
+
 		switch {
 		case errors.Is(err, le.ErrUserNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrUserNotFound, slog.String(key.UserID, userID))
@@ -316,6 +323,7 @@ func (h *authHandler) UpdateUser() http.HandlerFunc {
 		}
 
 		err = h.usecase.UpdateUser(ctx, userInput)
+
 		switch {
 		case errors.Is(err, le.ErrUserNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrUserNotFound,
@@ -355,6 +363,7 @@ func (h *authHandler) DeleteUser() http.HandlerFunc {
 		}
 
 		err = h.usecase.DeleteUser(ctx, userID)
+
 		switch {
 		case errors.Is(err, le.ErrUserNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrUserNotFound,
