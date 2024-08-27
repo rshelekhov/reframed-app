@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"fmt"
+
 	"github.com/golang-jwt/jwt/v5"
 	ssogrpc "github.com/rshelekhov/reframed/internal/clients/sso/grpc"
 	"github.com/rshelekhov/reframed/internal/config"
@@ -108,6 +109,7 @@ func (u *AuthUsecase) VerifyEmail(ctx context.Context, verificationToken string)
 		if !ok {
 			return err
 		}
+
 		switch st.Code() {
 		case codes.FailedPrecondition:
 			return le.ErrEmailVerificationTokenExpiredWithEmailResent
@@ -231,7 +233,6 @@ func (u *AuthUsecase) Refresh(
 	userID string,
 	err error,
 ) {
-
 	resp, err := u.ssoClient.Api.Refresh(ctx, &ssov1.RefreshRequest{
 		RefreshToken: refreshToken,
 		AppId:        u.jwt.AppID,
@@ -324,7 +325,6 @@ func (u *AuthUsecase) UpdateUser(ctx context.Context, data *model.UserRequestDat
 		UpdatedPassword: data.UpdatedPassword,
 		AppId:           u.jwt.AppID,
 	})
-
 	if err != nil {
 		st, ok := status.FromError(err)
 		if !ok {
@@ -355,7 +355,6 @@ func (u *AuthUsecase) DeleteUser(ctx context.Context, userID string) error {
 	_, err = u.ssoClient.Api.DeleteUser(ctx, &ssov1.DeleteUserRequest{
 		AppId: u.jwt.AppID,
 	})
-
 	if err != nil {
 		st, ok := status.FromError(err)
 		if !ok {

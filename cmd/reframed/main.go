@@ -3,8 +3,9 @@ package main
 
 import (
 	"context"
-	"github.com/rshelekhov/reframed/internal/config"
 	"log/slog"
+
+	"github.com/rshelekhov/reframed/internal/config"
 
 	"github.com/rshelekhov/reframed/internal/app/httpserver"
 	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
@@ -37,6 +38,9 @@ func main() {
 		cfg.Clients.SSO.Timeout,
 		cfg.Clients.SSO.RetriesCount,
 	)
+	if err != nil {
+		log.Error("failed to init sso client", logger.Err(err))
+	}
 
 	tokenAuth := jwtoken.NewService(ssoClient, cfg.AppData.ID)
 

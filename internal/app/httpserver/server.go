@@ -3,13 +3,14 @@ package httpserver
 import (
 	"context"
 	"errors"
-	"github.com/rshelekhov/reframed/internal/config"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/rshelekhov/reframed/internal/config"
 
 	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
 

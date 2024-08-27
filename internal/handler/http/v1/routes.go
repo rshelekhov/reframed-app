@@ -1,13 +1,14 @@
 package v1
 
 import (
+	"time"
+
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/httprate"
 	"github.com/go-chi/render"
 	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
 	mwlogger "github.com/rshelekhov/reframed/internal/lib/middleware/logger"
-	"time"
 )
 
 func (ar *AppRouter) initRoutes() *chi.Mux {
@@ -44,7 +45,7 @@ func (ar *AppRouter) initRoutes() *chi.Mux {
 	// Health check
 	r.Get("/health", HealthRead())
 
-	//Public routes
+	// Public routes
 	r.Group(func(r chi.Router) {
 		r.Post("/login", ar.LoginWithPassword())
 		r.Post("/register", ar.Register())

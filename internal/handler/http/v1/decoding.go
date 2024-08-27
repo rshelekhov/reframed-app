@@ -4,14 +4,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/go-chi/render"
-	"github.com/rshelekhov/reframed/internal/lib/constant/le"
-	"github.com/rshelekhov/reframed/internal/lib/logger"
-	"github.com/rshelekhov/reframed/internal/model"
 	"io"
 	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/go-chi/render"
+	"github.com/rshelekhov/reframed/internal/lib/constant/le"
+	"github.com/rshelekhov/reframed/internal/lib/logger"
+	"github.com/rshelekhov/reframed/internal/model"
 )
 
 func decodeJSON(w http.ResponseWriter, r *http.Request, log *slog.Logger, data any) error {

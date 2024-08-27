@@ -4,16 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/go-chi/render"
-	"github.com/go-playground/validator/v10"
-	"github.com/rshelekhov/reframed/internal/lib/constant/le"
-	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
-	"github.com/rshelekhov/reframed/internal/model"
 	"log/slog"
 	"net/http"
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/go-chi/render"
+	"github.com/go-playground/validator/v10"
+	"github.com/rshelekhov/reframed/internal/lib/constant/le"
+	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
+	"github.com/rshelekhov/reframed/internal/model"
 )
 
 func decodeAndValidateJSON(w http.ResponseWriter, r *http.Request, log *slog.Logger, data any) error {
@@ -29,6 +30,7 @@ func decodeAndValidateJSON(w http.ResponseWriter, r *http.Request, log *slog.Log
 // getUserIDFromContext retrieves the userID from context and handles any errors.
 func getUserIDFromContext(ctx context.Context, w http.ResponseWriter, r *http.Request, jwt *jwtoken.TokenService, log *slog.Logger) (userID string, err error) {
 	userID, err = jwt.GetUserID(ctx)
+
 	switch {
 	case errors.Is(err, jwtoken.ErrUserIDNotFoundInCtx):
 		handleResponseError(w, r, log, http.StatusNotFound, le.LocalError(jwtoken.ErrUserIDNotFoundInCtx.Error()))
@@ -152,12 +154,15 @@ func responseError(
 
 func getCaller() (pc uintptr, file string, line int, ok bool) {
 	i := 1
+
 	for {
 		p, f, l, o := runtime.Caller(i)
 		if !o {
 			return
 		}
+
 		fmt.Println(f)
+
 		if strings.Contains(f, "reframed") {
 			pc = p
 			file = f

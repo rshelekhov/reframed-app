@@ -3,8 +3,9 @@ package usecase
 import (
 	"context"
 	"errors"
-	"github.com/rshelekhov/reframed/internal/lib/constant/le"
 	"time"
+
+	"github.com/rshelekhov/reframed/internal/lib/constant/le"
 
 	"github.com/segmentio/ksuid"
 
@@ -146,7 +147,6 @@ func (u *HeadingUsecase) MoveHeadingToAnotherList(ctx context.Context, data mode
 	if _, err := u.ListUsecase.GetListByID(ctx, listRequestData); err != nil {
 		if errors.Is(err, le.ErrListNotFound) {
 			return model.HeadingResponseData{}, le.ErrListNotFound
-
 		}
 		return model.HeadingResponseData{}, err
 	}
