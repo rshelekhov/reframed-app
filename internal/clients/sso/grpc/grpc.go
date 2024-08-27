@@ -3,14 +3,15 @@ package grpc
 import (
 	"context"
 	"fmt"
+	"log/slog"
+	"time"
+
 	grpclog "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	grpcretry "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/retry"
 	ssov1 "github.com/rshelekhov/sso-protos/gen/go/sso"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
-	"log/slog"
-	"time"
 )
 
 type Client struct {
@@ -39,8 +40,7 @@ func New(
 
 	// TODO: updated to use secure transport
 
-	// TODO: use NewClient instead of DialContext
-	cc, err := grpc.DialContext(ctx, addr,
+	cc, err := grpc.NewClient(addr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithChainUnaryInterceptor(
 			grpclog.UnaryClientInterceptor(interceptorLogger(log), logOpts...),

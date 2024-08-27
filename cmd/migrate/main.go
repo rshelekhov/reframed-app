@@ -8,6 +8,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+
 	"github.com/rshelekhov/reframed/internal/config"
 
 	"github.com/golang-migrate/migrate/v4"

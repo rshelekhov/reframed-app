@@ -7,15 +7,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	ssogrpc "github.com/rshelekhov/reframed/internal/clients/sso/grpc"
-	"github.com/rshelekhov/reframed/internal/lib/cache"
-	"github.com/rshelekhov/reframed/internal/lib/constant/key"
-	"google.golang.org/grpc/metadata"
 	"math/big"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
+
+	ssogrpc "github.com/rshelekhov/reframed/internal/clients/sso/grpc"
+	"github.com/rshelekhov/reframed/internal/lib/cache"
+	"github.com/rshelekhov/reframed/internal/lib/constant/key"
+	"google.golang.org/grpc/metadata"
 
 	"github.com/golang-jwt/jwt/v5"
 	ssov1 "github.com/rshelekhov/sso-protos/gen/go/sso"
@@ -27,14 +28,13 @@ type TokenService struct {
 	mu        sync.RWMutex
 	AppID     string
 	Cookie    cookie
-	// TODO: add jwt data from env (?)
 }
 
 type cookie struct {
 	Domain    string
 	Path      string
 	ExpiresAt time.Time
-	HttpOnly  bool
+	HTTPOnly  bool
 }
 
 func NewService(ssoClient *ssogrpc.Client, appID string) *TokenService {
@@ -54,12 +54,6 @@ type TokenData struct {
 	HTTPOnly         bool
 	AdditionalFields map[string]string
 }
-
-type ContextKey struct {
-	name string
-}
-
-type ClaimCTXKey string
 
 var (
 	ErrUnauthorized             = errors.New("unauthorized")
@@ -94,7 +88,9 @@ func (j *TokenService) Verify(findTokenFns ...func(r *http.Request) string) func
 					http.Error(w, ErrNoTokenFound.Error(), http.StatusUnauthorized)
 					return
 				}
+
 				http.Error(w, err.Error(), http.StatusUnauthorized)
+
 				return
 			}
 
@@ -157,7 +153,6 @@ func (j *TokenService) VerifyToken(ctx context.Context, accessTokenString string
 }
 
 func (j *TokenService) ParseToken(ctx context.Context, accessTokenString string) (*jwt.Token, error) {
-
 	jwks, err := j.GetJWKS(ctx)
 	if err != nil {
 		return nil, err
@@ -226,7 +221,6 @@ func (j *TokenService) GetJWKS(ctx context.Context) ([]*ssov1.JWK, error) {
 		jwksResponse, err := j.ssoClient.Api.GetJWKS(ctx, &ssov1.GetJWKSRequest{
 			AppId: j.AppID,
 		})
-
 		if err != nil {
 			return nil, err
 		}

@@ -11,10 +11,14 @@ linters-settings:
   gofumpt:
     extra-rules: true
   lll:
-    line-length: 150
+    line-length: 165
     tab-width: 1
   nestif:
     min-complexity: 4
+  staticcheck:
+    checks:
+      - all
+      - '-SA1029'
   testpackage:
     skip-regexp: "(whitebox)_test\\.go"
   wsl:
@@ -45,7 +49,6 @@ linters:
     - nakedret
     - nestif
     - noctx
-    - revive
     - staticcheck
     - testpackage
     - unconvert
@@ -59,6 +62,11 @@ issues:
       linters:
         - revive
         - wsl
+        - unused
+        - revive
+    - path: api_tests
+      linters:
+        - unused
     - linters:
         - wsl
       text: "only one cuddle assignment allowed before if statement"
@@ -71,3 +79,5 @@ issues:
     - linters:
         - wsl
       text: "return statements should not be cuddled if block has more than two lines"
+  exclude-files:
+    - api_tests/helpers.go

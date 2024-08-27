@@ -3,8 +3,9 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"github.com/rshelekhov/reframed/internal/config"
 	"net"
+
+	"github.com/rshelekhov/reframed/internal/config"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib" // Import for side effects

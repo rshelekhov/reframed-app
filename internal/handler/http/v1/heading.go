@@ -86,6 +86,7 @@ func (h *headingHandler) GetHeadingByID() http.HandlerFunc {
 		}
 
 		headingResp, err := h.usecase.GetHeadingByID(ctx, headingInput)
+
 		switch {
 		case errors.Is(err, le.ErrHeadingNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrHeadingNotFound)
@@ -117,6 +118,7 @@ func (h *headingHandler) GetHeadingsByListID() http.HandlerFunc {
 		}
 
 		headingsResp, err := h.usecase.GetHeadingsByListID(ctx, headingsInput)
+
 		switch {
 		case errors.Is(err, le.ErrNoHeadingsFound):
 			handleResponseSuccess(w, r, log, "no headings found", nil)
@@ -151,6 +153,7 @@ func (h *headingHandler) UpdateHeading() http.HandlerFunc {
 		headingInput.UserID = userID
 
 		headingResponse, err := h.usecase.UpdateHeading(ctx, headingInput)
+
 		switch {
 		case errors.Is(err, le.ErrHeadingNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrHeadingNotFound)
@@ -188,6 +191,7 @@ func (h *headingHandler) MoveHeadingToAnotherList() http.HandlerFunc {
 		}
 
 		headingResponse, err := h.usecase.MoveHeadingToAnotherList(ctx, headingInput)
+
 		switch {
 		case errors.Is(err, le.ErrHeadingNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrHeadingNotFound)
@@ -221,6 +225,7 @@ func (h *headingHandler) DeleteHeading() http.HandlerFunc {
 		}
 
 		err = h.usecase.DeleteHeading(ctx, headingInput)
+
 		switch {
 		case errors.Is(err, le.ErrHeadingNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrHeadingNotFound)

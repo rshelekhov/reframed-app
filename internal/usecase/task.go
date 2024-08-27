@@ -597,7 +597,6 @@ func (u *TaskUsecase) CompleteTask(ctx context.Context, data model.TaskRequestDa
 		UserID:    completedTask.UserID,
 		UpdatedAt: completedTask.UpdatedAt,
 	}, nil
-
 }
 
 func (u *TaskUsecase) ArchiveTask(ctx context.Context, data model.TaskRequestData) (model.TaskResponseData, error) {
