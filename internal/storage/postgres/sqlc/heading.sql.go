@@ -40,12 +40,13 @@ func (q *Queries) CreateHeading(ctx context.Context, arg CreateHeadingParams) er
 	return err
 }
 
-const deleteHeading = `-- name: DeleteHeading :exec
+const deleteHeading = `-- name: DeleteHeading :one
 UPDATE headings
 SET deleted_at = $1
 WHERE id = $2
   AND user_id = $3
   AND deleted_at IS NULL
+RETURNING id
 `
 
 type DeleteHeadingParams struct {
@@ -54,9 +55,11 @@ type DeleteHeadingParams struct {
 	UserID    string             `db:"user_id"`
 }
 
-func (q *Queries) DeleteHeading(ctx context.Context, arg DeleteHeadingParams) error {
-	_, err := q.db.Exec(ctx, deleteHeading, arg.DeletedAt, arg.ID, arg.UserID)
-	return err
+func (q *Queries) DeleteHeading(ctx context.Context, arg DeleteHeadingParams) (string, error) {
+	row := q.db.QueryRow(ctx, deleteHeading, arg.DeletedAt, arg.ID, arg.UserID)
+	var id string
+	err := row.Scan(&id)
+	return id, err
 }
 
 const getDefaultHeadingID = `-- name: GetDefaultHeadingID :one

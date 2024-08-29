@@ -46,9 +46,10 @@ SET list_id = $1, updated_at = $2
 WHERE heading_id = $3
   AND user_id = $4;
 
--- name: DeleteHeading :exec
+-- name: DeleteHeading :one
 UPDATE headings
 SET deleted_at = $1
 WHERE id = $2
   AND user_id = $3
-  AND deleted_at IS NULL;
+  AND deleted_at IS NULL
+RETURNING id;

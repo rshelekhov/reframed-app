@@ -164,7 +164,7 @@ func (s *HeadingStorage) MoveHeadingToAnotherList(ctx context.Context, heading m
 func (s *HeadingStorage) DeleteHeading(ctx context.Context, heading model.Heading) error {
 	const op = "heading.storage.DeleteHeading"
 
-	err := s.Queries.DeleteHeading(ctx, sqlc.DeleteHeadingParams{
+	_, err := s.Queries.DeleteHeading(ctx, sqlc.DeleteHeadingParams{
 		ID:     heading.ID,
 		UserID: heading.UserID,
 		DeletedAt: pgtype.Timestamptz{
