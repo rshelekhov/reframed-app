@@ -13,9 +13,9 @@ type AuthUsecase interface {
 	LoginUser(ctx context.Context, userData *model.UserRequestData, userDevice model.UserDeviceRequestData) (tokenData *ssov1.TokenData, userID string, err error)
 	RequestResetPassword(ctx context.Context, email string) error
 	ChangePassword(ctx context.Context, password, resetPasswordToken string) error
-	Refresh(ctx context.Context, refreshToken string, data model.UserDeviceRequestData) (tokenData *ssov1.TokenData, userID string, err error)
+	RefreshTokens(ctx context.Context, refreshToken string, data model.UserDeviceRequestData) (tokenData *ssov1.TokenData, userID string, err error)
 	LogoutUser(ctx context.Context, data model.UserDeviceRequestData) error
 	GetUserByID(ctx context.Context) (model.UserResponseData, error)
-	UpdateUser(ctx context.Context, data *model.UserRequestData) error
+	UpdateUser(ctx context.Context, data *model.UpdateUserRequestData) error
 	DeleteUser(ctx context.Context, userID string) error
 }
