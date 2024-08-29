@@ -60,6 +60,7 @@ func (s *ListStorage) GetListByID(ctx context.Context, listID, userID string) (m
 	return model.List{
 		ID:        list.ID,
 		Title:     list.Title,
+		UserID:    list.UserID,
 		IsDefault: list.IsDefault,
 		UpdatedAt: list.UpdatedAt,
 	}, nil
@@ -122,7 +123,7 @@ func (s *ListStorage) UpdateList(ctx context.Context, list model.List) error {
 func (s *ListStorage) DeleteList(ctx context.Context, list model.List) error {
 	const op = "list.storage.DeleteList"
 
-	err := s.Queries.DeleteList(ctx, sqlc.DeleteListParams{
+	_, err := s.Queries.DeleteList(ctx, sqlc.DeleteListParams{
 		ID:     list.ID,
 		UserID: list.UserID,
 		DeletedAt: pgtype.Timestamptz{

@@ -38,11 +38,13 @@ func (q *Queries) CreateList(ctx context.Context, arg CreateListParams) error {
 	return err
 }
 
-const deleteList = `-- name: DeleteList :exec
+const deleteList = `-- name: DeleteList :one
 UPDATE lists
 SET deleted_at = $1
 WHERE id = $2
   AND user_id = $3
+  AND deleted_at IS NULL
+RETURNING id
 `
 
 type DeleteListParams struct {
@@ -51,9 +53,11 @@ type DeleteListParams struct {
 	UserID    string             `db:"user_id"`
 }
 
-func (q *Queries) DeleteList(ctx context.Context, arg DeleteListParams) error {
-	_, err := q.db.Exec(ctx, deleteList, arg.DeletedAt, arg.ID, arg.UserID)
-	return err
+func (q *Queries) DeleteList(ctx context.Context, arg DeleteListParams) (string, error) {
+	row := q.db.QueryRow(ctx, deleteList, arg.DeletedAt, arg.ID, arg.UserID)
+	var id string
+	err := row.Scan(&id)
+	return id, err
 }
 
 const getDefaultListID = `-- name: GetDefaultListID :one

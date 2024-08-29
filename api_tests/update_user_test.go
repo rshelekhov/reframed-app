@@ -17,11 +17,13 @@ func TestUpdateUser_HappyPath(t *testing.T) {
 	}
 	e := httpexpect.Default(t, u.String())
 
+	pass := randomFakePassword()
+
 	// Register user
 	user := e.POST("/register").
 		WithJSON(model.UserRequestData{
 			Email:    gofakeit.Email(),
-			Password: randomFakePassword(),
+			Password: pass,
 		}).
 		Expect().
 		Status(http.StatusCreated).
@@ -32,9 +34,10 @@ func TestUpdateUser_HappyPath(t *testing.T) {
 	// Update user
 	e.PATCH("/user/").
 		WithHeader("Authorization", "Bearer "+accessToken).
-		WithJSON(model.UserRequestData{
-			Email:    gofakeit.Email(),
-			Password: randomFakePassword(),
+		WithJSON(model.UpdateUserRequestData{
+			Email:           gofakeit.Email(),
+			Password:        pass,
+			UpdatedPassword: randomFakePassword(),
 		}).
 		Expect().
 		Status(http.StatusOK)
@@ -100,7 +103,7 @@ func TestUpdateUser_FailCases(t *testing.T) {
 			// Update user
 			e.PATCH("/user/").
 				WithHeader("Authorization", "Bearer "+accessToken).
-				WithJSON(model.UserRequestData{
+				WithJSON(model.UpdateUserRequestData{
 					Email:           tc.email,
 					Password:        tc.curPassword,
 					UpdatedPassword: tc.updPassword,

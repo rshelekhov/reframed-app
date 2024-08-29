@@ -125,3 +125,64 @@ func TestCreateHeading_FailCases(t *testing.T) {
 	// Cleanup the SSO gRPC service storage after testing
 	cleanupAuthService(e, user)
 }
+
+func TestCreateHeading_InvalidUserID(t *testing.T) {
+	u := url.URL{
+		Scheme: scheme,
+		Host:   host,
+	}
+	e := httpexpect.Default(t, u.String())
+
+	// Register first user
+	user1 := e.POST("/register").
+		WithJSON(model.UserRequestData{
+			Email:    gofakeit.Email(),
+			Password: randomFakePassword(),
+		}).
+		Expect().
+		Status(http.StatusCreated).
+		JSON().Object()
+
+	accessToken1 := user1.Value(jwtoken.AccessTokenKey).String().Raw()
+
+	// Create list
+	list := e.POST("/user/lists/").
+		WithHeader("Authorization", "Bearer "+accessToken1).
+		WithJSON(model.ListRequestData{
+			Title: gofakeit.Word(),
+		}).
+		Expect().
+		Status(http.StatusCreated).
+		JSON().Object()
+
+	listID := list.Value(key.Data).Object().Value(key.ListID).String().Raw()
+
+	// Register second user
+	user2 := e.POST("/register").
+		WithJSON(model.UserRequestData{
+			Email:    gofakeit.Email(),
+			Password: randomFakePassword(),
+		}).
+		Expect().
+		Status(http.StatusCreated).
+		JSON().Object()
+
+	accessToken2 := user2.Value(jwtoken.AccessTokenKey).String().Raw()
+
+	// Create heading with invalid token and userID
+	e.POST("/user/lists/{list_id}/headings/", listID).
+		WithHeader("Authorization", "Bearer "+accessToken2).
+		WithJSON(model.HeadingRequestData{
+			Title:  gofakeit.Word(),
+			ListID: listID,
+		}).
+		Expect().
+		Status(http.StatusNotFound).
+		JSON().Object()
+
+	// Cleanup the SSO gRPC service storage after testing
+	responses := []*httpexpect.Object{user1, user2}
+	for _, resp := range responses {
+		cleanupAuthService(e, resp)
+	}
+}

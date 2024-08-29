@@ -31,8 +31,10 @@ WHERE id = $3
   AND deleted_at IS NULL
 RETURNING id;
 
--- name: DeleteList :exec
+-- name: DeleteList :one
 UPDATE lists
 SET deleted_at = $1
 WHERE id = $2
-  AND user_id = $3;
+  AND user_id = $3
+  AND deleted_at IS NULL
+RETURNING id;

@@ -59,15 +59,17 @@ func (h *authHandler) Register() http.HandlerFunc {
 		case errors.Is(err, le.ErrUserAlreadyExists):
 			handleResponseError(w, r, log, http.StatusConflict, le.ErrUserAlreadyExists,
 				slog.String(key.Email, userInput.Email))
+			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToCreateUser, err)
-		default:
-			log.Info("user and tokens created",
-				slog.String(key.UserID, userID),
-				slog.Any(key.AccessToken, tokenData.GetAccessToken()),
-				slog.Any(key.RefreshToken, tokenData.GetRefreshToken()))
-			jwtoken.SendTokensToWeb(w, tokenData, http.StatusCreated)
+			return
 		}
+
+		log.Info("user and tokens created",
+			slog.String(key.UserID, userID),
+			slog.Any(key.AccessToken, tokenData.GetAccessToken()),
+			slog.Any(key.RefreshToken, tokenData.GetRefreshToken()))
+		jwtoken.SendTokensToWeb(w, tokenData, http.StatusCreated)
 	}
 }
 
@@ -89,13 +91,16 @@ func (h *authHandler) VerifyEmail() http.HandlerFunc {
 		switch {
 		case errors.Is(err, le.ErrEmailVerificationTokenExpiredWithEmailResent):
 			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrEmailVerificationTokenExpiredWithEmailResent)
+			return
 		case errors.Is(err, le.ErrEmailVerificationTokenNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrEmailVerificationTokenNotFound)
+			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToVerifyEmail, err)
-		default:
-			handleResponseSuccess(w, r, log, "user verified", nil)
+			return
 		}
+
+		handleResponseSuccess(w, r, log, "user verified", nil)
 	}
 }
 
@@ -122,21 +127,24 @@ func (h *authHandler) LoginWithPassword() http.HandlerFunc {
 		case errors.Is(err, le.ErrUserNotFound):
 			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrUserNotFound,
 				slog.String(key.Email, userInput.Email))
+			return
 		case errors.Is(err, le.ErrUserUnauthenticated):
 			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrUserUnauthenticated,
 				slog.String(key.Email, userInput.Email))
+			return
 		case err != nil:
 			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrFailedToLoginUser,
 				slog.String(key.Email, userInput.Email),
 				slog.String(key.Error, err.Error()))
-		default:
-			log.Info(
-				"user logged in, tokens created",
-				slog.String(key.UserID, userID),
-				slog.Any(key.AccessToken, tokenData.AccessToken),
-				slog.Any(key.RefreshToken, tokenData.RefreshToken))
-			jwtoken.SendTokensToWeb(w, tokenData, http.StatusOK)
+			return
 		}
+
+		log.Info(
+			"user logged in, tokens created",
+			slog.String(key.UserID, userID),
+			slog.Any(key.AccessToken, tokenData.AccessToken),
+			slog.Any(key.RefreshToken, tokenData.RefreshToken))
+		jwtoken.SendTokensToWeb(w, tokenData, http.StatusOK)
 	}
 }
 
@@ -158,11 +166,13 @@ func (h *authHandler) RequestResetPassword() http.HandlerFunc {
 		case errors.Is(err, le.ErrUserNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrUserNotFound,
 				slog.String(key.Email, userInput.Email))
+			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToRequestResetPassword, err)
-		default:
-			handleResponseSuccess(w, r, log, "reset password email sent", nil)
+			return
 		}
+
+		handleResponseSuccess(w, r, log, "reset password email sent", nil)
 	}
 }
 
@@ -189,19 +199,22 @@ func (h *authHandler) ChangePassword() http.HandlerFunc {
 		switch {
 		case errors.Is(err, le.ErrResetPasswordTokenExpiredWithEmailResent):
 			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrResetPasswordTokenExpiredWithEmailResent)
+			return
 		case errors.Is(err, le.ErrUpdatedPasswordMustNotMatchTheCurrent):
 			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrUpdatedPasswordMustNotMatchTheCurrent)
+			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToChangePassword, err)
-		default:
-			handleResponseSuccess(w, r, log, "password changed", nil)
+			return
 		}
+
+		handleResponseSuccess(w, r, log, "password changed", nil)
 	}
 }
 
-func (h *authHandler) RefreshJWTokens() http.HandlerFunc {
+func (h *authHandler) RefreshTokens() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "auth.handler.RefreshJWTokens"
+		const op = "auth.handler.RefreshTokens"
 
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
@@ -217,20 +230,19 @@ func (h *authHandler) RefreshJWTokens() http.HandlerFunc {
 			IP:        strings.Split(r.RemoteAddr, ":")[0],
 		}
 
-		tokenData, userID, err := h.usecase.Refresh(ctx, refreshToken, userDevice)
-
-		switch {
-		case err != nil:
+		tokenData, userID, err := h.usecase.RefreshTokens(ctx, refreshToken, userDevice)
+		if err != nil {
 			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrFailedToRefreshTokens,
 				slog.String(key.UserID, userID),
 				slog.Any(key.Error, err))
-		default:
-			log.Info("tokens created",
-				slog.Any(key.UserID, userID),
-				slog.Any(key.AccessToken, tokenData.AccessToken),
-				slog.Any(key.RefreshToken, tokenData.RefreshToken))
-			jwtoken.SendTokensToWeb(w, tokenData, http.StatusOK)
+			return
 		}
+
+		log.Info("tokens created",
+			slog.String(key.UserID, userID),
+			slog.String(key.AccessToken, tokenData.AccessToken),
+			slog.String(key.RefreshToken, tokenData.RefreshToken))
+		jwtoken.SendTokensToWeb(w, tokenData, http.StatusOK)
 	}
 }
 
@@ -296,11 +308,13 @@ func (h *authHandler) GetUser() http.HandlerFunc {
 		switch {
 		case errors.Is(err, le.ErrUserNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrUserNotFound, slog.String(key.UserID, userID))
+			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
-		default:
-			handleResponseSuccess(w, r, log, "user received", user, slog.String(key.UserID, userID))
+			return
 		}
+
+		handleResponseSuccess(w, r, log, "user received", user, slog.String(key.UserID, userID))
 	}
 }
 
@@ -317,7 +331,7 @@ func (h *authHandler) UpdateUser() http.HandlerFunc {
 			return
 		}
 
-		userInput := &model.UserRequestData{}
+		userInput := &model.UpdateUserRequestData{}
 		if err = decodeAndValidateJSON(w, r, log, userInput); err != nil {
 			return
 		}
@@ -329,23 +343,27 @@ func (h *authHandler) UpdateUser() http.HandlerFunc {
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrUserNotFound,
 				slog.String(key.UserID, userID),
 				slog.String(key.Email, userInput.Email))
+			return
 		case errors.Is(err, le.ErrEmailAlreadyTaken):
 			handleResponseError(w, r, log, http.StatusConflict, le.ErrEmailAlreadyTaken,
 				slog.String(key.UserID, userID),
 				slog.String(key.Email, userInput.Email))
+			return
 		case err != nil:
 			errStr := fmt.Sprint(err)
 			if strings.Contains(errStr, "bad request") {
 				handleResponseError(w, r, log, http.StatusBadRequest, le.LocalError(errStr),
 					slog.String(key.UserID, userID))
+				return
 			} else {
 				handleInternalServerError(w, r, log, le.ErrFailedToUpdateUser, err)
+				return
 			}
-		default:
-			handleResponseSuccess(w, r, log, "user updated",
-				model.UserResponseData{ID: userID},
-				slog.String(key.UserID, userID))
 		}
+
+		handleResponseSuccess(w, r, log, "user updated",
+			model.UserResponseData{ID: userID},
+			slog.String(key.UserID, userID))
 	}
 }
 
@@ -368,12 +386,14 @@ func (h *authHandler) DeleteUser() http.HandlerFunc {
 		case errors.Is(err, le.ErrUserNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrUserNotFound,
 				slog.String(key.UserID, userID))
+			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToDeleteUser, err)
-		default:
-			handleResponseSuccess(w, r, log, "user deleted",
-				model.UserResponseData{ID: userID},
-				slog.String(key.UserID, userID))
+			return
 		}
+
+		handleResponseSuccess(w, r, log, "user deleted",
+			model.UserResponseData{ID: userID},
+			slog.String(key.UserID, userID))
 	}
 }

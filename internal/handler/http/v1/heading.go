@@ -57,8 +57,14 @@ func (h *headingHandler) CreateHeading() http.HandlerFunc {
 		headingInput.UserID = userID
 
 		headingResponse, err := h.usecase.CreateHeading(ctx, headingInput)
-		if err != nil {
+
+		switch {
+		case errors.Is(err, le.ErrListNotFound):
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrListNotFound)
+			return
+		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToCreateHeading, err)
+			return
 		}
 
 		handleResponseCreated(w, r, log, "heading created", headingResponse,
@@ -90,11 +96,13 @@ func (h *headingHandler) GetHeadingByID() http.HandlerFunc {
 		switch {
 		case errors.Is(err, le.ErrHeadingNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrHeadingNotFound)
+			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
-		default:
-			handleResponseSuccess(w, r, log, "heading received", headingResp, slog.String(key.HeadingID, headingID))
+			return
 		}
+
+		handleResponseSuccess(w, r, log, "heading received", headingResp, slog.String(key.HeadingID, headingID))
 	}
 }
 
@@ -122,11 +130,13 @@ func (h *headingHandler) GetHeadingsByListID() http.HandlerFunc {
 		switch {
 		case errors.Is(err, le.ErrNoHeadingsFound):
 			handleResponseSuccess(w, r, log, "no headings found", nil)
+			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetHeadingsByListID, err)
-		default:
-			handleResponseSuccess(w, r, log, "headings found", headingsResp)
+			return
 		}
+
+		handleResponseSuccess(w, r, log, "headings found", headingsResp)
 	}
 }
 
@@ -157,11 +167,13 @@ func (h *headingHandler) UpdateHeading() http.HandlerFunc {
 		switch {
 		case errors.Is(err, le.ErrHeadingNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrHeadingNotFound)
+			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToUpdateHeading, err)
-		default:
-			handleResponseSuccess(w, r, log, "heading updated", headingResponse, slog.String(key.HeadingID, headingResponse.ID))
+			return
 		}
+
+		handleResponseSuccess(w, r, log, "heading updated", headingResponse, slog.String(key.HeadingID, headingResponse.ID))
 	}
 }
 
@@ -182,9 +194,10 @@ func (h *headingHandler) MoveHeadingToAnotherList() http.HandlerFunc {
 		otherListID := r.URL.Query().Get(key.ListID)
 		if otherListID == "" {
 			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryListID)
+			return
 		}
 
-		headingInput := model.HeadingRequestData{
+		headingInput := &model.HeadingRequestData{
 			ID:     headingID,
 			ListID: otherListID,
 			UserID: userID,
@@ -195,13 +208,16 @@ func (h *headingHandler) MoveHeadingToAnotherList() http.HandlerFunc {
 		switch {
 		case errors.Is(err, le.ErrHeadingNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrHeadingNotFound)
+			return
 		case errors.Is(err, le.ErrListNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrListNotFound)
+			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToMoveHeading, err)
-		default:
-			handleResponseSuccess(w, r, log, "heading moved to another list", headingResponse, slog.String(key.HeadingID, headingResponse.ID))
+			return
 		}
+
+		handleResponseSuccess(w, r, log, "heading moved to another list", headingResponse, slog.String(key.HeadingID, headingResponse.ID))
 	}
 }
 
@@ -219,7 +235,7 @@ func (h *headingHandler) DeleteHeading() http.HandlerFunc {
 
 		headingID := chi.URLParam(r, key.HeadingID)
 
-		headingInput := model.HeadingRequestData{
+		headingInput := &model.HeadingRequestData{
 			ID:     headingID,
 			UserID: userID,
 		}
@@ -229,10 +245,12 @@ func (h *headingHandler) DeleteHeading() http.HandlerFunc {
 		switch {
 		case errors.Is(err, le.ErrHeadingNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrHeadingNotFound)
+			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToDeleteHeading, err)
-		default:
-			handleResponseSuccess(w, r, log, "heading deleted", headingID, slog.String(key.HeadingID, headingID))
+			return
 		}
+
+		handleResponseSuccess(w, r, log, "heading deleted", headingID, slog.String(key.HeadingID, headingID))
 	}
 }

@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/rshelekhov/reframed/internal/lib/constant/le"
@@ -23,6 +22,11 @@ func NewHeadingUsecase(storage port.HeadingStorage) *HeadingUsecase {
 }
 
 func (u *HeadingUsecase) CreateHeading(ctx context.Context, data *model.HeadingRequestData) (model.HeadingResponseData, error) {
+	err := u.handleListID(ctx, data)
+	if err != nil {
+		return model.HeadingResponseData{}, err
+	}
+
 	currentTime := time.Now()
 
 	newHeading := model.Heading{
@@ -35,7 +39,7 @@ func (u *HeadingUsecase) CreateHeading(ctx context.Context, data *model.HeadingR
 		UpdatedAt: currentTime,
 	}
 
-	if err := u.storage.CreateHeading(ctx, newHeading); err != nil {
+	if err = u.storage.CreateHeading(ctx, newHeading); err != nil {
 		return model.HeadingResponseData{}, err
 	}
 
@@ -47,6 +51,21 @@ func (u *HeadingUsecase) CreateHeading(ctx context.Context, data *model.HeadingR
 		CreatedAt: newHeading.CreatedAt,
 		UpdatedAt: newHeading.UpdatedAt,
 	}, nil
+}
+
+func (u *HeadingUsecase) handleListID(ctx context.Context, data *model.HeadingRequestData) error {
+	// Check if list exists
+	list, err := u.ListUsecase.GetListByID(ctx, model.ListRequestData{ID: data.ListID, UserID: data.UserID})
+	if err != nil {
+		return err
+	}
+
+	// Check that this list belongs to the user
+	if list.UserID != data.UserID {
+		return le.ErrListNotFound
+	}
+
+	return nil
 }
 
 func (u *HeadingUsecase) CreateDefaultHeading(ctx context.Context, heading model.Heading) error {
@@ -121,7 +140,12 @@ func (u *HeadingUsecase) UpdateHeading(ctx context.Context, data *model.HeadingR
 	}, nil
 }
 
-func (u *HeadingUsecase) MoveHeadingToAnotherList(ctx context.Context, data model.HeadingRequestData) (model.HeadingResponseData, error) {
+func (u *HeadingUsecase) MoveHeadingToAnotherList(ctx context.Context, data *model.HeadingRequestData) (model.HeadingResponseData, error) {
+	err := u.handleListID(ctx, data)
+	if err != nil {
+		return model.HeadingResponseData{}, err
+	}
+
 	currentTime := time.Now()
 
 	updatedHeading := model.Heading{
@@ -138,20 +162,7 @@ func (u *HeadingUsecase) MoveHeadingToAnotherList(ctx context.Context, data mode
 		UpdatedAt: currentTime,
 	}
 
-	listRequestData := model.ListRequestData{
-		ID:     data.ListID,
-		UserID: data.UserID,
-	}
-
-	// Check if list exists
-	if _, err := u.ListUsecase.GetListByID(ctx, listRequestData); err != nil {
-		if errors.Is(err, le.ErrListNotFound) {
-			return model.HeadingResponseData{}, le.ErrListNotFound
-		}
-		return model.HeadingResponseData{}, err
-	}
-
-	if err := u.storage.MoveHeadingToAnotherList(ctx, updatedHeading, updatedTasks); err != nil {
+	if err = u.storage.MoveHeadingToAnotherList(ctx, updatedHeading, updatedTasks); err != nil {
 		return model.HeadingResponseData{}, err
 	}
 
@@ -164,7 +175,7 @@ func (u *HeadingUsecase) MoveHeadingToAnotherList(ctx context.Context, data mode
 	}, nil
 }
 
-func (u *HeadingUsecase) DeleteHeading(ctx context.Context, data model.HeadingRequestData) error {
+func (u *HeadingUsecase) DeleteHeading(ctx context.Context, data *model.HeadingRequestData) error {
 	deletedHeading := model.Heading{
 		ID:        data.ID,
 		UserID:    data.UserID,

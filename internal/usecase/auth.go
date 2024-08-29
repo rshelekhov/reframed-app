@@ -53,7 +53,7 @@ func (u *AuthUsecase) RegisterNewUser(
 	resp, err := u.ssoClient.Api.RegisterUser(ctx, &ssov1.RegisterUserRequest{
 		Email:           userData.Email,
 		Password:        userData.Password,
-		AppId:           u.jwt.AppID,
+		AppID:           u.jwt.AppID,
 		VerificationURL: verificationURL,
 		UserDeviceData: &ssov1.UserDeviceData{
 			UserAgent: userDevice.UserAgent,
@@ -134,7 +134,7 @@ func (u *AuthUsecase) LoginUser(
 	resp, err := u.ssoClient.Api.Login(ctx, &ssov1.LoginRequest{
 		Email:    userData.Email,
 		Password: userData.Password,
-		AppId:    u.jwt.AppID,
+		AppID:    u.jwt.AppID,
 		UserDeviceData: &ssov1.UserDeviceData{
 			UserAgent: userDevice.UserAgent,
 			Ip:        userDevice.IP,
@@ -179,7 +179,7 @@ func (u *AuthUsecase) RequestResetPassword(ctx context.Context, email string) er
 
 	_, err := u.ssoClient.Api.ResetPassword(ctx, &ssov1.ResetPasswordRequest{
 		Email:                    email,
-		AppId:                    u.jwt.AppID,
+		AppID:                    u.jwt.AppID,
 		ConfirmChangePasswordURL: confirmChangePasswordURL,
 	})
 	if err != nil {
@@ -203,7 +203,7 @@ func (u *AuthUsecase) RequestResetPassword(ctx context.Context, email string) er
 func (u *AuthUsecase) ChangePassword(ctx context.Context, password, resetPasswordToken string) error {
 	_, err := u.ssoClient.Api.ChangePassword(ctx, &ssov1.ChangePasswordRequest{
 		ResetPasswordToken: resetPasswordToken,
-		AppId:              u.jwt.AppID,
+		AppID:              u.jwt.AppID,
 		UpdatedPassword:    password,
 	})
 	if err != nil {
@@ -224,7 +224,7 @@ func (u *AuthUsecase) ChangePassword(ctx context.Context, password, resetPasswor
 	return nil
 }
 
-func (u *AuthUsecase) Refresh(
+func (u *AuthUsecase) RefreshTokens(
 	ctx context.Context,
 	refreshToken string,
 	data model.UserDeviceRequestData,
@@ -235,7 +235,7 @@ func (u *AuthUsecase) Refresh(
 ) {
 	resp, err := u.ssoClient.Api.Refresh(ctx, &ssov1.RefreshRequest{
 		RefreshToken: refreshToken,
-		AppId:        u.jwt.AppID,
+		AppID:        u.jwt.AppID,
 		UserDeviceData: &ssov1.UserDeviceData{
 			UserAgent: data.UserAgent,
 			Ip:        data.IP,
@@ -272,7 +272,7 @@ func (u *AuthUsecase) LogoutUser(ctx context.Context, data model.UserDeviceReque
 	}
 
 	_, err = u.ssoClient.Api.Logout(ctx, &ssov1.LogoutRequest{
-		AppId: u.jwt.AppID,
+		AppID: u.jwt.AppID,
 		UserDeviceData: &ssov1.UserDeviceData{
 			UserAgent: data.UserAgent,
 			Ip:        data.IP,
@@ -292,7 +292,7 @@ func (u *AuthUsecase) GetUserByID(ctx context.Context) (model.UserResponseData, 
 	}
 
 	user, err := u.ssoClient.Api.GetUser(ctx, &ssov1.GetUserRequest{
-		AppId: u.jwt.AppID,
+		AppID: u.jwt.AppID,
 	})
 	if err != nil {
 		st, ok := status.FromError(err)
@@ -313,7 +313,7 @@ func (u *AuthUsecase) GetUserByID(ctx context.Context) (model.UserResponseData, 
 	return userResponse, err
 }
 
-func (u *AuthUsecase) UpdateUser(ctx context.Context, data *model.UserRequestData) error {
+func (u *AuthUsecase) UpdateUser(ctx context.Context, data *model.UpdateUserRequestData) error {
 	ctx, err := jwtoken.AddAccessTokenToMetadata(ctx)
 	if err != nil {
 		return err
@@ -323,7 +323,7 @@ func (u *AuthUsecase) UpdateUser(ctx context.Context, data *model.UserRequestDat
 		Email:           data.Email,
 		CurrentPassword: data.Password,
 		UpdatedPassword: data.UpdatedPassword,
-		AppId:           u.jwt.AppID,
+		AppID:           u.jwt.AppID,
 	})
 	if err != nil {
 		st, ok := status.FromError(err)
@@ -353,7 +353,7 @@ func (u *AuthUsecase) DeleteUser(ctx context.Context, userID string) error {
 	}
 
 	_, err = u.ssoClient.Api.DeleteUser(ctx, &ssov1.DeleteUserRequest{
-		AppId: u.jwt.AppID,
+		AppID: u.jwt.AppID,
 	})
 	if err != nil {
 		st, ok := status.FromError(err)
