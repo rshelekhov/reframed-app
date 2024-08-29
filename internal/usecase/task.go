@@ -100,54 +100,69 @@ func (u *TaskUsecase) CreateTask(ctx context.Context, data *model.TaskRequestDat
 
 func (u *TaskUsecase) handleListID(ctx context.Context, data *model.TaskRequestData) error {
 	if data.ListID == "" {
-		defaultListID, err := u.ListUsecase.GetDefaultListID(ctx, data.UserID)
-		if err != nil {
-			return err
-		}
-
-		data.ListID = defaultListID
-	} else {
-		// Check that this list belongs to this user
-		list, err := u.ListUsecase.GetListByID(ctx, model.ListRequestData{
-			ID:     data.ListID,
-			UserID: data.UserID,
-		})
-		if err != nil {
-			return err
-		}
-		if list.UserID != data.UserID {
-			return le.ErrListNotFound
-		}
+		return u.setDefaultListID(ctx, data)
 	}
 
+	return u.verifyListOwnership(ctx, data)
+}
+
+func (u *TaskUsecase) setDefaultListID(ctx context.Context, data *model.TaskRequestData) error {
+	defaultListID, err := u.ListUsecase.GetDefaultListID(ctx, data.UserID)
+	if err != nil {
+		return err
+	}
+
+	data.ListID = defaultListID
+	return nil
+}
+
+func (u *TaskUsecase) verifyListOwnership(ctx context.Context, data *model.TaskRequestData) error {
+	list, err := u.ListUsecase.GetListByID(ctx, model.ListRequestData{
+		ID:     data.ListID,
+		UserID: data.UserID,
+	})
+	if err != nil {
+		return err
+	}
+	if list.UserID != data.UserID {
+		return le.ErrListNotFound
+	}
 	return nil
 }
 
 func (u *TaskUsecase) handleHeadingID(ctx context.Context, data *model.TaskRequestData) error {
 	if data.HeadingID == "" {
-		defaultHeadingID, err := u.HeadingUsecase.GetDefaultHeadingID(ctx, model.HeadingRequestData{
-			ListID: data.ListID,
-			UserID: data.UserID,
-		})
-		if err != nil {
-			return err
-		}
-
-		data.HeadingID = defaultHeadingID
-	} else {
-		// Check that this heading belongs to this user
-		heading, err := u.HeadingUsecase.GetHeadingByID(ctx, model.HeadingRequestData{
-			ID:     data.HeadingID,
-			UserID: data.UserID,
-		})
-		if err != nil {
-			return err
-		}
-		if heading.UserID != data.UserID {
-			return le.ErrHeadingNotFound
-		}
+		return u.setDefaultHeadingID(ctx, data)
 	}
 
+	return u.verifyHeadingOwnership(ctx, data)
+}
+
+func (u *TaskUsecase) setDefaultHeadingID(ctx context.Context, data *model.TaskRequestData) error {
+	defaultHeadingID, err := u.HeadingUsecase.GetDefaultHeadingID(ctx, model.HeadingRequestData{
+		ListID: data.ListID,
+		UserID: data.UserID,
+	})
+	if err != nil {
+		return err
+	}
+
+	data.HeadingID = defaultHeadingID
+	return nil
+}
+
+func (u *TaskUsecase) verifyHeadingOwnership(ctx context.Context, data *model.TaskRequestData) error {
+	// Check that this heading belongs to this user
+	heading, err := u.HeadingUsecase.GetHeadingByID(ctx, model.HeadingRequestData{
+		ID:     data.HeadingID,
+		UserID: data.UserID,
+	})
+	if err != nil {
+		return err
+	}
+	if heading.UserID != data.UserID {
+		return le.ErrHeadingNotFound
+	}
 	return nil
 }
 
