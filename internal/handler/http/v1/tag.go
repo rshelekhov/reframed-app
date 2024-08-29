@@ -47,10 +47,12 @@ func (h *tagHandler) GetTagsByUserID() http.HandlerFunc {
 		switch {
 		case errors.Is(err, le.ErrNoTagsFound):
 			handleResponseSuccess(w, r, log, "no tags found", nil)
+			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
-		default:
-			handleResponseSuccess(w, r, log, "tags found", tagsResp)
+			return
 		}
+
+		handleResponseSuccess(w, r, log, "tags found", tagsResp)
 	}
 }

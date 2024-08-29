@@ -63,13 +63,19 @@ func (h *taskHandler) CreateTask() http.HandlerFunc {
 		switch {
 		case errors.Is(err, le.ErrDefaultListNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrDefaultListNotFound)
+			return
+		case errors.Is(err, le.ErrListNotFound):
+			handleResponseError(w, r, log, http.StatusNotFound, le.ErrListNotFound)
+			return
 		case errors.Is(err, le.ErrHeadingNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrHeadingNotFound)
+			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToCreateTask, err)
-		default:
-			handleResponseCreated(w, r, log, "task created", taskResponse, slog.String(key.TaskID, taskResponse.ID))
+			return
 		}
+
+		handleResponseCreated(w, r, log, "task created", taskResponse, slog.String(key.TaskID, taskResponse.ID))
 	}
 }
 
@@ -97,13 +103,16 @@ func (h *taskHandler) CreateTaskInDefaultList() http.HandlerFunc {
 		switch {
 		case errors.Is(err, le.ErrDefaultListNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrDefaultListNotFound)
+			return
 		case errors.Is(err, le.ErrDefaultHeadingNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrHeadingNotFound)
+			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToCreateTask, err)
-		default:
-			handleResponseCreated(w, r, log, "task created", taskResponse, slog.String(key.TaskID, taskResponse.ID))
+			return
 		}
+
+		handleResponseCreated(w, r, log, "task created", taskResponse, slog.String(key.TaskID, taskResponse.ID))
 	}
 }
 
@@ -131,11 +140,13 @@ func (h *taskHandler) GetTaskByID() http.HandlerFunc {
 		switch {
 		case errors.Is(err, le.ErrTaskNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrTaskNotFound)
+			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
-		default:
-			handleResponseSuccess(w, r, log, "task received", taskResp, slog.String(key.TaskID, taskResp.ID))
+			return
 		}
+
+		handleResponseSuccess(w, r, log, "task received", taskResp, slog.String(key.TaskID, taskResp.ID))
 	}
 }
 
@@ -154,6 +165,7 @@ func (h *taskHandler) GetTasksByUserID() http.HandlerFunc {
 		pagination, err := ParseLimitAndCursor(r)
 		if err != nil {
 			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrInvalidCursor)
+			return
 		}
 
 		tasksResp, err := h.usecase.GetTasksByUserID(ctx, userID, pagination)
@@ -161,11 +173,13 @@ func (h *taskHandler) GetTasksByUserID() http.HandlerFunc {
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
 			handleResponseSuccess(w, r, log, "no tasks found", nil)
+			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
-		default:
-			handleResponseSuccess(w, r, log, "tasks found", tasksResp)
+			return
 		}
+
+		handleResponseSuccess(w, r, log, "tasks found", tasksResp)
 	}
 }
 
@@ -193,11 +207,13 @@ func (h *taskHandler) GetTasksByListID() http.HandlerFunc {
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
 			handleResponseSuccess(w, r, log, "no tasks found for the list", nil)
+			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
-		default:
-			handleResponseSuccess(w, r, log, "tasks for the list found", tasksResp)
+			return
 		}
+
+		handleResponseSuccess(w, r, log, "tasks for the list found", tasksResp)
 	}
 }
 
@@ -225,11 +241,13 @@ func (h *taskHandler) GetTasksGroupedByHeadings() http.HandlerFunc {
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
 			handleResponseSuccess(w, r, log, "no tasks grouped by headings found", nil)
+			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
-		default:
-			handleResponseSuccess(w, r, log, "tasks grouped by headings found", tasksResp)
+			return
 		}
+
+		handleResponseSuccess(w, r, log, "tasks grouped by headings found", tasksResp)
 	}
 }
 
@@ -250,11 +268,13 @@ func (h *taskHandler) GetTasksForToday() http.HandlerFunc {
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
 			handleResponseSuccess(w, r, log, "no tasks found for today", nil)
+			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
-		default:
-			handleResponseSuccess(w, r, log, "tasks for today found", tasksResp)
+			return
 		}
+
+		handleResponseSuccess(w, r, log, "tasks for today found", tasksResp)
 	}
 }
 
@@ -273,6 +293,7 @@ func (h *taskHandler) GetUpcomingTasks() http.HandlerFunc {
 		pagination, err := ParseLimitAndCursor(r)
 		if err != nil {
 			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrInvalidCursor)
+			return
 		}
 
 		tasksResp, err := h.usecase.GetUpcomingTasks(ctx, userID, pagination)
@@ -280,11 +301,13 @@ func (h *taskHandler) GetUpcomingTasks() http.HandlerFunc {
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
 			handleResponseSuccess(w, r, log, "no upcoming tasks found", nil)
+			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
-		default:
-			handleResponseSuccess(w, r, log, "upcoming tasks found", tasksResp)
+			return
 		}
+
+		handleResponseSuccess(w, r, log, "upcoming tasks found", tasksResp)
 	}
 }
 
@@ -303,6 +326,7 @@ func (h *taskHandler) GetOverdueTasks() http.HandlerFunc {
 		pagination, err := ParseLimitAndCursor(r)
 		if err != nil {
 			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrInvalidCursor)
+			return
 		}
 
 		tasksResp, err := h.usecase.GetOverdueTasks(ctx, userID, pagination)
@@ -310,11 +334,13 @@ func (h *taskHandler) GetOverdueTasks() http.HandlerFunc {
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
 			handleResponseSuccess(w, r, log, "no overdue tasks found", nil)
+			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
-		default:
-			handleResponseSuccess(w, r, log, "overdue tasks found", tasksResp)
+			return
 		}
+
+		handleResponseSuccess(w, r, log, "overdue tasks found", tasksResp)
 	}
 }
 
@@ -333,6 +359,7 @@ func (h *taskHandler) GetTasksForSomeday() http.HandlerFunc {
 		pagination, err := ParseLimitAndCursor(r)
 		if err != nil {
 			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrInvalidCursor)
+			return
 		}
 
 		tasksResp, err := h.usecase.GetTasksForSomeday(ctx, userID, pagination)
@@ -340,11 +367,13 @@ func (h *taskHandler) GetTasksForSomeday() http.HandlerFunc {
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
 			handleResponseSuccess(w, r, log, "no tasks for someday found", nil)
+			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
-		default:
-			handleResponseSuccess(w, r, log, "tasks for someday found", tasksResp)
+			return
 		}
+
+		handleResponseSuccess(w, r, log, "tasks for someday found", tasksResp)
 	}
 }
 
@@ -363,6 +392,7 @@ func (h *taskHandler) GetCompletedTasks() http.HandlerFunc {
 		pagination, err := ParseLimitAndCursor(r)
 		if err != nil {
 			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrInvalidCursor)
+			return
 		}
 
 		tasksResp, err := h.usecase.GetCompletedTasks(ctx, userID, pagination)
@@ -370,11 +400,13 @@ func (h *taskHandler) GetCompletedTasks() http.HandlerFunc {
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
 			handleResponseSuccess(w, r, log, "no completed tasks found", nil)
+			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
-		default:
-			handleResponseSuccess(w, r, log, "completed tasks found", tasksResp)
+			return
 		}
+
+		handleResponseSuccess(w, r, log, "completed tasks found", tasksResp)
 	}
 }
 
@@ -393,6 +425,7 @@ func (h *taskHandler) GetArchivedTasks() http.HandlerFunc {
 		pagination, err := ParseLimitAndCursor(r)
 		if err != nil {
 			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrInvalidCursor)
+			return
 		}
 
 		tasksResp, err := h.usecase.GetArchivedTasks(ctx, userID, pagination)
@@ -400,11 +433,13 @@ func (h *taskHandler) GetArchivedTasks() http.HandlerFunc {
 		switch {
 		case errors.Is(err, le.ErrNoTasksFound):
 			handleResponseSuccess(w, r, log, "no archived tasks found", nil)
+			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
-		default:
-			handleResponseSuccess(w, r, log, "archived tasks found", tasksResp)
+			return
 		}
+
+		handleResponseSuccess(w, r, log, "archived tasks found", tasksResp)
 	}
 }
 
@@ -435,11 +470,13 @@ func (h *taskHandler) UpdateTask() http.HandlerFunc {
 		switch {
 		case errors.Is(err, le.ErrTaskNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrTaskNotFound)
+			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToUpdateTask, err)
-		default:
-			handleResponseSuccess(w, r, log, "task updated", taskResponse, slog.String(key.TaskID, taskResponse.ID))
+			return
 		}
+
+		handleResponseSuccess(w, r, log, "task updated", taskResponse, slog.String(key.TaskID, taskResponse.ID))
 	}
 }
 
@@ -470,13 +507,16 @@ func (h *taskHandler) UpdateTaskTime() http.HandlerFunc {
 		switch {
 		case errors.Is(err, le.ErrTaskNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrTaskNotFound)
+			return
 		case errors.Is(err, le.ErrInvalidTaskTimeRange):
 			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrInvalidTaskTimeRange)
+			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToUpdateTask, err)
-		default:
-			handleResponseSuccess(w, r, log, "task updated", taskResponse, slog.String(key.TaskID, taskResponse.ID))
+			return
 		}
+
+		handleResponseSuccess(w, r, log, "task updated", taskResponse, slog.String(key.TaskID, taskResponse.ID))
 	}
 }
 
@@ -510,13 +550,16 @@ func (h *taskHandler) MoveTaskToAnotherList() http.HandlerFunc {
 		switch {
 		case errors.Is(err, le.ErrTaskNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrTaskNotFound)
+			return
 		case errors.Is(err, le.ErrListNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrListNotFound)
+			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToMoveTask, err)
-		default:
-			handleResponseSuccess(w, r, log, "task moved to another list", taskResponse, slog.String(key.TaskID, taskInput.ID))
+			return
 		}
+
+		handleResponseSuccess(w, r, log, "task moved to another list", taskResponse, slog.String(key.TaskID, taskInput.ID))
 	}
 }
 
@@ -537,6 +580,7 @@ func (h *taskHandler) MoveTaskToAnotherHeading() http.HandlerFunc {
 		headingID := r.URL.Query().Get(key.HeadingID)
 		if headingID == "" {
 			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryHeadingID)
+			return
 		}
 
 		taskInput := model.TaskRequestData{
@@ -550,13 +594,16 @@ func (h *taskHandler) MoveTaskToAnotherHeading() http.HandlerFunc {
 		switch {
 		case errors.Is(err, le.ErrTaskNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrTaskNotFound)
+			return
 		case errors.Is(err, le.ErrHeadingNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrHeadingNotFound)
+			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToMoveTask, err)
-		default:
-			handleResponseSuccess(w, r, log, "task moved to another heading", taskResponse, slog.String(key.TaskID, taskInput.ID))
+			return
 		}
+
+		handleResponseSuccess(w, r, log, "task moved to another heading", taskResponse, slog.String(key.TaskID, taskInput.ID))
 	}
 }
 
@@ -584,11 +631,13 @@ func (h *taskHandler) CompleteTask() http.HandlerFunc {
 		switch {
 		case errors.Is(err, le.ErrTaskNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrTaskNotFound)
+			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToCompleteTask, err)
-		default:
-			handleResponseSuccess(w, r, log, "task completed", taskResponse, slog.String(key.TaskID, taskID))
+			return
 		}
+
+		handleResponseSuccess(w, r, log, "task completed", taskResponse, slog.String(key.TaskID, taskID))
 	}
 }
 
@@ -616,10 +665,12 @@ func (h *taskHandler) ArchiveTask() http.HandlerFunc {
 		switch {
 		case errors.Is(err, le.ErrTaskNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrTaskNotFound)
+			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToArchiveTask, err)
-		default:
-			handleResponseSuccess(w, r, log, "task archived", taskResponse, slog.String(key.TaskID, taskID))
+			return
 		}
+
+		handleResponseSuccess(w, r, log, "task archived", taskResponse, slog.String(key.TaskID, taskID))
 	}
 }

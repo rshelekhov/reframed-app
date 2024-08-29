@@ -50,7 +50,7 @@ func (ar *AppRouter) initRoutes() *chi.Mux {
 		r.Post("/login", ar.LoginWithPassword())
 		r.Post("/register", ar.Register())
 		r.Post("/verify-email", ar.VerifyEmail())
-		r.Post("/refresh-tokens", ar.RefreshJWTokens())
+		r.Post("/refresh-tokens", ar.RefreshTokens())
 		r.Route("/password", func(r chi.Router) {
 			r.Get("/reset", ar.RequestResetPassword())
 			r.Post("/change", ar.ChangePassword())

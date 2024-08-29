@@ -54,13 +54,12 @@ func (h *listHandler) CreateList() http.HandlerFunc {
 		listInput.UserID = userID
 
 		list, err := h.usecase.CreateList(ctx, listInput)
-
-		switch {
-		case err != nil:
+		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToCreateList, err)
-		default:
-			handleResponseCreated(w, r, log, "list created", list, slog.String(key.ListID, list.ID))
+			return
 		}
+
+		handleResponseCreated(w, r, log, "list created", list, slog.String(key.ListID, list.ID))
 	}
 }
 
@@ -81,8 +80,10 @@ func (h *listHandler) GetDefaultList() http.HandlerFunc {
 		switch {
 		case errors.Is(err, le.ErrDefaultListNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrDefaultListNotFound)
+			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
+			return
 		}
 
 		listInput := model.ListRequestData{
@@ -91,13 +92,12 @@ func (h *listHandler) GetDefaultList() http.HandlerFunc {
 		}
 
 		listResp, err := h.usecase.GetListByID(ctx, listInput)
-
-		switch {
-		case err != nil:
+		if err != nil {
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
-		default:
-			handleResponseSuccess(w, r, log, "default list received", listResp, slog.String(key.ListID, listID))
+			return
 		}
+
+		handleResponseSuccess(w, r, log, "default list received", listResp, slog.String(key.ListID, listID))
 	}
 }
 
@@ -125,11 +125,13 @@ func (h *listHandler) GetListByID() http.HandlerFunc {
 		switch {
 		case errors.Is(err, le.ErrListNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrListNotFound)
+			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetData, err)
-		default:
-			handleResponseSuccess(w, r, log, "list received", listResp, slog.String(key.ListID, listID))
+			return
 		}
+
+		handleResponseSuccess(w, r, log, "list received", listResp, slog.String(key.ListID, listID))
 	}
 }
 
@@ -150,11 +152,13 @@ func (h *listHandler) GetListsByUserID() http.HandlerFunc {
 		switch {
 		case errors.Is(err, le.ErrNoListsFound):
 			handleResponseSuccess(w, r, log, "no lists found", nil)
+			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToGetLists, err)
-		default:
-			handleResponseSuccess(w, r, log, "lists found", listsResp)
+			return
 		}
+
+		handleResponseSuccess(w, r, log, "lists found", listsResp)
 	}
 }
 
@@ -185,11 +189,13 @@ func (h *listHandler) UpdateList() http.HandlerFunc {
 		switch {
 		case errors.Is(err, le.ErrListNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrListNotFound)
+			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToUpdateList, err)
-		default:
-			handleResponseSuccess(w, r, log, "list updated", listResponse, slog.String(key.ListID, listResponse.ID))
+			return
 		}
+
+		handleResponseSuccess(w, r, log, "list updated", listResponse, slog.String(key.ListID, listResponse.ID))
 	}
 }
 
@@ -217,12 +223,15 @@ func (h *listHandler) DeleteList() http.HandlerFunc {
 		switch {
 		case errors.Is(err, le.ErrListNotFound):
 			handleResponseError(w, r, log, http.StatusNotFound, le.ErrListNotFound)
+			return
 		case errors.Is(err, le.ErrCannotDeleteDefaultList):
 			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrCannotDeleteDefaultList)
+			return
 		case err != nil:
 			handleInternalServerError(w, r, log, le.ErrFailedToDeleteList, err)
-		default:
-			handleResponseSuccess(w, r, log, "list deleted", listID, slog.String(key.ListID, listID))
+			return
 		}
+
+		handleResponseSuccess(w, r, log, "list deleted", listID, slog.String(key.ListID, listID))
 	}
 }
