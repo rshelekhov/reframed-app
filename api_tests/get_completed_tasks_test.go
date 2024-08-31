@@ -66,6 +66,83 @@ func TestGetCompletedTasks_HappyPath(t *testing.T) {
 	cleanupAuthService(e, user)
 }
 
+func TestGetCompletedTasks_WithLimit(t *testing.T) {
+	u := url.URL{
+		Scheme: scheme,
+		Host:   host,
+	}
+	e := httpexpect.Default(t, u.String())
+
+	// Register user
+	user := e.POST("/register").
+		WithJSON(model.UserRequestData{
+			Email:    gofakeit.Email(),
+			Password: randomFakePassword(),
+		}).
+		Expect().
+		Status(http.StatusCreated).
+		JSON().Object()
+
+	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
+
+	numberOfLists := 3
+	numberOfTasks := 3
+
+	// Create three lists
+	lists := createLists(e, accessToken, numberOfLists)
+
+	// Create three tasks in each list
+	tasks := createTasks(e, accessToken, overdueTasks, lists, numberOfTasks)
+
+	// Complete tasks
+	for _, task := range tasks {
+		taskID := task.Value(key.Data).Object().Value(key.TaskID).String().Raw()
+		e.PATCH("/user/tasks/{task_id}/complete", taskID).
+			WithHeader("Authorization", "Bearer "+accessToken).
+			Expect().
+			Status(http.StatusOK).
+			JSON().Object().NotEmpty()
+	}
+
+	testCases := []struct {
+		name           string
+		limit          int
+		expectedGroups int
+	}{
+		{
+			name:           "Get completed tasks with limit = 2",
+			limit:          1,
+			expectedGroups: 1,
+		},
+		{
+			name:           "Get completed tasks with limit = 0",
+			limit:          0,
+			expectedGroups: 1,
+		},
+		{
+			name:  "Get completed tasks with limit = -1",
+			limit: -1,
+			// Limit = -1 means no limit, will be used the default value
+			expectedGroups: 1,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Get completed tasks
+			completedTasks := e.GET("/user/tasks/completed").
+				WithHeader("Authorization", "Bearer "+accessToken).
+				WithQuery(key.Limit, tc.limit).
+				Expect().
+				Status(http.StatusOK).
+				JSON().Object()
+
+			totalGroups := countGroups(t, completedTasks, false)
+			require.Equal(t, tc.expectedGroups, totalGroups)
+		})
+	}
+}
+
 func TestGetCompletedTasks_NotFound(t *testing.T) {
 	u := url.URL{
 		Scheme: scheme,
