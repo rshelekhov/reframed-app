@@ -537,6 +537,7 @@ func (h *taskHandler) MoveTaskToAnotherList() http.HandlerFunc {
 		listID := r.URL.Query().Get(key.ListID)
 		if listID == "" {
 			handleResponseError(w, r, log, http.StatusBadRequest, le.ErrEmptyQueryListID)
+			return
 		}
 
 		taskInput := model.TaskRequestData{
