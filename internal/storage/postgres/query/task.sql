@@ -598,3 +598,17 @@ WHERE id = $3
   AND user_id = $4
   AND deleted_at IS NULL
 RETURNING id;
+
+-- name: ArchiveTasksByHeadingID :exec
+UPDATE tasks
+SET status_id = $1, deleted_at = $2
+WHERE heading_id = $3
+  AND user_id = $4
+  AND deleted_at IS NULL;
+
+-- name: ArchiveTasksByListID :exec
+UPDATE tasks
+SET status_id = $1, deleted_at = $2
+WHERE list_id = $3
+  AND user_id = $4
+  AND deleted_at IS NULL;
