@@ -62,6 +62,25 @@ func (q *Queries) DeleteHeading(ctx context.Context, arg DeleteHeadingParams) (s
 	return id, err
 }
 
+const deleteHeadingsByListID = `-- name: DeleteHeadingsByListID :exec
+UPDATE headings
+SET deleted_at = $1
+WHERE list_id = $2
+  AND user_id = $3
+  AND deleted_at IS NULL
+`
+
+type DeleteHeadingsByListIDParams struct {
+	DeletedAt pgtype.Timestamptz `db:"deleted_at"`
+	ListID    string             `db:"list_id"`
+	UserID    string             `db:"user_id"`
+}
+
+func (q *Queries) DeleteHeadingsByListID(ctx context.Context, arg DeleteHeadingsByListIDParams) error {
+	_, err := q.db.Exec(ctx, deleteHeadingsByListID, arg.DeletedAt, arg.ListID, arg.UserID)
+	return err
+}
+
 const getDefaultHeadingID = `-- name: GetDefaultHeadingID :one
 SELECT id
 FROM headings

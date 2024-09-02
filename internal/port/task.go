@@ -25,6 +25,8 @@ type (
 		MoveTaskToAnotherHeading(ctx context.Context, data model.TaskRequestData) (model.TaskResponseData, error)
 		CompleteTask(ctx context.Context, data model.TaskRequestData) (model.TaskResponseData, error)
 		ArchiveTask(ctx context.Context, data model.TaskRequestData) (model.TaskResponseData, error)
+		ArchiveTasksByHeadingID(ctx context.Context, data model.TaskRequestData) error
+		ArchiveTasksByListID(ctx context.Context, data model.TaskRequestData) error
 	}
 
 	TaskStorage interface {
@@ -47,5 +49,7 @@ type (
 		MoveTaskToAnotherHeading(ctx context.Context, task model.Task) error
 		MarkAsCompleted(ctx context.Context, task model.Task) error
 		MarkAsArchived(ctx context.Context, task model.Task) error
+		MarkTasksAsArchivedByHeadingID(ctx context.Context, archivedTasks model.Task) error
+		MarkTasksAsArchivedByListID(ctx context.Context, archivedTasks model.Task) error
 	}
 )

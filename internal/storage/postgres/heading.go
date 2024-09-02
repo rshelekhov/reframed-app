@@ -181,3 +181,21 @@ func (s *HeadingStorage) DeleteHeading(ctx context.Context, heading model.Headin
 
 	return nil
 }
+
+func (s *HeadingStorage) DeleteHeadingsByListID(ctx context.Context, deletedHeadings model.Heading) error {
+	const op = "heading.storage.DeleteHeadingsByListID"
+
+	err := s.Queries.DeleteHeadingsByListID(ctx, sqlc.DeleteHeadingsByListIDParams{
+		ListID: deletedHeadings.ListID,
+		UserID: deletedHeadings.UserID,
+		DeletedAt: pgtype.Timestamptz{
+			Time:  deletedHeadings.DeletedAt,
+			Valid: true,
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("%s: failed to delete heading: %w", op, err)
+	}
+
+	return nil
+}
