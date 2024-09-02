@@ -72,6 +72,7 @@ func main() {
 	authUsecase.ListUsecase = listUsecase
 	authUsecase.HeadingUsecase = headingUsecase
 	headingUsecase.ListUsecase = listUsecase
+	headingUsecase.TaskUsecase = taskUsecase
 	listUsecase.HeadingUsecase = headingUsecase
 	taskUsecase.HeadingUsecase = headingUsecase
 	taskUsecase.TagUsecase = tagUsecase

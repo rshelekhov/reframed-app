@@ -635,6 +635,7 @@ func (u *TaskUsecase) CompleteTask(ctx context.Context, data model.TaskRequestDa
 		return model.TaskResponseData{}, err
 	}
 
+	// TODO: remove this and place it in struct below
 	data.StatusID = statusCompleted
 
 	completedTask := model.Task{
@@ -644,6 +645,7 @@ func (u *TaskUsecase) CompleteTask(ctx context.Context, data model.TaskRequestDa
 		UpdatedAt: time.Now(),
 	}
 
+	// TODO: rename to MarkTaskAsCompleted
 	if err = u.storage.MarkAsCompleted(ctx, completedTask); err != nil {
 		return model.TaskResponseData{}, err
 	}
@@ -662,6 +664,7 @@ func (u *TaskUsecase) ArchiveTask(ctx context.Context, data model.TaskRequestDat
 		return model.TaskResponseData{}, err
 	}
 
+	// TODO: remove this and place it in struct below
 	data.StatusID = statusArchived
 
 	archivedTask := model.Task{
@@ -671,6 +674,7 @@ func (u *TaskUsecase) ArchiveTask(ctx context.Context, data model.TaskRequestDat
 		UpdatedAt: time.Now(),
 	}
 
+	// TODO: rename to MarkTaskAsArchived
 	if err = u.storage.MarkAsArchived(ctx, archivedTask); err != nil {
 		return model.TaskResponseData{}, err
 	}
@@ -681,4 +685,24 @@ func (u *TaskUsecase) ArchiveTask(ctx context.Context, data model.TaskRequestDat
 		UserID:    archivedTask.UserID,
 		UpdatedAt: archivedTask.UpdatedAt,
 	}, nil
+}
+
+func (u *TaskUsecase) ArchiveTasksByHeadingID(ctx context.Context, data model.TaskRequestData) error {
+	statusArchived, err := u.storage.GetTaskStatusID(ctx, model.StatusArchived)
+	if err != nil {
+		return err
+	}
+
+	archivedTasks := model.Task{
+		StatusID:  statusArchived,
+		UserID:    data.UserID,
+		HeadingID: data.HeadingID,
+		UpdatedAt: time.Now(),
+	}
+
+	if err = u.storage.MarkTasksAsArchivedByHeadingID(ctx, archivedTasks); err != nil {
+		return err
+	}
+
+	return nil
 }

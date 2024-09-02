@@ -744,3 +744,23 @@ func (s *TaskStorage) MarkAsArchived(ctx context.Context, task model.Task) error
 		return nil
 	}
 }
+
+func (s *TaskStorage) MarkTasksAsArchivedByHeadingID(ctx context.Context, data model.Task) error {
+	const op = "task.storage.MarkTasksAsArchivedByHeadingID"
+
+	err := s.Queries.ArchiveTasksByHeadingID(ctx, sqlc.ArchiveTasksByHeadingIDParams{
+		StatusID: int32(data.StatusID),
+		DeletedAt: pgtype.Timestamptz{
+			Valid: true,
+			Time:  data.DeletedAt,
+		},
+		HeadingID: data.HeadingID,
+		UserID:    data.UserID,
+	})
+
+	if err != nil {
+		return fmt.Errorf("%s: failed to mark tasks as archived: %w", op, err)
+	}
+
+	return nil
+}

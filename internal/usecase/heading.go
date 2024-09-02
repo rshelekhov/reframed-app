@@ -15,6 +15,7 @@ import (
 type HeadingUsecase struct {
 	storage     port.HeadingStorage
 	ListUsecase port.ListUsecase
+	TaskUsecase port.TaskUsecase
 }
 
 func NewHeadingUsecase(storage port.HeadingStorage) *HeadingUsecase {
@@ -182,5 +183,18 @@ func (u *HeadingUsecase) DeleteHeading(ctx context.Context, data *model.HeadingR
 		DeletedAt: time.Now(),
 	}
 
-	return u.storage.DeleteHeading(ctx, deletedHeading)
+	if err := u.storage.DeleteHeading(ctx, deletedHeading); err != nil {
+		return err
+	}
+
+	tasksData := model.TaskRequestData{
+		HeadingID: data.ID,
+		UserID:    data.UserID,
+	}
+
+	if err := u.TaskUsecase.ArchiveTasksByHeadingID(ctx, tasksData); err != nil {
+		return err
+	}
+
+	return nil
 }
