@@ -16,6 +16,7 @@ type (
 		UpdateHeading(ctx context.Context, data *model.HeadingRequestData) (model.HeadingResponseData, error)
 		MoveHeadingToAnotherList(ctx context.Context, data *model.HeadingRequestData) (model.HeadingResponseData, error)
 		DeleteHeading(ctx context.Context, data *model.HeadingRequestData) error
+		DeleteHeadingsByListID(ctx context.Context, data model.HeadingRequestData) error
 	}
 
 	HeadingStorage interface {
@@ -26,5 +27,6 @@ type (
 		UpdateHeading(ctx context.Context, heading model.Heading) error
 		MoveHeadingToAnotherList(ctx context.Context, heading model.Heading, task model.Task) error
 		DeleteHeading(ctx context.Context, heading model.Heading) error
+		DeleteHeadingsByListID(ctx context.Context, deletedHeadings model.Heading) error
 	}
 )

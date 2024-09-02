@@ -53,3 +53,10 @@ WHERE id = $2
   AND user_id = $3
   AND deleted_at IS NULL
 RETURNING id;
+
+-- name: DeleteHeadingsByListID :exec
+UPDATE headings
+SET deleted_at = $1
+WHERE list_id = $2
+  AND user_id = $3
+  AND deleted_at IS NULL;

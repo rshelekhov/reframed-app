@@ -706,3 +706,23 @@ func (u *TaskUsecase) ArchiveTasksByHeadingID(ctx context.Context, data model.Ta
 
 	return nil
 }
+
+func (u *TaskUsecase) ArchiveTasksByListID(ctx context.Context, data model.TaskRequestData) error {
+	statusArchived, err := u.storage.GetTaskStatusID(ctx, model.StatusArchived)
+	if err != nil {
+		return err
+	}
+
+	archivedTasks := model.Task{
+		StatusID:  statusArchived,
+		UserID:    data.UserID,
+		ListID:    data.ListID,
+		UpdatedAt: time.Now(),
+	}
+
+	if err = u.storage.MarkTasksAsArchivedByListID(ctx, archivedTasks); err != nil {
+		return err
+	}
+
+	return nil
+}

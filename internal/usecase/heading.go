@@ -198,3 +198,17 @@ func (u *HeadingUsecase) DeleteHeading(ctx context.Context, data *model.HeadingR
 
 	return nil
 }
+
+func (u *HeadingUsecase) DeleteHeadingsByListID(ctx context.Context, data model.HeadingRequestData) error {
+	deletedHeadings := model.Heading{
+		UserID:    data.UserID,
+		ListID:    data.ListID,
+		DeletedAt: time.Now(),
+	}
+
+	if err := u.storage.DeleteHeadingsByListID(ctx, deletedHeadings); err != nil {
+		return err
+	}
+
+	return nil
+}
