@@ -744,3 +744,41 @@ func (s *TaskStorage) MarkAsArchived(ctx context.Context, task model.Task) error
 		return nil
 	}
 }
+
+func (s *TaskStorage) MarkTasksAsArchivedByHeadingID(ctx context.Context, archivedTasks model.Task) error {
+	const op = "task.storage.MarkTasksAsArchivedByHeadingID"
+
+	err := s.Queries.ArchiveTasksByHeadingID(ctx, sqlc.ArchiveTasksByHeadingIDParams{
+		StatusID: int32(archivedTasks.StatusID),
+		DeletedAt: pgtype.Timestamptz{
+			Valid: true,
+			Time:  archivedTasks.DeletedAt,
+		},
+		HeadingID: archivedTasks.HeadingID,
+		UserID:    archivedTasks.UserID,
+	})
+	if err != nil {
+		return fmt.Errorf("%s: failed to mark tasks as archived by headingID: %w", op, err)
+	}
+
+	return nil
+}
+
+func (s *TaskStorage) MarkTasksAsArchivedByListID(ctx context.Context, archivedTasks model.Task) error {
+	const op = "task.storage.MarkTasksAsArchivedByListID"
+
+	err := s.Queries.ArchiveTasksByListID(ctx, sqlc.ArchiveTasksByListIDParams{
+		StatusID: int32(archivedTasks.StatusID),
+		DeletedAt: pgtype.Timestamptz{
+			Valid: true,
+			Time:  archivedTasks.DeletedAt,
+		},
+		ListID: archivedTasks.ListID,
+		UserID: archivedTasks.UserID,
+	})
+	if err != nil {
+		return fmt.Errorf("%s: failed to mark tasks as archived by listID: %w", op, err)
+	}
+
+	return nil
+}

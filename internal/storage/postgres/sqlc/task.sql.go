@@ -12,6 +12,56 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const archiveTasksByHeadingID = `-- name: ArchiveTasksByHeadingID :exec
+UPDATE tasks
+SET status_id = $1, deleted_at = $2
+WHERE heading_id = $3
+  AND user_id = $4
+  AND deleted_at IS NULL
+`
+
+type ArchiveTasksByHeadingIDParams struct {
+	StatusID  int32              `db:"status_id"`
+	DeletedAt pgtype.Timestamptz `db:"deleted_at"`
+	HeadingID string             `db:"heading_id"`
+	UserID    string             `db:"user_id"`
+}
+
+func (q *Queries) ArchiveTasksByHeadingID(ctx context.Context, arg ArchiveTasksByHeadingIDParams) error {
+	_, err := q.db.Exec(ctx, archiveTasksByHeadingID,
+		arg.StatusID,
+		arg.DeletedAt,
+		arg.HeadingID,
+		arg.UserID,
+	)
+	return err
+}
+
+const archiveTasksByListID = `-- name: ArchiveTasksByListID :exec
+UPDATE tasks
+SET status_id = $1, deleted_at = $2
+WHERE list_id = $3
+  AND user_id = $4
+  AND deleted_at IS NULL
+`
+
+type ArchiveTasksByListIDParams struct {
+	StatusID  int32              `db:"status_id"`
+	DeletedAt pgtype.Timestamptz `db:"deleted_at"`
+	ListID    string             `db:"list_id"`
+	UserID    string             `db:"user_id"`
+}
+
+func (q *Queries) ArchiveTasksByListID(ctx context.Context, arg ArchiveTasksByListIDParams) error {
+	_, err := q.db.Exec(ctx, archiveTasksByListID,
+		arg.StatusID,
+		arg.DeletedAt,
+		arg.ListID,
+		arg.UserID,
+	)
+	return err
+}
+
 const createTask = `-- name: CreateTask :exec
 INSERT INTO tasks (
     id,

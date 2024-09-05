@@ -15,6 +15,7 @@ import (
 type ListUsecase struct {
 	storage        port.ListStorage
 	HeadingUsecase port.HeadingUsecase
+	TaskUsecase    port.TaskUsecase
 }
 
 func NewListUsecase(listStorage port.ListStorage) *ListUsecase {
@@ -173,5 +174,29 @@ func (u *ListUsecase) DeleteList(ctx context.Context, data model.ListRequestData
 		DeletedAt: time.Now(),
 	}
 
-	return u.storage.DeleteList(ctx, deletedList)
+	if err = u.storage.DeleteList(ctx, deletedList); err != nil {
+		return err
+	}
+
+	// Delete headings
+	headingsData := model.HeadingRequestData{
+		ListID: data.ID,
+		UserID: data.UserID,
+	}
+
+	if err = u.HeadingUsecase.DeleteHeadingsByListID(ctx, headingsData); err != nil {
+		return err
+	}
+
+	// Archive tasks
+	tasksData := model.TaskRequestData{
+		ListID: data.ID,
+		UserID: data.UserID,
+	}
+
+	if err = u.TaskUsecase.ArchiveTasksByListID(ctx, tasksData); err != nil {
+		return err
+	}
+
+	return nil
 }
