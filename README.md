@@ -5,6 +5,7 @@
 ## Stack
 - Golang backend
 - PostgresQL
+- 
 
 ## What's included
 - The REST API with JSON responses.
