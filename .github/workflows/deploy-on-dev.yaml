@@ -55,7 +55,7 @@ jobs:
             # Create config file on the server
             echo "${{ secrets.ENV_CONFIG_DEV }}" > ./config/reframed-app/.env
 
-            # Create reframed-network if it doesn't exist
+            # Create reframed-network if it doesn't exist 
             docker network inspect reframed-network >/dev/null 2>&1 || docker network create reframed-network
 
             # Stop and remove the existing container (if any)
