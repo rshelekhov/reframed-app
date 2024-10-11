@@ -10,8 +10,8 @@ import (
 
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/gavv/httpexpect/v2"
+	"github.com/rshelekhov/jwtauth"
 	"github.com/rshelekhov/reframed/internal/lib/constant/key"
-	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
 	"github.com/rshelekhov/reframed/internal/model"
 )
 
@@ -301,7 +301,7 @@ func countTasksInGroups(t *testing.T, response *httpexpect.Object, printDetails 
 
 // Clearing the SSO gRPC service storage after testing to avoid data collision
 func cleanupAuthService(e *httpexpect.Expect, o *httpexpect.Object) {
-	accessToken := o.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := o.Value(jwtauth.AccessTokenKey).String().Raw()
 	e.DELETE("/user/").
 		WithHeader("Authorization", "Bearer "+accessToken).
 		Expect().
