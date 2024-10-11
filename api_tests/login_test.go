@@ -1,14 +1,15 @@
 package api_tests
 
 import (
-	"github.com/brianvoe/gofakeit/v6"
-	"github.com/gavv/httpexpect/v2"
-	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
-	"github.com/rshelekhov/reframed/internal/model"
 	"net/http"
 	"net/url"
 	"testing"
 	"time"
+
+	"github.com/brianvoe/gofakeit/v6"
+	"github.com/gavv/httpexpect/v2"
+	"github.com/rshelekhov/jwtauth"
+	"github.com/rshelekhov/reframed/internal/model"
 )
 
 func TestLogin_HappyPath(t *testing.T) {
@@ -41,7 +42,7 @@ func TestLogin_HappyPath(t *testing.T) {
 		Status(http.StatusOK).
 		JSON().Object()
 
-	respLogin.Value(jwtoken.AccessTokenKey).String().NotEmpty()
+	respLogin.Value(jwtauth.AccessTokenKey).String().NotEmpty()
 
 	// Login user and check cookies
 	cookie := e.POST("/login").
@@ -51,7 +52,7 @@ func TestLogin_HappyPath(t *testing.T) {
 		}).
 		Expect().
 		Status(http.StatusOK).
-		Cookie(jwtoken.RefreshTokenKey)
+		Cookie(jwtauth.RefreshTokenKey)
 
 	cookie.Value().NotEmpty()
 	cookie.Domain().IsEqual(cookieDomain)
@@ -157,7 +158,7 @@ func TestLoginUserNotFound(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtauth.AccessTokenKey).String().Raw()
 
 	// Delete user
 	e.DELETE("/user/").

@@ -1,15 +1,16 @@
 package api_tests
 
 import (
-	"github.com/brianvoe/gofakeit/v6"
-	"github.com/gavv/httpexpect/v2"
-	"github.com/rshelekhov/reframed/internal/lib/constant/key"
-	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
-	"github.com/rshelekhov/reframed/internal/model"
-	"github.com/segmentio/ksuid"
 	"net/http"
 	"net/url"
 	"testing"
+
+	"github.com/brianvoe/gofakeit/v6"
+	"github.com/gavv/httpexpect/v2"
+	"github.com/rshelekhov/jwtauth"
+	"github.com/rshelekhov/reframed/internal/lib/constant/key"
+	"github.com/rshelekhov/reframed/internal/model"
+	"github.com/segmentio/ksuid"
 )
 
 func TestMoveTaskToAnotherList_HappyPath(t *testing.T) {
@@ -29,7 +30,7 @@ func TestMoveTaskToAnotherList_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtauth.AccessTokenKey).String().Raw()
 
 	fakeTask := randomFakeTask(upcomingTasks, "", "")
 
@@ -90,7 +91,7 @@ func TestMoveTaskToAnotherList_FailCases(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtauth.AccessTokenKey).String().Raw()
 
 	fakeTask := randomFakeTask(upcomingTasks, "", "")
 
@@ -173,7 +174,7 @@ func TestMoveTaskToAnotherHeading_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtauth.AccessTokenKey).String().Raw()
 
 	fakeTask := randomFakeTask(upcomingTasks, "", "")
 
@@ -247,7 +248,7 @@ func TestMoveTaskToAnotherHeading_FailCases(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtauth.AccessTokenKey).String().Raw()
 
 	fakeTask := randomFakeTask(upcomingTasks, "", "")
 

@@ -1,13 +1,14 @@
 package api_tests
 
 import (
-	"github.com/brianvoe/gofakeit/v6"
-	"github.com/gavv/httpexpect/v2"
-	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
-	"github.com/rshelekhov/reframed/internal/model"
 	"net/http"
 	"net/url"
 	"testing"
+
+	"github.com/brianvoe/gofakeit/v6"
+	"github.com/gavv/httpexpect/v2"
+	"github.com/rshelekhov/jwtauth"
+	"github.com/rshelekhov/reframed/internal/model"
 )
 
 func TestGetUser_HappyPath(t *testing.T) {
@@ -27,7 +28,7 @@ func TestGetUser_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtauth.AccessTokenKey).String().Raw()
 
 	// Get user
 	e.GET("/user/").
@@ -102,7 +103,7 @@ func TestGetUser_NotFound(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtauth.AccessTokenKey).String().Raw()
 
 	// Delete user
 	e.DELETE("/user/").

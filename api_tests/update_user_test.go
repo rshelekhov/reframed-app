@@ -1,13 +1,14 @@
 package api_tests
 
 import (
-	"github.com/brianvoe/gofakeit/v6"
-	"github.com/gavv/httpexpect/v2"
-	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
-	"github.com/rshelekhov/reframed/internal/model"
 	"net/http"
 	"net/url"
 	"testing"
+
+	"github.com/brianvoe/gofakeit/v6"
+	"github.com/gavv/httpexpect/v2"
+	"github.com/rshelekhov/jwtauth"
+	"github.com/rshelekhov/reframed/internal/model"
 )
 
 func TestUpdateUser_HappyPath(t *testing.T) {
@@ -29,7 +30,7 @@ func TestUpdateUser_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtauth.AccessTokenKey).String().Raw()
 
 	// Update user
 	e.PATCH("/user/").
@@ -66,7 +67,7 @@ func TestUpdateUser_FailCases(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtauth.AccessTokenKey).String().Raw()
 
 	testCases := []struct {
 		name        string
@@ -134,7 +135,7 @@ func TestUpdateUserNotFound(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtauth.AccessTokenKey).String().Raw()
 
 	// Delete user
 	e.DELETE("/user/").
@@ -172,7 +173,7 @@ func TestUpdateUserEmailAlreadyTaken(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := user1.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user1.Value(jwtauth.AccessTokenKey).String().Raw()
 
 	// Register second user
 	user2 := e.POST("/register").

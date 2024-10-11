@@ -1,14 +1,15 @@
 package api_tests
 
 import (
-	"github.com/brianvoe/gofakeit/v6"
-	"github.com/gavv/httpexpect/v2"
-	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
-	"github.com/rshelekhov/reframed/internal/model"
 	"net/http"
 	"net/url"
 	"testing"
 	"time"
+
+	"github.com/brianvoe/gofakeit/v6"
+	"github.com/gavv/httpexpect/v2"
+	"github.com/rshelekhov/jwtauth"
+	"github.com/rshelekhov/reframed/internal/model"
 )
 
 func TestRegisterNewUser_HappyPath(t *testing.T) {
@@ -29,7 +30,7 @@ func TestRegisterNewUser_HappyPath(t *testing.T) {
 		JSON().Object()
 
 	// Check if access token is returned
-	user.Value(jwtoken.AccessTokenKey).String().NotEmpty()
+	user.Value(jwtauth.AccessTokenKey).String().NotEmpty()
 
 	// Check cookies
 	cookie := e.POST("/register").
@@ -39,7 +40,7 @@ func TestRegisterNewUser_HappyPath(t *testing.T) {
 		}).
 		Expect().
 		Status(http.StatusCreated).
-		Cookie(jwtoken.RefreshTokenKey)
+		Cookie(jwtauth.RefreshTokenKey)
 
 	cookie.Value().NotEmpty()
 	cookie.Domain().IsEqual(cookieDomain)

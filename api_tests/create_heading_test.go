@@ -1,14 +1,15 @@
 package api_tests
 
 import (
-	"github.com/brianvoe/gofakeit/v6"
-	"github.com/gavv/httpexpect/v2"
-	"github.com/rshelekhov/reframed/internal/lib/constant/key"
-	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
-	"github.com/rshelekhov/reframed/internal/model"
 	"net/http"
 	"net/url"
 	"testing"
+
+	"github.com/brianvoe/gofakeit/v6"
+	"github.com/gavv/httpexpect/v2"
+	"github.com/rshelekhov/jwtauth"
+	"github.com/rshelekhov/reframed/internal/lib/constant/key"
+	"github.com/rshelekhov/reframed/internal/model"
 )
 
 func TestCreateHeading_HappyPath(t *testing.T) {
@@ -28,7 +29,7 @@ func TestCreateHeading_HappyPath(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtauth.AccessTokenKey).String().Raw()
 
 	// Create list
 	list := e.POST("/user/lists/").
@@ -74,7 +75,7 @@ func TestCreateHeading_FailCases(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken := user.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken := user.Value(jwtauth.AccessTokenKey).String().Raw()
 
 	testCases := []struct {
 		name        string
@@ -143,7 +144,7 @@ func TestCreateHeading_InvalidUserID(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken1 := user1.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken1 := user1.Value(jwtauth.AccessTokenKey).String().Raw()
 
 	// Create list
 	list := e.POST("/user/lists/").
@@ -167,7 +168,7 @@ func TestCreateHeading_InvalidUserID(t *testing.T) {
 		Status(http.StatusCreated).
 		JSON().Object()
 
-	accessToken2 := user2.Value(jwtoken.AccessTokenKey).String().Raw()
+	accessToken2 := user2.Value(jwtauth.AccessTokenKey).String().Raw()
 
 	// Create heading with invalid token and userID
 	e.POST("/user/lists/{list_id}/headings/", listID).
