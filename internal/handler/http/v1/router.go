@@ -4,15 +4,15 @@ import (
 	"log/slog"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/rshelekhov/jwtauth"
 	"github.com/rshelekhov/reframed/internal/config"
-	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
 	"github.com/rshelekhov/reframed/internal/port"
 )
 
 type AppRouter struct {
 	*config.ServerSettings
 	*slog.Logger
-	*jwtoken.TokenService
+	*jwtauth.TokenService
 	*authHandler
 	*listHandler
 	*headingHandler
@@ -24,7 +24,7 @@ type AppRouter struct {
 func NewRouter(
 	cfg *config.ServerSettings,
 	log *slog.Logger,
-	jwt *jwtoken.TokenService,
+	jwt *jwtauth.TokenService,
 	authUsecase port.AuthUsecase,
 	listUsecase port.ListUsecase,
 	headingUsecase port.HeadingUsecase,

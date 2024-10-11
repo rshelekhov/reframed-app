@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
+	"github.com/rshelekhov/jwtauth"
 
 	"github.com/rshelekhov/reframed/internal/lib/constant/key"
 	"github.com/rshelekhov/reframed/internal/lib/constant/le"
@@ -19,13 +19,13 @@ import (
 
 type authHandler struct {
 	logger  *slog.Logger
-	jwt     *jwtoken.TokenService
+	jwt     *jwtauth.TokenService
 	usecase port.AuthUsecase
 }
 
 func newAuthHandler(
 	log *slog.Logger,
-	jwt *jwtoken.TokenService,
+	jwt *jwtauth.TokenService,
 	usecase port.AuthUsecase,
 ) *authHandler {
 	return &authHandler{
@@ -69,7 +69,7 @@ func (h *authHandler) Register() http.HandlerFunc {
 			slog.String(key.UserID, userID),
 			slog.Any(key.AccessToken, tokenData.GetAccessToken()),
 			slog.Any(key.RefreshToken, tokenData.GetRefreshToken()))
-		jwtoken.SendTokensToWeb(w, tokenData, http.StatusCreated)
+		jwtauth.SendTokensToWeb(w, tokenData, http.StatusCreated)
 	}
 }
 
@@ -144,7 +144,7 @@ func (h *authHandler) LoginWithPassword() http.HandlerFunc {
 			slog.String(key.UserID, userID),
 			slog.Any(key.AccessToken, tokenData.AccessToken),
 			slog.Any(key.RefreshToken, tokenData.RefreshToken))
-		jwtoken.SendTokensToWeb(w, tokenData, http.StatusOK)
+		jwtauth.SendTokensToWeb(w, tokenData, http.StatusOK)
 	}
 }
 
@@ -219,7 +219,7 @@ func (h *authHandler) RefreshTokens() http.HandlerFunc {
 		ctx := r.Context()
 		log := logger.LogWithRequest(h.logger, op, r)
 
-		refreshToken, err := jwtoken.FindRefreshToken(r)
+		refreshToken, err := jwtauth.FindRefreshToken(r)
 		if err != nil {
 			handleResponseError(w, r, log, http.StatusUnauthorized, le.ErrFailedToGetRefreshToken, err)
 			return
@@ -242,7 +242,7 @@ func (h *authHandler) RefreshTokens() http.HandlerFunc {
 			slog.String(key.UserID, userID),
 			slog.String(key.AccessToken, tokenData.AccessToken),
 			slog.String(key.RefreshToken, tokenData.RefreshToken))
-		jwtoken.SendTokensToWeb(w, tokenData, http.StatusOK)
+		jwtauth.SendTokensToWeb(w, tokenData, http.StatusOK)
 	}
 }
 

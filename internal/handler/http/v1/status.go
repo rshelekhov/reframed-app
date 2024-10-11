@@ -7,22 +7,22 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/rshelekhov/jwtauth"
 	"github.com/rshelekhov/reframed/internal/lib/constant/key"
 	"github.com/rshelekhov/reframed/internal/lib/constant/le"
 	"github.com/rshelekhov/reframed/internal/lib/logger"
-	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
 	"github.com/rshelekhov/reframed/internal/port"
 )
 
 type statusHandler struct {
 	logger  *slog.Logger
-	jwt     *jwtoken.TokenService
+	jwt     *jwtauth.TokenService
 	usecase port.StatusUsecase
 }
 
 func newStatusHandler(
 	log *slog.Logger,
-	jwt *jwtoken.TokenService,
+	jwt *jwtauth.TokenService,
 	usecase port.StatusUsecase,
 ) *statusHandler {
 	return &statusHandler{

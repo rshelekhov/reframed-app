@@ -5,8 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
-
+	"github.com/rshelekhov/jwtauth"
 	"github.com/rshelekhov/reframed/internal/lib/constant/le"
 	"github.com/rshelekhov/reframed/internal/lib/logger"
 	"github.com/rshelekhov/reframed/internal/port"
@@ -14,13 +13,13 @@ import (
 
 type tagHandler struct {
 	logger  *slog.Logger
-	jwt     *jwtoken.TokenService
+	jwt     *jwtauth.TokenService
 	usecase port.TagUsecase
 }
 
 func newTagHandler(
 	log *slog.Logger,
-	jwt *jwtoken.TokenService,
+	jwt *jwtauth.TokenService,
 	usecase port.TagUsecase,
 ) *tagHandler {
 	return &tagHandler{

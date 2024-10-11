@@ -10,9 +10,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/rshelekhov/jwtauth"
 	"github.com/rshelekhov/reframed/internal/config"
-
-	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -20,14 +19,14 @@ import (
 type Server struct {
 	cfg       *config.ServerSettings
 	log       *slog.Logger
-	tokenAuth *jwtoken.TokenService
+	tokenAuth *jwtauth.TokenService
 	router    *chi.Mux
 }
 
 func NewServer(
 	cfg *config.ServerSettings,
 	log *slog.Logger,
-	tokenAuth *jwtoken.TokenService,
+	tokenAuth *jwtauth.TokenService,
 	router *chi.Mux,
 ) *Server {
 	srv := &Server{

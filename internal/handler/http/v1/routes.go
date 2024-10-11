@@ -7,7 +7,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/httprate"
 	"github.com/go-chi/render"
-	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
+	"github.com/rshelekhov/jwtauth"
 	mwlogger "github.com/rshelekhov/reframed/internal/lib/middleware/logger"
 )
 
@@ -59,8 +59,8 @@ func (ar *AppRouter) initRoutes() *chi.Mux {
 
 	// Protected routes
 	r.Group(func(r chi.Router) {
-		r.Use(jwtoken.Verifier(ar.TokenService))
-		r.Use(jwtoken.Authenticator())
+		r.Use(jwtauth.Verifier(ar.TokenService))
+		r.Use(jwtauth.Authenticator())
 
 		r.Post("/logout", ar.Logout())
 

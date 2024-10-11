@@ -2,13 +2,12 @@
 package main
 
 import (
-	"context"
 	"log/slog"
 
+	"github.com/rshelekhov/jwtauth"
 	"github.com/rshelekhov/reframed/internal/config"
 
 	"github.com/rshelekhov/reframed/internal/app/httpserver"
-	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
 
 	ssogrpc "github.com/rshelekhov/reframed/internal/clients/sso/grpc"
 	v1 "github.com/rshelekhov/reframed/internal/handler/http/v1"
@@ -32,7 +31,6 @@ func main() {
 	log.Debug("logger debug mode enabled")
 
 	ssoClient, err := ssogrpc.New(
-		context.Background(),
 		log,
 		cfg.Clients.SSO.Address,
 		cfg.Clients.SSO.Timeout,
@@ -42,7 +40,8 @@ func main() {
 		log.Error("failed to init sso client", logger.Err(err))
 	}
 
-	tokenAuth := jwtoken.NewService(ssoClient, cfg.AppData.ID)
+	// tokenAuth := jwtoken.NewService(ssoClient, cfg.AppData.ID)
+	tokenAuth := jwtauth.New(ssoClient, cfg.AppData.ID)
 
 	// Storage
 	pg, err := postgres.NewStorage(cfg)

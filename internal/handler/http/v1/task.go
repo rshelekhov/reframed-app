@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
+	"github.com/rshelekhov/jwtauth"
 
 	"github.com/go-chi/chi/v5"
 
@@ -18,13 +18,13 @@ import (
 
 type taskHandler struct {
 	logger  *slog.Logger
-	jwt     *jwtoken.TokenService
+	jwt     *jwtauth.TokenService
 	usecase port.TaskUsecase
 }
 
 func newTaskHandler(
 	log *slog.Logger,
-	jwt *jwtoken.TokenService,
+	jwt *jwtauth.TokenService,
 	usecase port.TaskUsecase,
 ) *taskHandler {
 	return &taskHandler{

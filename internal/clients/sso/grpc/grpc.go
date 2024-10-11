@@ -20,7 +20,6 @@ type Client struct {
 }
 
 func New(
-	ctx context.Context,
 	log *slog.Logger,
 	addr string,
 	timeout time.Duration,

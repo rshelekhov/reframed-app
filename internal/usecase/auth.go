@@ -5,9 +5,9 @@ import (
 	"fmt"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/rshelekhov/jwtauth"
 	ssogrpc "github.com/rshelekhov/reframed/internal/clients/sso/grpc"
 	"github.com/rshelekhov/reframed/internal/config"
-	"github.com/rshelekhov/reframed/internal/lib/middleware/jwtoken"
 	ssov1 "github.com/rshelekhov/sso-protos/gen/go/sso"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -21,7 +21,7 @@ import (
 type AuthUsecase struct {
 	cfg            *config.ServerSettings
 	ssoClient      *ssogrpc.Client
-	jwt            *jwtoken.TokenService
+	jwt            *jwtauth.TokenService
 	UserUsecase    port.UserUsecase
 	ListUsecase    port.ListUsecase
 	HeadingUsecase port.HeadingUsecase
@@ -30,7 +30,7 @@ type AuthUsecase struct {
 func NewAuthUsecase(
 	cfg *config.ServerSettings,
 	ssoClient *ssogrpc.Client,
-	jwt *jwtoken.TokenService,
+	jwt *jwtauth.TokenService,
 ) *AuthUsecase {
 	return &AuthUsecase{
 		cfg:       cfg,
@@ -266,7 +266,7 @@ func (u *AuthUsecase) RefreshTokens(
 }
 
 func (u *AuthUsecase) LogoutUser(ctx context.Context, data model.UserDeviceRequestData) error {
-	ctx, err := jwtoken.AddAccessTokenToMetadata(ctx)
+	ctx, err := jwtauth.AddAccessTokenToMetadata(ctx)
 	if err != nil {
 		return err
 	}
@@ -286,7 +286,7 @@ func (u *AuthUsecase) LogoutUser(ctx context.Context, data model.UserDeviceReque
 }
 
 func (u *AuthUsecase) GetUserByID(ctx context.Context) (model.UserResponseData, error) {
-	ctx, err := jwtoken.AddAccessTokenToMetadata(ctx)
+	ctx, err := jwtauth.AddAccessTokenToMetadata(ctx)
 	if err != nil {
 		return model.UserResponseData{}, err
 	}
@@ -314,7 +314,7 @@ func (u *AuthUsecase) GetUserByID(ctx context.Context) (model.UserResponseData, 
 }
 
 func (u *AuthUsecase) UpdateUser(ctx context.Context, data *model.UpdateUserRequestData) error {
-	ctx, err := jwtoken.AddAccessTokenToMetadata(ctx)
+	ctx, err := jwtauth.AddAccessTokenToMetadata(ctx)
 	if err != nil {
 		return err
 	}
@@ -347,7 +347,7 @@ func (u *AuthUsecase) UpdateUser(ctx context.Context, data *model.UpdateUserRequ
 }
 
 func (u *AuthUsecase) DeleteUser(ctx context.Context, userID string) error {
-	ctx, err := jwtoken.AddAccessTokenToMetadata(ctx)
+	ctx, err := jwtauth.AddAccessTokenToMetadata(ctx)
 	if err != nil {
 		return err
 	}
